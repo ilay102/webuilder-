@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg:      #0a0c10;
+  --bg2:     #0f1117;
+  --bg3:     #161b24;
+  --border:  #1e2535;
+  --border2: #2a3347;
+  --accent:  #3b82f6;
+  --success: #10b981;
+  --warn:    #f59e0b;
+  --danger:  #ef4444;
+  --purple:  #8b5cf6;
+  --cyan:    #06b6d4;
+  --muted:   #94a3b8;
+  --faint:   #475569;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: #e2e8f0;
+  font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+  font-size: 13px;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* Pixel art rendering for office page */
+.pixel-art {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Pulsing dot */
+@keyframes glow-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px currentColor; }
+  50%       { opacity: 0.5; box-shadow: 0 0 2px currentColor; }
+}
+.pulse-dot { animation: glow-pulse 2s ease-in-out infinite; }
+
+/* Kanban drag */
+.drag-over { border-color: var(--accent) !important; background: rgba(59,130,246,0.05) !important; }
+
+/* Scrollable panel */
+.panel-scroll { overflow-y: auto; flex: 1; min-height: 0; }

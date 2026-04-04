@@ -1,0 +1,14 @@
+{
+  "name": "chad-mission-control-server",
+  "version": "1.0.0",
+  "description": "API server for Chad Mission Control — reads ~/.openclaw/workspace/ and serves JSON",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  }
+}
