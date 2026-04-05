@@ -57,6 +57,7 @@ export interface Lead {
   id: string
   company: string
   contact: string
+  phone?: string
   email?: string
   linkedin?: string
   industry: string
