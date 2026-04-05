@@ -41,13 +41,13 @@ export default function ApprovalsPage() {
   const pending = items.filter(i => !done.has(i.id))
 
   const handleApprove = async (id: string) => {
-    setDone(s => new Set([...s, id]))
+    setDone(s => { const n = new Set(s); n.add(id); return n; })
     if (selected?.id === id) setSelected(pending.find(p => p.id !== id) ?? null)
     await approve(id)
   }
 
   const handleReject = async (id: string) => {
-    setDone(s => new Set([...s, id]))
+    setDone(s => { const n = new Set(s); n.add(id); return n; })
     if (selected?.id === id) setSelected(pending.find(p => p.id !== id) ?? null)
     await reject(id)
   }
