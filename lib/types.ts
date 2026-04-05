@@ -72,9 +72,11 @@ export interface Approval {
   id: string
   title: string
   body: string
+  message_draft?: string
   type: 'message' | 'action' | 'deploy' | 'email' | 'post'
   agent: string
   created_at: string
+  timestamp?: string
   urgency: 'low' | 'medium' | 'high'
   metadata?: Record<string, string>
 }
