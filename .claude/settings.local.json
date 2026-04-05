@@ -75,7 +75,8 @@
       "Bash(curl -s \"https://generativelanguage.googleapis.com/v1beta/models?key=AIzaSyAokh-a-7A_GpTIag1G5YT7UQF1vCPVUkY\")",
       "Bash(npm run:*)",
       "Bash(curl -s http://localhost:3002/dental)",
-      "mcp__3f06ac87-cddc-4214-8b83-a0bb037a77cc__execute_sql"
+      "mcp__3f06ac87-cddc-4214-8b83-a0bb037a77cc__execute_sql",
+      "Bash(npx vercel:*)"
     ]
   }
 }
