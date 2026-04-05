@@ -1,0 +1,25 @@
+[
+  {
+    "id": "uuid-jj-generates-this",
+    "status": "pending",
+
+    "template": "dental",
+    "route": "cohen-dental",
+    "businessName": "Dr. Cohen Dental",
+    "tagline": "Gentle care for every smile",
+    "city": "Tel Aviv",
+    "phone": "03-123-4567",
+    "hours": "Sun–Thu 9:00–18:00",
+    "calLink": "ilay-lankin/15min",
+    "clientEmail": "ilay1bgu@gmail.com",
+    "clientWhatsapp": "972501234567",
+
+    "leadPhone": "972501234567",
+    "leadName": "Avi",
+    "requestedAt": "2026-04-05T10:00:00Z",
+
+    "demoUrl": null,
+    "deployedAt": null,
+    "error": null
+  }
+]
