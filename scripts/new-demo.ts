@@ -188,36 +188,30 @@ function buildDemo(c: DemoConfig): string {
   return `${BASE_URL}/${c.route}`;
 }
 
-// ─── Replacements ─────────────────────────────────────────────────
+// ─── BIZ block replace (two-tier config) ──────────────────────────
+// Templates use a BIZ const block. We replace it entirely —
+// no regex hunting, no missed fields, no fragile string matching.
+
+function buildBizBlock(c: DemoConfig): string {
+  return `const BIZ = {
+  name:          '${c.businessName}',
+  tagline:       '${c.tagline}',
+  city:          '${c.city}',
+  address:       '${c.city}',
+  phone:         '${c.phone}',
+  email:         '${c.clientEmail}',
+  hours:         '${c.hours}',
+  calLink:       '${c.calLink}',
+  alertEmail:    '${c.clientEmail}',
+  alertWhatsapp: '${c.clientWhatsapp}',
+} as const;`;
+}
 
 function getReplacements(c: DemoConfig): [RegExp, string][] {
-  const base: [RegExp, string][] = [
-    [/const CAL_LINK = '[^']*'/,                          `const CAL_LINK = '${c.calLink}'`],
-    [/name: '[^']*',(\s*\/\/.*)?(\n\s*type:)/,            `name: '${c.businessName}',$2`],
-    [/location: '[^']*'/,                                 `location: '${c.city}'`],
-    [/phone: '[^-\d]*[\d-]*'(?=,\s*\n\s*hours)/,         `phone: '${c.phone}'`],
-    [/hours: '[^']*'/,                                    `hours: '${c.hours}'`],
-    [/clientEmail: '[^']*'/,                              `clientEmail: '${c.clientEmail}'`],
-    [/clientWhatsapp: '[^']*'/,                           `clientWhatsapp: '${c.clientWhatsapp}'`],
-    [/greeting: "Hi! 👋 I'm the [^"]* assistant\./,      `greeting: "Hi! 👋 I'm the ${c.businessName} assistant.`],
-    [/© \d{4} [^.]+\./,                                   `© 2026 ${c.businessName}.`],
-    [/config=\{\{\s*\n\s*name: '[^']*'/,                  `config={{\n        name: '${c.businessName}'`],
+  return [
+    // One replace: the entire BIZ block. That's it.
+    [/const BIZ = \{[\s\S]*?\} as const;/, buildBizBlock(c)],
   ];
-
-  const templateNames: Record<string, [RegExp, string][]> = {
-    dental: [
-      [/Smile Studio/g,      c.businessName],
-      [/smile studio/gi,     c.businessName.toLowerCase()],
-    ],
-    accountant: [
-      [/Goldberg & Associates/g,  c.businessName],
-    ],
-    lawyer: [
-      [/Avi Mizrahi Law/g,   c.businessName],
-    ],
-  };
-
-  return [...base, ...(templateNames[c.template] || [])];
 }
 
 // ─── Output helper (always JSON to stdout) ────────────────────────
