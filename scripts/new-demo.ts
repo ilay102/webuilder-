@@ -37,7 +37,7 @@ interface DemoConfig {
   template:       'dental' | 'accountant' | 'lawyer';
   route:          string;
   businessName:   string;
-  tagline:        string;
+  tagline?:       string;
   city:           string;
   phone:          string;
   hours:          string;
@@ -195,7 +195,7 @@ function buildDemo(c: DemoConfig): string {
 function buildBizBlock(c: DemoConfig): string {
   return `const BIZ = {
   name:          '${c.businessName}',
-  tagline:       '${c.tagline}',
+  tagline:       '${c.tagline || 'Professional ' + c.template + ' care in ' + c.city}',
   city:          '${c.city}',
   address:       '${c.city}',
   phone:         '${c.phone}',
