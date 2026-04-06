@@ -35,7 +35,7 @@ const F = {
 ══════════════════════════════════════════════════════════════ */
 const BIZ = {
   name:          'Dr. Stern Dental Clinic',
-  tagline:       'undefined',
+  tagline:       'Professional dental care in Jerusalem',
   city:          'Jerusalem',
   address:       'Jerusalem',
   phone:         '02-555-1234',
