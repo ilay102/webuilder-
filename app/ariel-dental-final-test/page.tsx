@@ -34,16 +34,16 @@ const F = {
    TIER 2 — BUSINESS  (swap this block per client — nothing else)
 ══════════════════════════════════════════════════════════════ */
 const BIZ = {
-  name:          'מרפאת שיניים בדיקה',
-  tagline:       'שירות מקצועי ואמין',
-  city:          'תל אביב',
-  address:       'תל אביב',
-  phone:         '03-0000000',
-  email:         '',
-  hours:         'א-ה 09:00-18:00',
+  name:          'מרפאת שיניים עילאי אריאל',
+  tagline:       'Professional dental care in אריאל',
+  city:          'אריאל',
+  address:       'אריאל',
+  phone:         '972534638880',
+  email:         'ilay1bgu@gmail.com',
+  hours:         'Sun–Thu 9:00–18:00',
   calLink:       'ilay-lankin/15min',
-  alertEmail:    '',
-  alertWhatsapp: '972534638880',
+  alertEmail:    'ilay1bgu@gmail.com',
+  alertWhatsapp: '972507112015',
 } as const;
 
 /* ─── Helpers ───────────────────────────────────────────────── */
@@ -173,13 +173,11 @@ export default function DentalPage() {
         @media (max-width: 768px) {
           .nav-links { display: none !important; }
           .nav-book  { display: none !important; }
+          .nav-name  { font-size: 14px !important; }
           .hero-grad { background: linear-gradient(to bottom, rgba(250,248,244,0.1) 0%, rgba(250,248,244,0.85) 40%, rgba(250,248,244,0.97) 100%) !important; }
           .hero-inner { padding: 0 24px !important; align-items: flex-end !important; padding-bottom: 80px !important; }
           .hero-content { max-width: 100% !important; }
-          .hero-btns { flex-direction: column !important; align-items: flex-start !important; }
-          .hero-btns button { width: 100% !important; text-align: center !important; }
-          .stats-section { padding: 40px 24px !important; }
-          .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 24px !important; }
+          .stats-grid { grid-template-columns: repeat(2,1fr) !important; padding: 40px 24px !important; gap: 24px !important; }
           .services-wrap { padding: 60px 24px !important; }
           .services-grid { grid-template-columns: 1fr !important; }
           .about-section { padding: 60px 24px !important; }
@@ -189,8 +187,13 @@ export default function DentalPage() {
           .testimonials-wrap { padding: 60px 24px !important; }
           .testimonials-grid { grid-template-columns: 1fr !important; }
           .cta-section { height: auto !important; padding: 80px 0 !important; }
+          .cta-inner { padding: 0 24px !important; }
+          .cta-content { max-width: 100% !important; }
+          .hero-btns { flex-direction: column !important; align-items: flex-start !important; }
+          .hero-btns button { width: 100% !important; text-align: center !important; }
           .footer-outer { padding: 48px 24px 32px !important; }
           .footer-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .sec-pad { padding: 60px 24px !important; }
           .hide-mobile { display: none !important; }
         }
       `}} />
@@ -284,8 +287,8 @@ export default function DentalPage() {
       </section>
 
       {/* ── STATS ── */}
-      <section className="stats-section" style={{ background: C.forest, padding: '48px 80px' }}>
-        <div className="stats-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32 }}>
+      <section style={{ background: C.forest }}>
+        <div className="stats-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32, padding: '48px 80px' }}>
           {stats.map(({ value, label }, i) => (
             <motion.div key={label} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }} style={{ textAlign: 'center' as const }}>
               <div style={{ fontFamily: F.serif, fontSize: 40, fontWeight: 800, color: '#fff', letterSpacing: '-0.03em' }}>{value}</div>
