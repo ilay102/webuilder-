@@ -109,7 +109,9 @@ function triggerBuildIfNeeded(phone, message) {
     let queue = [];
     try { queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf-8')); } catch (e) {}
 
-    const slug = (lead.company || 'site').replace(/[^\w\s-]/g, '').trim().toLowerCase().replace(/\s+/g, '-');
+    // Generate slug: convert to kebab-case, handle Hebrew
+    const slugBase = (lead.company || 'site').trim().replace(/\s+/g, '-').toLowerCase();
+    const slug = slugBase.replace(/[^a-z0-9\u0590-\u05FF-]/g, ''); // Keep Hebrew + alphanumeric + dash
     const entry = {
       id: `jj-${Date.now()}`,
       status: 'pending',
