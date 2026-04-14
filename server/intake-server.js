@@ -19,7 +19,7 @@ const path    = require('path');
 const { execSync } = require('child_process');
 
 const app  = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3004;
 
 const INTAKE_SECRET  = process.env.INTAKE_SECRET  || '';
 const REPO_ROOT      = path.resolve(__dirname, '..');
