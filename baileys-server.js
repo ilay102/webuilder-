@@ -19,7 +19,7 @@ app.use(express.json());
 const PORT = 3003;
 const AUTH_DIR = '/root/whatsapp-baileys/auth';
 const SIMPLE_JJ_URL = 'http://127.0.0.1:3002/respond';
-const VPS_SERVER_URL = process.env.VPS_SERVER_URL || 'http://127.0.0.1:3001';
+const VPS_SERVER_URL = process.env.VPS_SERVER_URL || 'http://127.0.0.1:3004';
 const INTAKE_SECRET  = process.env.INTAKE_SECRET  || '';
 
 let sock = null;
