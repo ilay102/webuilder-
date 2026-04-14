@@ -151,62 +151,51 @@ function processQueue(queuePath: string): void {
 // ─── Core build logic ─────────────────────────────────────────────
 
 function buildDemo(c: DemoConfig): string {
-  const templatePath = path.join(process.cwd(), 'app', c.template, 'page.tsx');
+  const templateDir  = path.join(process.cwd(), 'app', c.template);
+  const templatePage = path.join(templateDir, 'page.tsx');
   const outDir       = path.join(process.cwd(), 'app', c.route);
-  const outPath      = path.join(outDir, 'page.tsx');
 
-  if (!fs.existsSync(templatePath)) {
+  if (!fs.existsSync(templatePage)) {
     throw new Error(`Template not found: app/${c.template}/page.tsx`);
   }
 
-  // Read base template
-  let code = fs.readFileSync(templatePath, 'utf-8');
-
-  // Apply all replacements
-  const replacements = getReplacements(c);
-  for (const [pattern, replacement] of replacements) {
-    code = code.replace(pattern, replacement);
-  }
-
-  // Write new route
   fs.mkdirSync(outDir, { recursive: true });
-  fs.writeFileSync(outPath, code);
 
-  // TypeScript check disabled — template is pre-validated
+  // Copy page.tsx as-is (it reads from content.json — no patching needed)
+  fs.copyFileSync(templatePage, path.join(outDir, 'page.tsx'));
 
-  // Git push → Vercel auto-deploys
+  // Build content.json from template defaults, patching biz fields
+  const templateContentPath = path.join(templateDir, 'content.json');
+  const baseContent = fs.existsSync(templateContentPath)
+    ? JSON.parse(fs.readFileSync(templateContentPath, 'utf-8'))
+    : { biz: {}, services: [], photos: {}, testimonials: [], stats: [] };
+
+  baseContent.biz = {
+    ...baseContent.biz,
+    name:          c.businessName,
+    tagline:       c.tagline || `Professional ${c.template} care in ${c.city}`,
+    city:          c.city,
+    address:       c.city,
+    phone:         c.phone,
+    email:         c.clientEmail,
+    hours:         c.hours,
+    calLink:       c.calLink,
+    alertEmail:    c.clientEmail,
+    alertWhatsapp: c.clientWhatsapp,
+  };
+
+  fs.writeFileSync(
+    path.join(outDir, 'content.json'),
+    JSON.stringify(baseContent, null, 2) + '\n',
+  );
+
+  // Git push → Vercel auto-deploys (skip commit if nothing changed)
   execSync(
-    `git add app/${c.route} && git commit -m "demo: ${c.route}" && git push`,
+    `git add app/${c.route} && (git diff --staged --quiet || git commit -m "demo: ${c.route}") && git push`,
     { cwd: process.cwd(), stdio: 'pipe' }
   );
 
   return `${BASE_URL}/${c.route}`;
-}
-
-// ─── BIZ block replace (two-tier config) ──────────────────────────
-// Templates use a BIZ const block. We replace it entirely —
-// no regex hunting, no missed fields, no fragile string matching.
-
-function buildBizBlock(c: DemoConfig): string {
-  return `const BIZ = {
-  name:          '${c.businessName}',
-  tagline:       '${c.tagline || 'Professional ' + c.template + ' care in ' + c.city}',
-  city:          '${c.city}',
-  address:       '${c.city}',
-  phone:         '${c.phone}',
-  email:         '${c.clientEmail}',
-  hours:         '${c.hours}',
-  calLink:       '${c.calLink}',
-  alertEmail:    '${c.clientEmail}',
-  alertWhatsapp: '${c.clientWhatsapp}',
-} as const;`;
-}
-
-function getReplacements(c: DemoConfig): [RegExp, string][] {
-  return [
-    // One replace: the entire BIZ block. That's it.
-    [/const BIZ = \{[\s\S]*?\} as const;/, buildBizBlock(c)],
-  ];
 }
 
 // ─── Output helper (always JSON to stdout) ────────────────────────

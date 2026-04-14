@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { CalBooking, CalFloatingButton } from '@/components/ui/cal-booking';
 import { Chatbot } from '@/components/ui/chatbot';
+import content from './content.json';
 
 /* ══════════════════════════════════════════════════════════════
    TIER 1 — BRAND  (colors, fonts — same for all dental clients)
@@ -31,20 +32,9 @@ const F = {
 } as const;
 
 /* ══════════════════════════════════════════════════════════════
-   TIER 2 — BUSINESS  (swap this block per client — nothing else)
+   TIER 2 — BUSINESS  (loaded from content.json — edit that file)
 ══════════════════════════════════════════════════════════════ */
-const BIZ = {
-  name:          'מרפאת שיניים עילאי אריאל',
-  tagline:       'Professional dental care in אריאל',
-  city:          'אריאל',
-  address:       'אריאל',
-  phone:         '972534638880',
-  email:         'ilay1bgu@gmail.com',
-  hours:         'Sun–Thu 9:00–18:00',
-  calLink:       'ilay-lankin/15min',
-  alertEmail:    'ilay1bgu@gmail.com',
-  alertWhatsapp: '972507112015',
-} as const;
+const BIZ = content.biz;
 
 /* ─── Helpers ───────────────────────────────────────────────── */
 function Tag({ children }: { children: React.ReactNode }) {
@@ -141,27 +131,10 @@ export default function DentalPage() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const services = [
-    { icon: '✦', title: 'Aesthetic Dentistry', desc: 'Veneers, whitening, and smile design crafted to complement your natural beauty.' },
-    { icon: '◈', title: 'Dental Implants',     desc: 'Titanium implants that feel and look completely natural. Lifetime results.' },
-    { icon: '◉', title: 'Orthodontics',         desc: 'Invisible aligners and clear braces — straighten your smile discreetly.' },
-    { icon: '◇', title: 'Preventive Care',      desc: 'Routine cleanings, digital X-rays and gum health — your long-term foundation.' },
-    { icon: '○', title: 'Root Canal',            desc: 'Painless, precise endodontic treatment with full digital guidance.' },
-    { icon: '◆', title: "Children's Dentistry", desc: 'A calm, warm environment designed to make young patients feel at ease.' },
-  ];
-
-  const testimonials = [
-    { quote: "I've never felt so comfortable at a dentist. The clinic feels like a spa — the team is warm, professional and incredibly skilled.", name: 'Noa Levi',     detail: 'Smile Design Patient' },
-    { quote: "My implants look completely natural. Six months later I still can't believe how painless the whole process was.",                  name: 'Avi Cohen',    detail: 'Implant Patient' },
-    { quote: 'My kids actually look forward to their appointments here. That says everything you need to know.',                                name: 'Miri Shapiro', detail: 'Family Patient' },
-  ];
-
-  const stats = [
-    { value: '3,200+', label: 'Happy Patients' },
-    { value: '14 Yrs',  label: 'Experience' },
-    { value: '98%',     label: 'Satisfaction Rate' },
-    { value: '12',      label: 'Specialists' },
-  ];
+  const services     = content.services;
+  const testimonials = content.testimonials;
+  const stats        = content.stats;
+  const photos       = content.photos;
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', fontFamily: F.body }}>
@@ -237,7 +210,7 @@ export default function DentalPage() {
 
       {/* ── HERO ── */}
       <section style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
-        <img src="/dental-hero.png" alt="Dental clinic treatment room" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+        <img src={photos.hero} alt="Dental clinic treatment room" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
         <div className="hero-grad" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(250,248,244,0.92) 38%, rgba(250,248,244,0.2) 70%, transparent 100%)' }} />
         <div className="hero-inner" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 80px', maxWidth: 1200, margin: '0 auto', left: 0, right: 0 }}>
           <div className="hero-content" style={{ maxWidth: 560 }}>
@@ -318,7 +291,7 @@ export default function DentalPage() {
       <section id="about" className="about-section" style={{ background: C.bgAlt, padding: '120px 80px' }}>
         <div className="about-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
           <motion.div initial={{ opacity: 0, x: -32 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} style={{ position: 'relative' }}>
-            <img src="/dental-consult.png" alt="Dentist consulting with patient" style={{ width: '100%', height: 480, objectFit: 'cover', borderRadius: 24, display: 'block' }} />
+            <img src={photos.about} alt="Dentist consulting with patient" style={{ width: '100%', height: 480, objectFit: 'cover', borderRadius: 24, display: 'block' }} />
             <div className="hide-mobile" style={{ position: 'absolute', bottom: 28, left: -28, background: C.white, borderRadius: 16, padding: '20px 24px', boxShadow: '0 16px 48px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 48, height: 48, borderRadius: 12, background: C.sageLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🏆</div>
               <div>
@@ -367,7 +340,7 @@ export default function DentalPage() {
           </div>
         </motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.1 }} style={{ borderRadius: 24, overflow: 'hidden', boxShadow: '0 32px 80px rgba(45,107,85,0.15)' }}>
-          <img src="/dental-smile.png" alt="Happy patient smile" style={{ width: '100%', height: 520, objectFit: 'cover', display: 'block' }} />
+          <img src={photos.results} alt="Happy patient smile" style={{ width: '100%', height: 520, objectFit: 'cover', display: 'block' }} />
         </motion.div>
       </section>
 
@@ -386,7 +359,7 @@ export default function DentalPage() {
 
       {/* ── CTA ── */}
       <section className="cta-section" style={{ position: 'relative', height: 560, overflow: 'hidden' }}>
-        <img src="/dental-reception.png" alt="Clinic reception" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }} />
+        <img src={photos.cta} alt="Clinic reception" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(45,107,85,0.75)' }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', textAlign: 'center' as const, padding: '0 40px' }}>
           <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
@@ -454,7 +427,7 @@ export default function DentalPage() {
         location:      BIZ.city,
         phone:         BIZ.phone,
         hours:         BIZ.hours,
-        services:      ['Aesthetic Dentistry', 'Implants', 'Orthodontics', 'Preventive Care', 'Root Canal', "Children's Dentistry"],
+        services:      services.map(s => s.title),
         offer:         'Free first consultation',
         brandColor:    C.forest,
         greeting:      `Hi! 👋 I'm the ${BIZ.name} assistant. How can I help you today?`,

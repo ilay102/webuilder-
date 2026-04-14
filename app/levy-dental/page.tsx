@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { CalBooking, CalFloatingButton } from '@/components/ui/cal-booking';
 import { Chatbot } from '@/components/ui/chatbot';
+import content from './content.json';
 
 /* ══════════════════════════════════════════════════════════════
    TIER 1 — BRAND  (colors, fonts — same for all dental clients)
@@ -31,20 +32,9 @@ const F = {
 } as const;
 
 /* ══════════════════════════════════════════════════════════════
-   TIER 2 — BUSINESS  (swap this block per client — nothing else)
+   TIER 2 — BUSINESS  (loaded from content.json — edit that file)
 ══════════════════════════════════════════════════════════════ */
-const BIZ = {
-  name:          'Dr. Levy Dental',
-  tagline:       'Professional dental care in Jerusalem',
-  city:          'Jerusalem',
-  address:       'Jerusalem',
-  phone:         '02-555-1234',
-  email:         'ilay1bgu@gmail.com',
-  hours:         'Sun–Thu 9:00–18:00',
-  calLink:       'ilay-lankin/15min',
-  alertEmail:    'ilay1bgu@gmail.com',
-  alertWhatsapp: '972501234567',
-} as const;
+const BIZ = content.biz;
 
 /* ─── Helpers ───────────────────────────────────────────────── */
 function Tag({ children }: { children: React.ReactNode }) {
@@ -141,27 +131,10 @@ export default function DentalPage() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const services = [
-    { icon: '✦', title: 'Aesthetic Dentistry', desc: 'Veneers, whitening, and smile design crafted to complement your natural beauty.' },
-    { icon: '◈', title: 'Dental Implants',     desc: 'Titanium implants that feel and look completely natural. Lifetime results.' },
-    { icon: '◉', title: 'Orthodontics',         desc: 'Invisible aligners and clear braces — straighten your smile discreetly.' },
-    { icon: '◇', title: 'Preventive Care',      desc: 'Routine cleanings, digital X-rays and gum health — your long-term foundation.' },
-    { icon: '○', title: 'Root Canal',            desc: 'Painless, precise endodontic treatment with full digital guidance.' },
-    { icon: '◆', title: "Children's Dentistry", desc: 'A calm, warm environment designed to make young patients feel at ease.' },
-  ];
-
-  const testimonials = [
-    { quote: "I've never felt so comfortable at a dentist. The clinic feels like a spa — the team is warm, professional and incredibly skilled.", name: 'Noa Levi',     detail: 'Smile Design Patient' },
-    { quote: "My implants look completely natural. Six months later I still can't believe how painless the whole process was.",                  name: 'Avi Cohen',    detail: 'Implant Patient' },
-    { quote: 'My kids actually look forward to their appointments here. That says everything you need to know.',                                name: 'Miri Shapiro', detail: 'Family Patient' },
-  ];
-
-  const stats = [
-    { value: '3,200+', label: 'Happy Patients' },
-    { value: '14 Yrs',  label: 'Experience' },
-    { value: '98%',     label: 'Satisfaction Rate' },
-    { value: '12',      label: 'Specialists' },
-  ];
+  const services     = content.services;
+  const testimonials = content.testimonials;
+  const stats        = content.stats;
+  const photos       = content.photos;
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', fontFamily: F.body }}>
@@ -170,6 +143,32 @@ export default function DentalPage() {
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
+        @media (max-width: 768px) {
+          .nav-links { display: none !important; }
+          .nav-book  { display: none !important; }
+          .nav-name  { font-size: 14px !important; }
+          .hero-grad { background: linear-gradient(to bottom, rgba(250,248,244,0.1) 0%, rgba(250,248,244,0.85) 40%, rgba(250,248,244,0.97) 100%) !important; }
+          .hero-inner { padding: 0 24px !important; align-items: flex-end !important; padding-bottom: 80px !important; }
+          .hero-content { max-width: 100% !important; }
+          .stats-grid { grid-template-columns: repeat(2,1fr) !important; padding: 40px 24px !important; gap: 24px !important; }
+          .services-wrap { padding: 60px 24px !important; }
+          .services-grid { grid-template-columns: 1fr !important; }
+          .about-section { padding: 60px 24px !important; }
+          .about-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+          .results-section { grid-template-columns: 1fr !important; padding: 60px 24px !important; gap: 40px !important; }
+          .results-mini { grid-template-columns: 1fr 1fr !important; }
+          .testimonials-wrap { padding: 60px 24px !important; }
+          .testimonials-grid { grid-template-columns: 1fr !important; }
+          .cta-section { height: auto !important; padding: 80px 0 !important; }
+          .cta-inner { padding: 0 24px !important; }
+          .cta-content { max-width: 100% !important; }
+          .hero-btns { flex-direction: column !important; align-items: flex-start !important; }
+          .hero-btns button { width: 100% !important; text-align: center !important; }
+          .footer-outer { padding: 48px 24px 32px !important; }
+          .footer-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .sec-pad { padding: 60px 24px !important; }
+          .hide-mobile { display: none !important; }
+        }
       `}} />
 
       {/* ── NAV ── */}
@@ -189,7 +188,7 @@ export default function DentalPage() {
               {BIZ.name}
             </span>
           </div>
-          <div style={{ display: 'flex', gap: 40, alignItems: 'center' }}>
+          <div className="nav-links" style={{ display: 'flex', gap: 40, alignItems: 'center' }}>
             {['Services', 'About', 'Testimonials'].map(item => (
               <a key={item} href={`#${item.toLowerCase()}`} style={{ fontFamily: F.body, fontSize: 15, color: C.charcoal, textDecoration: 'none', fontWeight: 500, opacity: 0.75, transition: 'opacity 0.2s' }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
@@ -197,7 +196,7 @@ export default function DentalPage() {
                 {item}
               </a>
             ))}
-            <button style={{
+            <button className="nav-book" style={{
               background: C.forest, color: '#fff', fontFamily: F.label, fontWeight: 600, fontSize: 14,
               padding: '10px 24px', borderRadius: 99, border: 'none', cursor: 'pointer', transition: 'background 0.2s ease',
             }}
@@ -211,10 +210,10 @@ export default function DentalPage() {
 
       {/* ── HERO ── */}
       <section style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
-        <img src="/dental-hero.png" alt="Dental clinic treatment room" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(250,248,244,0.92) 38%, rgba(250,248,244,0.2) 70%, transparent 100%)' }} />
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 80px', maxWidth: 1200, margin: '0 auto', left: 0, right: 0 }}>
-          <div style={{ maxWidth: 560 }}>
+        <img src={photos.hero} alt="Dental clinic treatment room" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+        <div className="hero-grad" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(250,248,244,0.92) 38%, rgba(250,248,244,0.2) 70%, transparent 100%)' }} />
+        <div className="hero-inner" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 80px', maxWidth: 1200, margin: '0 auto', left: 0, right: 0 }}>
+          <div className="hero-content" style={{ maxWidth: 560 }}>
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
               <Tag>Premium Dental Care · {BIZ.city}</Tag>
             </motion.div>
@@ -232,6 +231,7 @@ export default function DentalPage() {
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.45 }}
+              className="hero-btns"
               style={{ display: 'flex', gap: 16, flexWrap: 'wrap' as const }}
             >
               <CalBooking calLink={BIZ.calLink} brandColor={C.forest}>
@@ -260,8 +260,8 @@ export default function DentalPage() {
       </section>
 
       {/* ── STATS ── */}
-      <section style={{ background: C.forest, padding: '48px 80px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32 }}>
+      <section style={{ background: C.forest }}>
+        <div className="stats-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32, padding: '48px 80px' }}>
           {stats.map(({ value, label }, i) => (
             <motion.div key={label} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }} style={{ textAlign: 'center' as const }}>
               <div style={{ fontFamily: F.serif, fontSize: 40, fontWeight: 800, color: '#fff', letterSpacing: '-0.03em' }}>{value}</div>
@@ -272,7 +272,7 @@ export default function DentalPage() {
       </section>
 
       {/* ── SERVICES ── */}
-      <section id="services" style={{ padding: '120px 80px', maxWidth: 1200, margin: '0 auto' }}>
+      <section id="services" className="services-wrap" style={{ padding: '120px 80px', maxWidth: 1200, margin: '0 auto' }}>
         <SectionLabel>What We Offer</SectionLabel>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 64, gap: 32 }}>
           <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 480 }}>
@@ -282,17 +282,17 @@ export default function DentalPage() {
             From your first check-up to full smile transformations — every treatment is performed by specialists who genuinely care.
           </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+        <div className="services-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
           {services.map((s, i) => <ServiceCard key={s.title} {...s} delay={i * 0.08} />)}
         </div>
       </section>
 
       {/* ── ABOUT ── */}
-      <section id="about" style={{ background: C.bgAlt, padding: '120px 80px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+      <section id="about" className="about-section" style={{ background: C.bgAlt, padding: '120px 80px' }}>
+        <div className="about-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
           <motion.div initial={{ opacity: 0, x: -32 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} style={{ position: 'relative' }}>
-            <img src="/dental-consult.png" alt="Dentist consulting with patient" style={{ width: '100%', height: 480, objectFit: 'cover', borderRadius: 24, display: 'block' }} />
-            <div style={{ position: 'absolute', bottom: 28, left: -28, background: C.white, borderRadius: 16, padding: '20px 24px', boxShadow: '0 16px 48px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', gap: 14 }}>
+            <img src={photos.about} alt="Dentist consulting with patient" style={{ width: '100%', height: 480, objectFit: 'cover', borderRadius: 24, display: 'block' }} />
+            <div className="hide-mobile" style={{ position: 'absolute', bottom: 28, left: -28, background: C.white, borderRadius: 16, padding: '20px 24px', boxShadow: '0 16px 48px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 48, height: 48, borderRadius: 12, background: C.sageLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🏆</div>
               <div>
                 <div style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 15, color: C.charcoal }}>Top Rated Clinic</div>
@@ -321,7 +321,7 @@ export default function DentalPage() {
       </section>
 
       {/* ── RESULTS ── */}
-      <section style={{ padding: '120px 80px', maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+      <section className="results-section" style={{ padding: '120px 80px', maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
         <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
           <SectionLabel>Results</SectionLabel>
           <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 24 }}>
@@ -330,7 +330,7 @@ export default function DentalPage() {
           <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 40 }}>
             Every smile we transform is a story. Whether it&apos;s whitening, veneers, or a complete smile makeover — we work with your natural features to create results that feel authentically you.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+          <div className="results-mini" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
             {[{ value: '1,200+', label: 'Smile Makeovers' }, { value: '4.9★', label: 'Average Rating' }].map(({ value, label }) => (
               <div key={label} style={{ background: C.sageLight, borderRadius: 16, padding: '24px 20px' }}>
                 <div style={{ fontFamily: F.serif, fontSize: 28, fontWeight: 800, color: C.forest }}>{value}</div>
@@ -340,26 +340,26 @@ export default function DentalPage() {
           </div>
         </motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.1 }} style={{ borderRadius: 24, overflow: 'hidden', boxShadow: '0 32px 80px rgba(45,107,85,0.15)' }}>
-          <img src="/dental-smile.png" alt="Happy patient smile" style={{ width: '100%', height: 520, objectFit: 'cover', display: 'block' }} />
+          <img src={photos.results} alt="Happy patient smile" style={{ width: '100%', height: 520, objectFit: 'cover', display: 'block' }} />
         </motion.div>
       </section>
 
       {/* ── TESTIMONIALS ── */}
-      <section id="testimonials" style={{ background: C.bgAlt, padding: '120px 80px' }}>
+      <section id="testimonials" className="testimonials-wrap" style={{ background: C.bgAlt, padding: '120px 80px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <SectionLabel>Testimonials</SectionLabel>
           <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 64 }}>
             What Our Patients Say
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+          <div className="testimonials-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
             {testimonials.map((t, i) => <Testimonial key={t.name} {...t} delay={i * 0.1} />)}
           </div>
         </div>
       </section>
 
       {/* ── CTA ── */}
-      <section style={{ position: 'relative', height: 560, overflow: 'hidden' }}>
-        <img src="/dental-reception.png" alt="Clinic reception" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }} />
+      <section className="cta-section" style={{ position: 'relative', height: 560, overflow: 'hidden' }}>
+        <img src={photos.cta} alt="Clinic reception" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(45,107,85,0.75)' }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', textAlign: 'center' as const, padding: '0 40px' }}>
           <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
@@ -386,9 +386,9 @@ export default function DentalPage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ background: C.charcoal, padding: '64px 80px 40px' }}>
+      <footer className="footer-outer" style={{ background: C.charcoal, padding: '64px 80px 40px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48, marginBottom: 56 }}>
+          <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48, marginBottom: 56 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
                 <div style={{ width: 32, height: 32, borderRadius: 99, background: C.forest, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -427,7 +427,7 @@ export default function DentalPage() {
         location:      BIZ.city,
         phone:         BIZ.phone,
         hours:         BIZ.hours,
-        services:      ['Aesthetic Dentistry', 'Implants', 'Orthodontics', 'Preventive Care', 'Root Canal', "Children's Dentistry"],
+        services:      services.map(s => s.title),
         offer:         'Free first consultation',
         brandColor:    C.forest,
         greeting:      `Hi! 👋 I'm the ${BIZ.name} assistant. How can I help you today?`,
