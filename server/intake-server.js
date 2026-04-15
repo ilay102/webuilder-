@@ -54,6 +54,7 @@ function findRouteByPhone(phone) {
 function gitPush(relPath, message) {
   execSync(`git add "${relPath}"`,                      { cwd: REPO_ROOT, stdio: 'pipe' });
   execSync(`git commit -m "${message}" --allow-empty`, { cwd: REPO_ROOT, stdio: 'pipe' });
+  execSync('git pull --rebase',                         { cwd: REPO_ROOT, stdio: 'pipe' });
   execSync('git push',                                  { cwd: REPO_ROOT, stdio: 'pipe' });
 }
 
