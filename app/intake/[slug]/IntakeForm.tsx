@@ -321,8 +321,9 @@ export function IntakeForm({ slug, initial }: IntakeFormProps) {
       {/* Centered content */}
       <div style={{
         minHeight: '100vh', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', padding: '80px 0 60px',
+        alignItems: 'center', padding: '80px 0 60px',
       }}>
+        <div style={{ margin: 'auto', width: '100%' }}>
         <AnimatePresence mode="wait">
 
           {/* ── WELCOME ─────────────────────────────────────────── */}
@@ -643,6 +644,7 @@ export function IntakeForm({ slug, initial }: IntakeFormProps) {
           )}
 
         </AnimatePresence>
+        </div>
       </div>
     </div>
   );
