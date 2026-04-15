@@ -29,7 +29,10 @@ import path from 'path';
 import { execSync }  from 'child_process';
 import { parseArgs } from 'node:util';
 
-const BASE_URL = 'https://webuilder-liart.vercel.app';
+const BASE_URL        = 'https://webuilder-liart.vercel.app';
+const VERCEL_TOKEN    = process.env.VERCEL_TOKEN ?? '';
+const VERCEL_PROJECT  = 'prj_JAZsukTRQkgJQ1lyYCoEafQfZwrI';
+const VERCEL_TEAM     = 'team_fpBcoKvlkv3AffiuMNDZJ0Xb';
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -44,6 +47,7 @@ interface DemoConfig {
   calLink:        string;
   clientEmail:    string;
   clientWhatsapp: string;
+  domain?:        string;   // e.g. "cohen-dental.co.il"
 }
 
 interface QueueEntry extends DemoConfig {
@@ -72,6 +76,7 @@ function parseCliArgs(): DemoConfig | null {
       cal:      { type: 'string' },
       email:    { type: 'string' },
       whatsapp: { type: 'string' },
+      domain:   { type: 'string' },
       queue:    { type: 'string' },
     },
     strict: false,
@@ -98,12 +103,13 @@ function parseCliArgs(): DemoConfig | null {
     calLink:        (values.cal     as string) || 'ilay-lankin/15min',
     clientEmail:    values.email    as string,
     clientWhatsapp: values.whatsapp as string,
+    domain:         (values.domain  as string) || undefined,
   };
 }
 
 // ─── Queue mode ───────────────────────────────────────────────────
 
-function processQueue(queuePath: string): void {
+async function processQueue(queuePath: string): Promise<void> {
   if (!fs.existsSync(queuePath)) {
     out({ success: false, error: `Queue file not found: ${queuePath}` });
     process.exit(1);
@@ -122,7 +128,7 @@ function processQueue(queuePath: string): void {
   fs.writeFileSync(queuePath, JSON.stringify(queue, null, 2));
 
   try {
-    const url = buildDemo(pending);
+    const url = await buildDemo(pending);
 
     // Mark as done
     pending.status    = 'done';
@@ -148,9 +154,51 @@ function processQueue(queuePath: string): void {
   }
 }
 
+// ─── Domain helpers ───────────────────────────────────────────────
+
+/** Add domain → slug mapping to domains.json */
+function registerDomain(domain: string, slug: string): void {
+  const domainsPath = path.join(process.cwd(), 'domains.json');
+  const map: Record<string, string> = fs.existsSync(domainsPath)
+    ? JSON.parse(fs.readFileSync(domainsPath, 'utf-8'))
+    : {};
+  map[domain] = slug;
+  // Also register www. variant
+  map[`www.${domain}`] = slug;
+  fs.writeFileSync(domainsPath, JSON.stringify(map, null, 2) + '\n');
+}
+
+/** Call Vercel API to add domain to the project (auto-provisions SSL) */
+async function addDomainToVercel(domain: string): Promise<void> {
+  if (!VERCEL_TOKEN) {
+    process.stderr.write('[domain] VERCEL_TOKEN not set — skipping Vercel API call\n');
+    return;
+  }
+
+  for (const d of [domain, `www.${domain}`]) {
+    const res = await fetch(
+      `https://api.vercel.com/v10/projects/${VERCEL_PROJECT}/domains?teamId=${VERCEL_TEAM}`,
+      {
+        method:  'POST',
+        headers: {
+          Authorization:  `Bearer ${VERCEL_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: d }),
+      }
+    );
+    const json = await res.json() as any;
+    if (res.ok || json.error?.code === 'domain_already_in_use') {
+      process.stderr.write(`[domain] ✅ ${d} added to Vercel\n`);
+    } else {
+      process.stderr.write(`[domain] ⚠️  ${d}: ${json.error?.message ?? JSON.stringify(json)}\n`);
+    }
+  }
+}
+
 // ─── Core build logic ─────────────────────────────────────────────
 
-function buildDemo(c: DemoConfig): string {
+async function buildDemo(c: DemoConfig): Promise<string> {
   const templateDir  = path.join(process.cwd(), 'app', c.template);
   const templatePage = path.join(templateDir, 'page.tsx');
   const outDir       = path.join(process.cwd(), 'app', c.route);
@@ -182,6 +230,7 @@ function buildDemo(c: DemoConfig): string {
     calLink:       c.calLink,
     alertEmail:    c.clientEmail,
     alertWhatsapp: c.clientWhatsapp,
+    domain:        c.domain ?? null,
   };
 
   fs.writeFileSync(
@@ -189,13 +238,24 @@ function buildDemo(c: DemoConfig): string {
     JSON.stringify(baseContent, null, 2) + '\n',
   );
 
+  // ── Domain setup ──────────────────────────────────────────────
+  if (c.domain) {
+    const domain = c.domain.replace(/^www\./, '').toLowerCase();
+    registerDomain(domain, c.route);
+    await addDomainToVercel(domain);
+  }
+
   // Git push → Vercel auto-deploys (skip commit if nothing changed)
   execSync(
-    `git add app/${c.route} && (git diff --staged --quiet || git commit -m "demo: ${c.route}") && git push`,
+    `git add app/${c.route} domains.json && (git diff --staged --quiet || git commit -m "demo: ${c.route}") && git pull --rebase && git push`,
     { cwd: process.cwd(), stdio: 'pipe' }
   );
 
-  return `${BASE_URL}/${c.route}`;
+  const siteUrl = c.domain
+    ? `https://${c.domain.replace(/^www\./, '')}`
+    : `${BASE_URL}/${c.route}`;
+
+  return siteUrl;
 }
 
 // ─── Output helper (always JSON to stdout) ────────────────────────
@@ -206,14 +266,14 @@ function out(data: object): void {
 
 // ─── Entry point ──────────────────────────────────────────────────
 
-function main() {
+async function main() {
   const { values } = parseArgs({
     options: { queue: { type: 'string' } },
     strict: false,
   });
 
   if (values.queue) {
-    processQueue(values.queue as string);
+    await processQueue(values.queue as string);
     return;
   }
 
@@ -224,7 +284,7 @@ function main() {
   }
 
   try {
-    const url = buildDemo(config);
+    const url = await buildDemo(config);
     out({ success: true, route: config.route, url });
   } catch (err: any) {
     out({ success: false, error: err.message });
