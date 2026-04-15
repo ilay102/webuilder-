@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { CalBooking, CalFloatingButton } from '@/components/ui/cal-booking';
 import { Chatbot } from '@/components/ui/chatbot';
+import { AccessibilityFooter } from '@/components/ui/AccessibilityFooter';
 import content from './content.json';
 
 /* ══════════════════════════════════════════════════════════════
@@ -419,6 +420,15 @@ export default function DentalPage() {
           </div>
         </div>
       </footer>
+
+      {/* ── ACCESSIBILITY FOOTER ── */}
+      <AccessibilityFooter
+        bizName={BIZ.name}
+        email={BIZ.email}
+        phone={BIZ.phone}
+        hours={BIZ.hours}
+        accentColor={C.forest}
+      />
 
       {/* ── CHATBOT ── */}
       <Chatbot config={{
