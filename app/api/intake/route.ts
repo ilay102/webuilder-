@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
+  console.log('[intake] secret present:', !!secret, '| length:', secret?.length ?? 0);
+
   try {
     const upstream = await fetch(vpsUrl, {
       method:  'POST',
