@@ -1,12 +1,12 @@
 {
   "biz": {
-    "name": "Test Clinic",
+    "name": "typeee",
     "tagline": "A boutique dental clinic where cutting-edge technology meets a calm, welcoming environment. Because great dental care should feel like self-care.",
     "city": "Tel Aviv",
     "address": "Rothschild Blvd, TLV",
     "phone": "03-000-0000",
-    "email": "hello@smilestudio.co.il",
-    "hours": "Sun–Thu 9:00–18:00",
+    "email": "",
+    "hours": "Sun–Thu 8:00–20:00",
     "calLink": "ilay-lankin/15min",
     "alertEmail": "ilay1bgu@gmail.com",
     "alertWhatsapp": "972501234567"
@@ -28,19 +28,9 @@
       "desc": "Invisible aligners and clear braces — straighten your smile discreetly."
     },
     {
-      "icon": "◇",
-      "title": "Preventive Care",
-      "desc": "Routine cleanings, digital X-rays and gum health — your long-term foundation."
-    },
-    {
       "icon": "○",
       "title": "Root Canal",
       "desc": "Painless, precise endodontic treatment with full digital guidance."
-    },
-    {
-      "icon": "◆",
-      "title": "Children's Dentistry",
-      "desc": "A calm, warm environment designed to make young patients feel at ease."
     }
   ],
   "photos": {
