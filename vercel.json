@@ -1,5 +1,6 @@
 {
   "env": {
-    "VPS_INTAKE_URL": "http://204.168.207.116:3004/api/intake"
+    "VPS_INTAKE_URL": "http://204.168.207.116:3004/api/intake",
+    "INTAKE_SECRET": "jvne84h98nfunkf"
   }
 }
