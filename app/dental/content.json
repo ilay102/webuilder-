@@ -37,7 +37,10 @@
     "hero": "/clients/dental/hero.jpg",
     "about": "/clients/dental/about.jpg",
     "results": "/dental-smile.png",
-    "cta": "/dental-reception.png"
+    "cta": "/dental-reception.png",
+    "gallery": [
+      "/clients/dental/gallery-1.jpg"
+    ]
   },
   "testimonials": [
     {
