@@ -274,11 +274,29 @@ https://webuilder-liart.vercel.app/intake/{slug}
 זה לוקח פחות מ-2 דקות. אחרי שתסיים — שלח לי תמונות של הקליניקה כאן בוואטסאפ והן יעלו לאתר אוטומטית 📸
 ```
 
+3. After the client completes the intake form and asks about photos (or sends one), send this ONCE:
+
+```
+איך לשלוח תמונות לאתר שלך 📸
+
+שלח ישירות לכאן בוואטסאפ — התמונות עולות אוטומטית תוך 30 שניות 🚀
+
+ברירת מחדל (ללא כיתוב):
+התמונה תמלא את המיקום הפנוי הבא לפי הסדר: רקע ראשי ← אודות ← תוצאות ← גלריה
+
+רוצה לשלוח למקום ספציפי? כתוב בכיתוב:
+• hero — תמונת הרקע הראשית
+• about — חלק "אודותינו"
+• results — תוצאות / לפני-אחרי
+• gallery — מוסיף לגלריה (בלי להחליף כלום)
+```
+
 **CRITICAL:**
 - Send ONE message only. Nothing else.
 - The intake link MUST contain the correct slug from the lead data.
 - After this message, stay silent until the client replies or sends photos.
-- If the client sends a photo after the intake form → the system handles it automatically. Do NOT tell them to do anything else.
+- If the client sends a photo → the system handles it automatically. Confirm with: "✅ התמונה עלתה! האתר מתעדכן תוך 30 שניות 🚀"
+- Do NOT manually describe what the photo shows or comment on it.
 
 ### "אנחנו אומנם רואים את זה יפה, אבל מה עם הכוונה למבוגרים? נראה לך שהם יבינו את זה?"
 > "בדיוק בגלל שזה בנוי בממשק הכי ברור בטלפון, בלי תפריטים מסובכים, גם אנשים מבוגרים פשוט לוחצים ובוחרים מועד, במקום לחכות לך על הקו שעות כשאתה עסוק במשהו אחר."
