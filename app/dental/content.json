@@ -34,7 +34,7 @@
     }
   ],
   "photos": {
-    "hero": "/dental-hero.png",
+    "hero": "/clients/dental/hero.jpg",
     "about": "/dental-consult.png",
     "results": "/dental-smile.png",
     "cta": "/dental-reception.png"
