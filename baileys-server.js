@@ -191,8 +191,15 @@ async function startWhatsApp() {
       if (isImage) {
         try {
           const buffer = await downloadMediaMessage(msg, 'buffer', {});
-          const slot   = text.toLowerCase().includes('hero')  ? 'hero'
-                       : text.toLowerCase().includes('about') ? 'about'
+          const slot   = text.toLowerCase().includes('hero')    ? 'hero'
+                       : text.toLowerCase().includes('שער')    ? 'hero'
+                       : text.toLowerCase().includes('פתיחה')  ? 'hero'
+                       : text.toLowerCase().includes('about')  ? 'about'
+                       : text.toLowerCase().includes('אודות')  ? 'about'
+                       : text.toLowerCase().includes('results') ? 'results'
+                       : text.toLowerCase().includes('תוצאות') ? 'results'
+                       : text.toLowerCase().includes('gallery') ? 'gallery'
+                       : text.toLowerCase().includes('גלריה')  ? 'gallery'
                        : 'auto';
 
           // POST raw buffer to VPS server
@@ -212,8 +219,13 @@ async function startWhatsApp() {
             console.log(`[IMG] Saved ${result.slot} for phone ${phone}`);
             // Confirm to client on WhatsApp
             const jidStr = phone + '@s.whatsapp.net';
+            const slotHe = result.slot === 'hero'    ? 'מסך פתיחה'
+                         : result.slot === 'about'   ? 'אודות'
+                         : result.slot === 'results' ? 'תוצאות'
+                         : result.slot === 'gallery' ? 'גלריה'
+                         : result.slot;
             await sock.sendMessage(jidStr, {
-              text: `✅ התמונה עלתה לאתר שלך! (${result.slot})\nהאתר יתעדכן תוך ~30 שניות 🚀`,
+              text: `✅ התמונה עלתה לאתר שלך! (${slotHe})\nהאתר יתעדכן תוך ~30 שניות 🚀`,
             });
           } else {
             console.log(`[IMG] Server returned: ${JSON.stringify(result)}`);
