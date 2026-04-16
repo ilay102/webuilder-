@@ -82,6 +82,25 @@ export interface Approval {
   metadata?: Record<string, string>
 }
 
+export interface Client {
+  slug:         string
+  name:         string
+  phone?:       string
+  email?:       string
+  whatsapp?:    string
+  domain?:      string | null
+  template:     string
+  siteUrl?:     string
+  status:       'active' | 'churned'
+  plan:         'trial' | 'paid'
+  notes?:       string
+  intakeAt?:    string
+  lastPhotoAt?: string
+  lastPhotoSlot?: string
+  createdAt:    string
+  updatedAt:    string
+}
+
 export interface SystemStatus {
   daemon: 'active' | 'inactive' | 'error'
   agents_running: number

@@ -1,4 +1,4 @@
-import type { Task, CronJob, MemoryEntry, Doc, Lead, Approval, SystemStatus } from './types'
+import type { Task, CronJob, MemoryEntry, Doc, Lead, Approval, SystemStatus, Client } from './types'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://204.168.207.116:3000'
 
@@ -37,6 +37,35 @@ export const fetchDocs      = () => get<Doc[]>('/docs', MOCK_DOCS)
 export const fetchLeads     = () => get<Lead[]>('/leads', MOCK_LEADS)
 export const fetchApprovals = () => get<Approval[]>('/approvals', MOCK_APPROVALS)
 export const fetchStatus    = () => get<SystemStatus>('/status', MOCK_STATUS)
+export const fetchClients   = () => get<Client[]>('/clients', [])
+
+export async function saveClient(payload: Partial<Client> & { slug: string }): Promise<Client | null> {
+  try {
+    const res = await fetch(`${BASE}/api/clients/${payload.slug}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) throw new Error()
+    return res.json()
+  } catch { return null }
+}
+
+export async function createClient(payload: Partial<Client> & { slug: string }): Promise<Client | null> {
+  try {
+    const res = await fetch(`${BASE}/api/clients`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) throw new Error()
+    return res.json()
+  } catch { return null }
+}
+
+export async function churnClient(slug: string): Promise<void> {
+  await fetch(`${BASE}/api/clients/${slug}`, { method: 'DELETE' }).catch(() => {})
+}
 
 // ── Mock data (shown when server is unreachable) ──────────────────────────────
 
