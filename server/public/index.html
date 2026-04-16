@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Control — Webuilder</title>
+<style>
+  :root {
+    --bg:     #0a0c10;
+    --bg2:    #0f1117;
+    --bg3:    #161b24;
+    --border: #1e2535;
+    --bd2:    #2a3347;
+    --accent: #3b82f6;
+    --green:  #10b981;
+    --yellow: #f59e0b;
+    --red:    #ef4444;
+    --purple: #8b5cf6;
+    --cyan:   #06b6d4;
+    --text:   #e2e8f0;
+    --text2:  #94a3b8;
+    --text3:  #475569;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    height: 100vh; display: flex; flex-direction: column;
+    overflow: hidden; font-size: 13px;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 20px; height: 50px;
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+  .logo-icon {
+    width: 30px; height: 30px; border-radius: 7px;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .logo-sub { color: var(--text2); font-size: 11px; font-weight: 400; }
+  .sep { width: 1px; height: 22px; background: var(--border); }
+  .pulse {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+    box-shadow: 0 0 8px var(--green); animation: blink 2s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+  .status-row { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--text2); }
+  .ml-auto { margin-left: auto; }
+  .chip {
+    padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700;
+    letter-spacing: .06em;
+  }
+  .chip.green  { background: rgba(16,185,129,.12); color: var(--green);  border: 1px solid rgba(16,185,129,.25); }
+  .chip.blue   { background: rgba(59,130,246,.12);  color: var(--accent); border: 1px solid rgba(59,130,246,.25); }
+  .chip.yellow { background: rgba(245,158,11,.12);  color: var(--yellow); border: 1px solid rgba(245,158,11,.25); }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex; gap: 0;
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 0 20px; flex-shrink: 0;
+  }
+  .tab {
+    padding: 10px 18px; font-size: 12px; font-weight: 600; cursor: pointer;
+    color: var(--text2); border-bottom: 2px solid transparent;
+    transition: all .15s; letter-spacing: .04em;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── PANELS ── */
+  .panel { flex: 1; overflow-y: auto; padding: 20px; display: none; }
+  .panel.active { display: block; }
+  .panel::-webkit-scrollbar { width: 5px; }
+  .panel::-webkit-scrollbar-thumb { background: var(--bd2); border-radius: 3px; }
+
+  /* ── CLIENTS TABLE ── */
+  .page-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  }
+  .page-title { font-size: 18px; font-weight: 700; }
+  .page-sub { font-size: 12px; color: var(--text2); }
+  .spacer { flex: 1; }
+  .btn {
+    padding: 7px 16px; border-radius: 7px; border: 1px solid var(--bd2);
+    background: var(--bg3); color: var(--text); font-size: 12px;
+    font-weight: 600; cursor: pointer; transition: all .15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: #2563eb; }
+  .btn.sm { padding: 4px 10px; font-size: 11px; }
+
+  /* stats row */
+  .stats-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .stat-card {
+    flex: 1; min-width: 130px; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px;
+  }
+  .stat-val { font-size: 26px; font-weight: 800; line-height: 1; }
+  .stat-val.green  { color: var(--green); }
+  .stat-val.blue   { color: var(--accent); }
+  .stat-val.yellow { color: var(--yellow); }
+  .stat-val.red    { color: var(--red); }
+  .stat-label { font-size: 10px; color: var(--text3); margin-top: 4px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+
+  /* table */
+  .table-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    padding: 10px 14px; text-align: left; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--text3);
+    background: var(--bg3); border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg3); }
+  td { padding: 11px 14px; font-size: 12px; color: var(--text); vertical-align: middle; }
+  .td-muted { color: var(--text2); font-size: 11px; }
+  .td-link { color: var(--accent); text-decoration: none; font-size: 11px; }
+  .td-link:hover { text-decoration: underline; }
+
+  /* status badge */
+  .badge {
+    display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px;
+    font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  }
+  .badge.active  { background: rgba(16,185,129,.12); color: var(--green);  border: 1px solid rgba(16,185,129,.3); }
+  .badge.trial   { background: rgba(245,158,11,.12); color: var(--yellow); border: 1px solid rgba(245,158,11,.3); }
+  .badge.paid    { background: rgba(59,130,246,.12);  color: var(--accent); border: 1px solid rgba(59,130,246,.3); }
+  .badge.churned { background: rgba(71,85,105,.12);   color: var(--text3);  border: 1px solid var(--border); }
+
+  /* search bar */
+  .search-bar {
+    width: 220px; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 7px; padding: 6px 12px; font-size: 12px; color: var(--text);
+    font-family: inherit; outline: none; transition: border-color .15s;
+  }
+  .search-bar::placeholder { color: var(--text3); }
+  .search-bar:focus { border-color: var(--accent); }
+
+  /* ── LEADS / TASKS PANEL ── */
+  .lead-list { display: flex; flex-direction: column; gap: 10px; }
+  .lead-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px;
+  }
+  .lead-avatar {
+    width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 700; color: #fff;
+  }
+  .lead-body { flex: 1; }
+  .lead-name { font-size: 13px; font-weight: 700; }
+  .lead-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .lead-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+
+  /* ── INLINE EDIT ── */
+  .edit-field {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 5px; padding: 3px 7px; font-size: 11px;
+    color: var(--text); font-family: inherit; outline: none; width: 100%;
+  }
+  .edit-field:focus { border-color: var(--accent); }
+
+  /* ── MODAL ── */
+  .overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+    z-index: 500; align-items: center; justify-content: center;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--bd2); border-radius: 12px;
+    width: 480px; max-width: 95vw; box-shadow: 0 24px 60px rgba(0,0,0,.6);
+  }
+  .modal-head {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .modal-title { font-size: 15px; font-weight: 700; flex: 1; }
+  .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 13px; }
+  .modal-foot { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-label { font-size: 10px; font-weight: 700; color: var(--text2); letter-spacing: .06em; text-transform: uppercase; }
+  .form-input, .form-select {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 12px; font-size: 12px; color: var(--text); font-family: inherit;
+    outline: none; transition: border-color .15s; width: 100%;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--accent); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── TOAST ── */
+  .toasts { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--bg2); border: 1px solid var(--bd2); border-radius: 8px;
+    padding: 10px 16px; font-size: 12px; min-width: 240px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4); animation: slideIn .25s ease;
+  }
+  .toast.ok   { border-left: 3px solid var(--green); }
+  .toast.err  { border-left: 3px solid var(--red); }
+  .toast.info { border-left: 3px solid var(--accent); }
+  @keyframes slideIn { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
+
+  /* ── STATUS VIEW ── */
+  .status-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .status-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .status-card-title { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .08em; }
+  .status-card-val { font-size: 20px; font-weight: 800; }
+  .status-row-item { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--text2); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot.green  { background: var(--green);  box-shadow: 0 0 6px var(--green); }
+  .dot.yellow { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); animation: blink 2s infinite; }
+  .dot.red    { background: var(--red);    box-shadow: 0 0 6px var(--red); }
+  .dot.gray   { background: var(--text3); }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div>
+      <div>MISSION CONTROL</div>
+      <div class="logo-sub">Webuilder Operations</div>
+    </div>
+  </div>
+  <div class="sep"></div>
+  <div class="status-row">
+    <div class="pulse" id="srv-pulse"></div>
+    <span id="srv-label">Connecting…</span>
+  </div>
+  <div class="sep"></div>
+  <div class="status-row">
+    <div class="pulse"></div>
+    <span id="uptime-label">—</span>
+  </div>
+  <div class="ml-auto" style="display:flex;gap:10px;align-items:center;">
+    <div class="chip green" id="chip-active">— active</div>
+    <div class="chip blue"  id="chip-total">— clients</div>
+    <div class="chip yellow" id="chip-trial">— trial</div>
+  </div>
+</header>
+
+<!-- TABS -->
+<nav class="tabs">
+  <div class="tab active" onclick="switchTab('clients')">Clients</div>
+  <div class="tab" onclick="switchTab('leads')">Leads</div>
+  <div class="tab" onclick="switchTab('status')">System Status</div>
+</nav>
+
+<!-- ═══ CLIENTS TAB ═══ -->
+<div class="panel active" id="tab-clients">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Clients</div>
+      <div class="page-sub">All active websites — updated live</div>
+    </div>
+    <div class="spacer"></div>
+    <input class="search-bar" id="search" placeholder="Search client…" oninput="renderClients()" />
+    <button class="btn primary" onclick="openAddModal()">⊕ Add Client</button>
+  </div>
+
+  <div class="stats-row" id="stats-row">
+    <div class="stat-card"><div class="stat-val green" id="s-active">—</div><div class="stat-label">Active Sites</div></div>
+    <div class="stat-card"><div class="stat-val blue"  id="s-paid">—</div><div class="stat-label">Paid</div></div>
+    <div class="stat-card"><div class="stat-val yellow" id="s-trial">—</div><div class="stat-label">Trial</div></div>
+    <div class="stat-card"><div class="stat-val red"  id="s-churned">—</div><div class="stat-label">Churned</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-photos">—</div><div class="stat-label">Photos Uploaded</div></div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Contact</th>
+          <th>Template</th>
+          <th>Status</th>
+          <th>Plan</th>
+          <th>Site</th>
+          <th>Last Photo</th>
+          <th>Added</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="clients-tbody">
+        <tr><td colspan="9" style="text-align:center;color:var(--text3);padding:30px;">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ LEADS TAB ═══ -->
+<div class="panel" id="tab-leads">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Leads</div>
+      <div class="page-sub">Managed by Chad via WhatsApp</div>
+    </div>
+  </div>
+  <div class="lead-list" id="leads-list">
+    <div style="color:var(--text3);text-align:center;padding:40px;">Loading leads…</div>
+  </div>
+</div>
+
+<!-- ═══ SYSTEM STATUS TAB ═══ -->
+<div class="panel" id="tab-status">
+  <div class="page-header">
+    <div class="page-title">System Status</div>
+  </div>
+  <div class="status-grid" id="status-grid">
+    <div class="status-card">
+      <div class="status-card-title">Mission Control API</div>
+      <div class="status-card-val" id="st-api">—</div>
+      <div class="status-row-item"><div class="dot" id="st-api-dot"></div><span id="st-api-msg">Checking…</span></div>
+    </div>
+    <div class="status-card">
+      <div class="status-card-title">Uptime</div>
+      <div class="status-card-val" id="st-uptime">—</div>
+      <div class="status-row-item"><div class="dot green"></div><span>VPS running</span></div>
+    </div>
+    <div class="status-card">
+      <div class="status-card-title">Last Sync</div>
+      <div class="status-card-val" id="st-sync">—</div>
+      <div class="status-row-item"><div class="dot green"></div><span>Workspace cache</span></div>
+    </div>
+    <div class="status-card">
+      <div class="status-card-title">Intake Server</div>
+      <div class="status-card-val" id="st-intake">Port 3004</div>
+      <div class="status-row-item"><div class="dot green"></div><span>pm2: intake-server</span></div>
+    </div>
+    <div class="status-card">
+      <div class="status-card-title">WhatsApp Bot</div>
+      <div class="status-card-val">Baileys</div>
+      <div class="status-row-item"><div class="dot green"></div><span>pm2: whatsapp-baileys</span></div>
+    </div>
+    <div class="status-card">
+      <div class="status-card-title">Vercel Deploy</div>
+      <div class="status-card-val">Auto</div>
+      <div class="status-row-item"><div class="dot green"></div><span>On git push</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADD/EDIT CLIENT MODAL ═══ -->
+<div class="overlay" id="client-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">Add Client</div>
+      <button class="btn sm" onclick="closeModal()">✕ Close</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-slug-orig" />
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Business Name</label>
+          <input class="form-input" id="f-name" placeholder="Dr. Cohen Dental" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Route Slug</label>
+          <input class="form-input" id="f-slug" placeholder="cohen-dental" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input class="form-input" id="f-phone" placeholder="050-000-0000" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" id="f-email" placeholder="client@gmail.com" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">WhatsApp</label>
+          <input class="form-input" id="f-whatsapp" placeholder="972501234567" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Custom Domain</label>
+          <input class="form-input" id="f-domain" placeholder="cohen-dental.co.il" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Template</label>
+          <select class="form-select" id="f-template">
+            <option value="dental">Dental</option>
+            <option value="accountant">Accountant</option>
+            <option value="lawyer">Lawyer</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Plan</label>
+          <select class="form-select" id="f-plan">
+            <option value="trial">Trial</option>
+            <option value="paid">Paid</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <input class="form-input" id="f-notes" placeholder="Any notes…" />
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="saveClient()">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div class="toasts" id="toasts"></div>
+
+<script>
+const API = window.location.origin; // same host: http://204.168.207.116:3000
+let allClients = [];
+let allLeads   = [];
+
+// ── Tab switching ──────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────
+function toast(msg, type = 'ok') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── Fetch data ─────────────────────────────────────────────────────────
+async function loadAll() {
+  try {
+    const [cRes, lRes, sRes] = await Promise.all([
+      fetch(`${API}/api/clients`),
+      fetch(`${API}/api/leads`),
+      fetch(`${API}/api/status`),
+    ]);
+    allClients = await cRes.json();
+    allLeads   = await lRes.json();
+    const status = await sRes.json();
+
+    // Update topbar chips
+    const active  = allClients.filter(c => c.status === 'active').length;
+    const trial   = allClients.filter(c => c.plan === 'trial').length;
+    document.getElementById('chip-active').textContent = `${active} active`;
+    document.getElementById('chip-total').textContent  = `${allClients.length} clients`;
+    document.getElementById('chip-trial').textContent  = `${trial} trial`;
+    document.getElementById('srv-label').textContent   = 'VPS online';
+    document.getElementById('uptime-label').textContent = `Uptime ${status.uptime}`;
+
+    // Status tab
+    document.getElementById('st-api').textContent    = 'Online';
+    document.getElementById('st-api-dot').className  = 'dot green';
+    document.getElementById('st-api-msg').textContent = `Last sync: ${status.last_sync ? new Date(status.last_sync).toLocaleTimeString() : '—'}`;
+    document.getElementById('st-uptime').textContent  = status.uptime;
+    document.getElementById('st-sync').textContent    = status.last_sync ? new Date(status.last_sync).toLocaleTimeString() : '—';
+
+    renderClients();
+    renderLeads();
+  } catch (e) {
+    document.getElementById('srv-label').textContent = 'VPS offline';
+    document.getElementById('srv-pulse').style.background = 'var(--red)';
+    document.getElementById('srv-pulse').style.animation  = 'none';
+    toast('Cannot reach API — check VPS', 'err');
+  }
+}
+
+// ── Render clients table ───────────────────────────────────────────────
+function renderClients() {
+  const q = (document.getElementById('search').value || '').toLowerCase();
+  const filtered = allClients.filter(c =>
+    !q ||
+    (c.name   || '').toLowerCase().includes(q) ||
+    (c.slug   || '').toLowerCase().includes(q) ||
+    (c.phone  || '').includes(q) ||
+    (c.email  || '').toLowerCase().includes(q)
+  );
+
+  // Stats
+  const active  = allClients.filter(c => c.status === 'active').length;
+  const paid    = allClients.filter(c => c.plan   === 'paid').length;
+  const trial   = allClients.filter(c => c.plan   === 'trial').length;
+  const churned = allClients.filter(c => c.status === 'churned').length;
+  const photos  = allClients.filter(c => c.lastPhotoAt).length;
+  document.getElementById('s-active').textContent  = active;
+  document.getElementById('s-paid').textContent    = paid;
+  document.getElementById('s-trial').textContent   = trial;
+  document.getElementById('s-churned').textContent = churned;
+  document.getElementById('s-photos').textContent  = photos;
+
+  const tbody = document.getElementById('clients-tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:30px;">No clients found</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(c => {
+    const planBadge  = c.plan === 'paid' ? 'paid' : 'trial';
+    const statuBadge = c.status || 'active';
+    const added = c.createdAt ? new Date(c.createdAt).toLocaleDateString('he-IL') : '—';
+    const lastPhoto = c.lastPhotoAt ? new Date(c.lastPhotoAt).toLocaleDateString('he-IL') : '—';
+    return `
+    <tr>
+      <td>
+        <div style="font-weight:700">${esc(c.name || c.slug)}</div>
+        <div class="td-muted">/${esc(c.slug)}</div>
+      </td>
+      <td>
+        <div>${esc(c.phone || '—')}</div>
+        <div class="td-muted">${esc(c.email || '—')}</div>
+      </td>
+      <td><span style="color:var(--text2)">${esc(c.template || 'dental')}</span></td>
+      <td><span class="badge ${statuBadge}">${statuBadge}</span></td>
+      <td><span class="badge ${planBadge}">${planBadge}</span></td>
+      <td>
+        ${c.siteUrl ? `<a class="td-link" href="${esc(c.siteUrl)}" target="_blank" rel="noopener">Open ↗</a>` : '—'}
+      </td>
+      <td class="td-muted">${lastPhoto}</td>
+      <td class="td-muted">${added}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn sm" onclick="editClient('${esc(c.slug)}')">Edit</button>
+          <button class="btn sm" style="color:var(--red);border-color:rgba(239,68,68,.3)" onclick="churnClient('${esc(c.slug)}')">×</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Render leads ───────────────────────────────────────────────────────
+function renderLeads() {
+  const el = document.getElementById('leads-list');
+  if (!allLeads.length) {
+    el.innerHTML = `<div style="color:var(--text3);text-align:center;padding:40px;">No leads yet — Chad is working on it</div>`;
+    return;
+  }
+  el.innerHTML = allLeads.slice(0, 30).map(l => `
+    <div class="lead-card">
+      <div class="lead-avatar">${(l.name || '?')[0].toUpperCase()}</div>
+      <div class="lead-body">
+        <div class="lead-name">${esc(l.name || 'Unknown')}</div>
+        <div class="lead-meta">${esc(l.phone || '')} · ${esc(l.business || '')} · ${esc(l.status || 'new')}</div>
+      </div>
+      <div class="lead-actions">
+        <span class="badge ${l.status === 'closed_won' ? 'paid' : l.status === 'interested' ? 'active' : 'trial'}">${esc(l.status || 'new')}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────
+function openAddModal() {
+  document.getElementById('modal-title').textContent = 'Add Client';
+  document.getElementById('edit-slug-orig').value = '';
+  ['f-name','f-slug','f-phone','f-email','f-whatsapp','f-domain','f-notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-template').value = 'dental';
+  document.getElementById('f-plan').value = 'trial';
+  document.getElementById('client-modal').classList.add('open');
+}
+
+function editClient(slug) {
+  const c = allClients.find(x => x.slug === slug);
+  if (!c) return;
+  document.getElementById('modal-title').textContent = 'Edit Client';
+  document.getElementById('edit-slug-orig').value  = slug;
+  document.getElementById('f-name').value     = c.name || '';
+  document.getElementById('f-slug').value     = c.slug || '';
+  document.getElementById('f-phone').value    = c.phone || '';
+  document.getElementById('f-email').value    = c.email || '';
+  document.getElementById('f-whatsapp').value = c.whatsapp || '';
+  document.getElementById('f-domain').value   = c.domain || '';
+  document.getElementById('f-notes').value    = c.notes || '';
+  document.getElementById('f-template').value = c.template || 'dental';
+  document.getElementById('f-plan').value     = c.plan || 'trial';
+  document.getElementById('client-modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('client-modal').classList.remove('open'); }
+
+async function saveClient() {
+  const slugOrig = document.getElementById('edit-slug-orig').value;
+  const slug = document.getElementById('f-slug').value.trim().toLowerCase().replace(/\s+/g, '-');
+  if (!slug) return toast('Slug is required', 'err');
+
+  const payload = {
+    slug,
+    name:     document.getElementById('f-name').value.trim(),
+    phone:    document.getElementById('f-phone').value.trim(),
+    email:    document.getElementById('f-email').value.trim(),
+    whatsapp: document.getElementById('f-whatsapp').value.trim(),
+    domain:   document.getElementById('f-domain').value.trim() || null,
+    template: document.getElementById('f-template').value,
+    plan:     document.getElementById('f-plan').value,
+    notes:    document.getElementById('f-notes').value.trim(),
+    siteUrl:  `https://webuilder-liart.vercel.app/${slug}`,
+  };
+
+  try {
+    const method  = slugOrig ? 'PATCH' : 'POST';
+    const url     = slugOrig ? `${API}/api/clients/${slugOrig}` : `${API}/api/clients`;
+    const res     = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if (!res.ok) throw new Error(await res.text());
+    const updated = await res.json();
+
+    // Merge into local array
+    const idx = allClients.findIndex(c => c.slug === (slugOrig || slug));
+    if (idx === -1) allClients.unshift(updated);
+    else allClients[idx] = updated;
+
+    renderClients();
+    closeModal();
+    toast(`${payload.name || slug} saved`, 'ok');
+  } catch (e) {
+    toast('Save failed: ' + e.message, 'err');
+  }
+}
+
+async function churnClient(slug) {
+  if (!confirm(`Mark "${slug}" as churned?`)) return;
+  try {
+    await fetch(`${API}/api/clients/${slug}`, { method: 'DELETE' });
+    const idx = allClients.findIndex(c => c.slug === slug);
+    if (idx !== -1) allClients[idx].status = 'churned';
+    renderClients();
+    toast(`${slug} marked churned`, 'info');
+  } catch (e) {
+    toast('Error: ' + e.message, 'err');
+  }
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────
+loadAll();
+setInterval(loadAll, 15000); // refresh every 15s
+</script>
+</body>
+</html>

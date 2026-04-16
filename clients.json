@@ -1,0 +1,16 @@
+[
+  {
+    "slug": "dental",
+    "name": "Moran Dental",
+    "phone": "050-123-4567",
+    "email": "info@mordental.co.il",
+    "whatsapp": "",
+    "template": "dental",
+    "siteUrl": "https://webuilder-liart.vercel.app/dental",
+    "status": "active",
+    "plan": "trial",
+    "notes": "Demo site — first client",
+    "createdAt": "2026-04-01T00:00:00.000Z",
+    "updatedAt": "2026-04-16T00:00:00.000Z"
+  }
+]

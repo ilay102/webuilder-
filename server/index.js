@@ -5,18 +5,27 @@
  * Auto-refreshes file cache every 10 seconds
  */
 
-const express = require('express')
-const cors    = require('cors')
-const fs      = require('fs')
-const path    = require('path')
-const os      = require('os')
+const express    = require('express')
+const cors       = require('cors')
+const fs         = require('fs')
+const path       = require('path')
+const os         = require('os')
+const { execSync } = require('child_process')
 
 const app  = express()
 const PORT = process.env.PORT || 3000
-const WORKSPACE = process.env.WORKSPACE_PATH || path.join(os.homedir(), '.openclaw', 'workspace')
+const WORKSPACE    = process.env.WORKSPACE_PATH  || path.join(os.homedir(), '.openclaw', 'workspace')
+const REPO_ROOT    = path.resolve(__dirname, '..')
+const INTAKE_PORT  = process.env.INTAKE_PORT   || 3001
+const INTAKE_SECRET = process.env.INTAKE_SECRET || ''
+const SITE_BASE_URL = process.env.SITE_BASE_URL || 'https://webuilder-liart.vercel.app'
+const CLIENTS_FILE  = path.join(REPO_ROOT, 'clients.json')
 
 app.use(cors())
 app.use(express.json())
+
+// Serve Mission Control dashboard at /
+app.use(express.static(path.join(__dirname, 'public')))
 
 // ── Cache ─────────────────────────────────────────────────────────────────────
 const cache = {}
@@ -242,6 +251,241 @@ app.post('/api/approvals/:id/reject', (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
+})
+
+// ── Intake form endpoint ──────────────────────────────────────────────────────
+// POST /api/intake  { slug, biz: {...}, services: [...] }
+// Called by Vercel's app/api/intake/route.ts after client submits intake form.
+// Updates content.json + git push → Vercel rebuilds the client's site.
+
+app.post('/api/intake', (req, res) => {
+  // ── Auth ──────────────────────────────────────────────────
+  if (INTAKE_SECRET && req.headers['x-intake-secret'] !== INTAKE_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  const { slug, biz, services } = req.body
+  if (!slug) return res.status(400).json({ error: 'slug is required' })
+
+  const contentPath = path.join(REPO_ROOT, 'app', slug, 'content.json')
+  if (!fs.existsSync(contentPath)) {
+    return res.status(404).json({ error: `Client not found: ${slug}` })
+  }
+
+  try {
+    // Merge fields into existing content.json
+    const content = JSON.parse(fs.readFileSync(contentPath, 'utf-8'))
+
+    if (biz) {
+      // Only overwrite fields that were actually provided (non-empty)
+      const filtered = Object.fromEntries(
+        Object.entries(biz).filter(([, v]) => v !== '' && v != null)
+      )
+      content.biz = { ...content.biz, ...filtered }
+    }
+    if (Array.isArray(services) && services.length > 0) {
+      content.services = services
+    }
+
+    fs.writeFileSync(contentPath, JSON.stringify(content, null, 2) + '\n', 'utf-8')
+    console.log(`[intake] Updated ${slug}/content.json`)
+
+    // Auto-register in clients.json
+    upsertClient(slug, {
+      name:    content.biz?.name    || slug,
+      phone:   content.biz?.phone   || biz?.phone   || '',
+      email:   content.biz?.email   || biz?.email   || '',
+      whatsapp: content.biz?.alertWhatsapp || biz?.alertWhatsapp || '',
+      template: content.biz?.template || 'dental',
+      siteUrl:  `${SITE_BASE_URL}/${slug}`,
+      status:  'active',
+      intakeAt: new Date().toISOString(),
+    })
+
+    // Git add → commit → push
+    const relPath = `app/${slug}/content.json`
+    execSync(`git add "${relPath}"`, { cwd: REPO_ROOT, stdio: 'pipe' })
+
+    // Skip commit if nothing staged (idempotent)
+    try {
+      execSync(`git commit -m "intake: ${slug}"`, { cwd: REPO_ROOT, stdio: 'pipe' })
+    } catch {
+      // Nothing to commit — already up to date
+    }
+
+    execSync('git push', { cwd: REPO_ROOT, stdio: 'pipe' })
+    console.log(`[intake] Pushed — Vercel rebuilding ${slug}`)
+
+    res.json({ ok: true, url: `${SITE_BASE_URL}/${slug}` })
+
+  } catch (err) {
+    console.error('[intake] Error:', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ── Photo upload endpoint ─────────────────────────────────────────────────────
+// POST /api/photo  (raw binary body — the image buffer)
+// Headers: x-intake-secret, x-phone (client's WA number), x-slot (hero|about|gallery|auto)
+// Called by baileys-server.js when a client sends a photo via WhatsApp.
+
+app.post('/api/photo', express.raw({ type: '*/*', limit: '25mb' }), (req, res) => {
+  // ── Auth ──────────────────────────────────────────────────
+  if (INTAKE_SECRET && req.headers['x-intake-secret'] !== INTAKE_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  const phone = String(req.headers['x-phone'] || '').replace(/\D/g, '')
+  const slot  = String(req.headers['x-slot']  || 'auto')
+
+  if (!phone) return res.status(400).json({ error: 'x-phone header required' })
+  if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+    return res.status(400).json({ error: 'Empty image body' })
+  }
+
+  // ── Find client by phone ───────────────────────────────────
+  const appDir = path.join(REPO_ROOT, 'app')
+  let clientSlug = null
+  let content    = null
+
+  for (const entry of fs.readdirSync(appDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const cp = path.join(appDir, entry.name, 'content.json')
+    if (!fs.existsSync(cp)) continue
+    const c = JSON.parse(fs.readFileSync(cp, 'utf-8'))
+    if (String(c.biz?.alertWhatsapp || '').replace(/\D/g, '') === phone) {
+      clientSlug = entry.name
+      content    = c
+      break
+    }
+  }
+
+  if (!clientSlug) {
+    return res.status(404).json({ error: `No client found for phone ${phone}` })
+  }
+
+  // ── Determine slot (auto = fill missing slots in order) ───
+  const DEFAULT_PHOTOS = ['/dental-hero.png', '/dental-consult.png', '/dental-smile.png', '/dental-reception.png']
+  let actualSlot = slot
+  if (slot === 'auto') {
+    const photos = content.photos || {}
+    if (!photos.hero  || DEFAULT_PHOTOS.includes(photos.hero))  actualSlot = 'hero'
+    else if (!photos.about  || DEFAULT_PHOTOS.includes(photos.about))  actualSlot = 'about'
+    else if (!photos.results || DEFAULT_PHOTOS.includes(photos.results)) actualSlot = 'results'
+    else actualSlot = 'gallery'
+  }
+
+  // ── Save image ─────────────────────────────────────────────
+  const publicDir = path.join(REPO_ROOT, 'public', 'clients', clientSlug)
+  fs.mkdirSync(publicDir, { recursive: true })
+
+  let fileName, publicPath
+  if (actualSlot === 'gallery') {
+    const gallery = content.photos?.gallery || []
+    fileName   = `gallery-${gallery.length + 1}.jpg`
+    publicPath = `/clients/${clientSlug}/${fileName}`
+    content.photos = { ...content.photos, gallery: [...gallery, publicPath] }
+  } else {
+    fileName   = `${actualSlot}.jpg`
+    publicPath = `/clients/${clientSlug}/${fileName}`
+    content.photos = { ...content.photos, [actualSlot]: publicPath }
+  }
+
+  fs.writeFileSync(path.join(publicDir, fileName), req.body)
+
+  // ── Update content.json ────────────────────────────────────
+  const contentPath = path.join(REPO_ROOT, 'app', clientSlug, 'content.json')
+  fs.writeFileSync(contentPath, JSON.stringify(content, null, 2) + '\n', 'utf-8')
+  console.log(`[photo] Saved ${publicPath} for ${clientSlug}`)
+
+  // Auto-update client record
+  upsertClient(clientSlug, { lastPhotoAt: new Date().toISOString(), lastPhotoSlot: actualSlot })
+
+  // ── Git push ───────────────────────────────────────────────
+  const relImg  = `public/clients/${clientSlug}/${fileName}`
+  const relJson = `app/${clientSlug}/content.json`
+  execSync(`git add "${relImg}" "${relJson}"`, { cwd: REPO_ROOT, stdio: 'pipe' })
+  try {
+    execSync(`git commit -m "photo: ${actualSlot} for ${clientSlug}"`, { cwd: REPO_ROOT, stdio: 'pipe' })
+  } catch { /* nothing new to commit */ }
+  execSync('git push', { cwd: REPO_ROOT, stdio: 'pipe' })
+  console.log(`[photo] Pushed — Vercel rebuilding ${clientSlug}`)
+
+  res.json({ ok: true, slot: actualSlot, path: publicPath, site: `${SITE_BASE_URL}/${clientSlug}` })
+})
+
+// ── Clients CRUD ──────────────────────────────────────────────────────────────
+
+function readClients() {
+  try {
+    if (!fs.existsSync(CLIENTS_FILE)) return []
+    return JSON.parse(fs.readFileSync(CLIENTS_FILE, 'utf-8'))
+  } catch { return [] }
+}
+
+function writeClients(clients) {
+  fs.writeFileSync(CLIENTS_FILE, JSON.stringify(clients, null, 2) + '\n', 'utf-8')
+}
+
+/**
+ * Upsert a client by slug. Creates if not exists, merges if exists.
+ * Returns the updated client object.
+ */
+function upsertClient(slug, patch) {
+  const clients = readClients()
+  const idx = clients.findIndex(c => c.slug === slug)
+  const now = new Date().toISOString()
+  if (idx === -1) {
+    const client = { slug, status: 'active', createdAt: now, updatedAt: now, ...patch }
+    clients.push(client)
+    writeClients(clients)
+    return client
+  } else {
+    clients[idx] = { ...clients[idx], ...patch, updatedAt: now }
+    writeClients(clients)
+    return clients[idx]
+  }
+}
+
+// GET /api/clients — list all clients (sorted newest first)
+app.get('/api/clients', (req, res) => {
+  const clients = readClients().sort((a, b) =>
+    new Date(b.createdAt) - new Date(a.createdAt)
+  )
+  res.json(clients)
+})
+
+// GET /api/clients/:slug
+app.get('/api/clients/:slug', (req, res) => {
+  const clients = readClients()
+  const client = clients.find(c => c.slug === req.params.slug)
+  if (!client) return res.status(404).json({ error: 'Not found' })
+  res.json(client)
+})
+
+// POST /api/clients — create / update client (used by new-demo.ts or manual)
+app.post('/api/clients', (req, res) => {
+  const { slug, ...rest } = req.body
+  if (!slug) return res.status(400).json({ error: 'slug required' })
+  const client = upsertClient(slug, rest)
+  res.json(client)
+})
+
+// PATCH /api/clients/:slug — partial update (status, notes, payment, etc.)
+app.patch('/api/clients/:slug', (req, res) => {
+  const client = upsertClient(req.params.slug, req.body)
+  res.json(client)
+})
+
+// DELETE /api/clients/:slug — mark as churned (soft delete)
+app.delete('/api/clients/:slug', (req, res) => {
+  const clients = readClients()
+  const idx = clients.findIndex(c => c.slug === req.params.slug)
+  if (idx === -1) return res.status(404).json({ error: 'Not found' })
+  clients[idx].status = 'churned'
+  clients[idx].updatedAt = new Date().toISOString()
+  writeClients(clients)
+  res.json({ ok: true })
 })
 
 // ── Health check ──────────────────────────────────────────────────────────────

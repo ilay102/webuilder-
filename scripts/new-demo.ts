@@ -255,6 +255,29 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     ? `https://${c.domain.replace(/^www\./, '')}`
     : `${BASE_URL}/${c.route}`;
 
+  // Register client in Mission Control
+  const VPS_API = process.env.VPS_API_URL ?? 'http://204.168.207.116:3000';
+  try {
+    await fetch(`${VPS_API}/api/clients`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slug:     c.route,
+        name:     c.businessName,
+        phone:    c.phone,
+        email:    c.clientEmail,
+        whatsapp: c.clientWhatsapp,
+        template: c.template,
+        domain:   c.domain ?? null,
+        siteUrl,
+        status:   'active',
+        plan:     'trial',
+      }),
+    });
+  } catch (e: any) {
+    process.stderr.write(`[clients] Could not register client: ${e.message}\n`);
+  }
+
   return siteUrl;
 }
 
