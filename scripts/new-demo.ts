@@ -28,6 +28,9 @@ import fs   from 'fs';
 import path from 'path';
 import { execSync }  from 'child_process';
 import { parseArgs } from 'node:util';
+import { pickVariant } from '../lib/variance';
+import { getPack }     from '../lib/design-packs';
+import { generateCopy } from '../lib/generate-copy';
 
 const BASE_URL        = 'https://webuilder-liart.vercel.app';
 const VERCEL_TOKEN    = process.env.VERCEL_TOKEN ?? '';
@@ -218,10 +221,32 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     ? JSON.parse(fs.readFileSync(templateContentPath, 'utf-8'))
     : { biz: {}, services: [], photos: {}, testimonials: [], stats: [] };
 
+  // ── Automated Variance: design pack + hero assignment ──────────
+  const variant = pickVariant(c.route, c.template, c.city);
+  const pack    = getPack(variant.packId);
+  process.stderr.write(`[variance] ${c.route} → pack=${pack.id}, hero=${variant.heroPhoto}\n`);
+
+  // ── AI copy generation (unique H1/tagline per client) ──────────
+  let copy;
+  try {
+    copy = await generateCopy({
+      businessName: c.businessName,
+      city:         c.city,
+      template:     c.template,
+      packVibe:     pack.vibe,
+      services:     (baseContent.services || []).map((s: any) => s.title).slice(0, 6),
+      language:     'he',
+    });
+    process.stderr.write(`[copy] h1="${copy.h1}"\n`);
+  } catch (e: any) {
+    process.stderr.write(`[copy] generation failed: ${e.message}\n`);
+    copy = undefined;
+  }
+
   baseContent.biz = {
     ...baseContent.biz,
     name:          c.businessName,
-    tagline:       c.tagline || `Professional ${c.template} care in ${c.city}`,
+    tagline:       copy?.tagline || c.tagline || `Professional ${c.template} care in ${c.city}`,
     city:          c.city,
     address:       c.city,
     phone:         c.phone,
@@ -231,7 +256,21 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     alertEmail:    c.clientEmail,
     alertWhatsapp: c.clientWhatsapp,
     domain:        c.domain ?? null,
+    template:      c.template,
   };
+
+  // Seed photo slots with deterministic hero pool selections (client can override later)
+  baseContent.photos = {
+    ...(baseContent.photos || {}),
+    hero:    baseContent.photos?.hero    || variant.heroPhoto,
+    about:   baseContent.photos?.about   || variant.aboutPhoto,
+    results: baseContent.photos?.results || variant.resultsPhoto,
+    cta:     baseContent.photos?.cta     || variant.ctaPhoto,
+  };
+
+  // Bake in design pack id + AI copy
+  baseContent.design = { packId: pack.id };
+  if (copy) baseContent.copy = copy;
 
   fs.writeFileSync(
     path.join(outDir, 'content.json'),

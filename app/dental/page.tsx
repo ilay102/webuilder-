@@ -5,32 +5,63 @@ import { motion, useInView } from 'framer-motion';
 import { CalBooking, CalFloatingButton } from '@/components/ui/cal-booking';
 import { Chatbot } from '@/components/ui/chatbot';
 import { AccessibilityFooter } from '@/components/ui/AccessibilityFooter';
+import { getPack, googleFontsUrl } from '@/lib/design-packs';
 import content from './content.json';
 
 /* ══════════════════════════════════════════════════════════════
-   TIER 1 — BRAND  (colors, fonts — same for all dental clients)
+   TIER 1 — DESIGN PACK  (automated variance — same template, per-client look)
+   Source of truth: content.json → design.packId (assigned by new-demo.ts).
+   Falls back to 'forest-serif-soft' if no pack specified.
 ══════════════════════════════════════════════════════════════ */
+const PACK = getPack((content as any).design?.packId);
+
+// Map pack colors → the semantic names already used throughout this template.
 const C = {
-  bg:        '#FAF8F4',
-  bgAlt:     '#F2EFE9',
-  white:     '#FFFFFF',
-  forest:    '#2D6B55',
-  forestDim: '#3D8A6E',
-  sage:      '#5A8A6A',
-  sageMid:   '#7AAD8A',
-  sageLight: '#C8DDD0',
-  oak:       '#C9956A',
-  oakLight:  '#E8D5C0',
-  charcoal:  '#2A2A2A',
-  muted:     '#7A6F66',
-  light:     '#B0A89E',
+  bg:        PACK.colors.bg,
+  bgAlt:     PACK.colors.bgAlt,
+  white:     PACK.colors.white,
+  forest:    PACK.colors.primary,
+  forestDim: PACK.colors.primaryDark,
+  sage:      PACK.colors.primary,
+  sageMid:   PACK.colors.primaryDark,
+  sageLight: PACK.colors.accentLight,
+  oak:       PACK.colors.accent,
+  oakLight:  PACK.colors.accentLight,
+  charcoal:  PACK.colors.text,
+  muted:     PACK.colors.muted,
+  light:     PACK.colors.light,
 } as const;
 
 const F = {
-  serif: "'Plus Jakarta Sans', system-ui, sans-serif",
-  body:  "'Manrope', system-ui, sans-serif",
-  label: "'Manrope', monospace",
+  serif: `'${PACK.fonts.heading.family}', system-ui, serif`,
+  body:  `'${PACK.fonts.body.family}', system-ui, sans-serif`,
+  label: `'${PACK.fonts.body.family}', system-ui, sans-serif`,
 } as const;
+
+// AI-generated per-client copy (falls back to tasteful defaults if not generated yet)
+const COPY = {
+  h1:           (content as any).copy?.h1           ?? null,
+  heroSubtitle: (content as any).copy?.heroSubtitle ?? null,
+  tagline:      (content as any).copy?.tagline      ?? null,
+  about:        (content as any).copy?.about        ?? null,
+  ctaMain:      (content as any).copy?.ctaMain      ?? 'Book a Free Consultation',
+  ctaSecondary: (content as any).copy?.ctaSecondary ?? 'View Our Services',
+  sectionLabel: (content as any).copy?.sectionLabel ?? `Premium Dental Care · ${content.biz.city}`,
+};
+
+/* Google Fonts loader — injects the pack's heading + body fonts at runtime. */
+function DesignPackFonts() {
+  useEffect(() => {
+    const id = `pack-fonts-${PACK.id}`;
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = googleFontsUrl(PACK);
+    document.head.appendChild(link);
+  }, []);
+  return null;
+}
 
 /* ══════════════════════════════════════════════════════════════
    TIER 2 — BUSINESS  (loaded from content.json — edit that file)
@@ -139,16 +170,18 @@ export default function DentalPage() {
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', fontFamily: F.body }}>
+      {/* Pack-aware font loader (injects Google Fonts for the assigned design pack) */}
+      <DesignPackFonts />
 
       <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700&display=swap');
+        @import url('${googleFontsUrl(PACK)}');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
         @media (max-width: 768px) {
           .nav-links { display: none !important; }
           .nav-book  { display: none !important; }
           .nav-name  { font-size: 14px !important; }
-          .hero-grad { background: linear-gradient(to bottom, rgba(250,248,244,0.1) 0%, rgba(250,248,244,0.85) 40%, rgba(250,248,244,0.97) 100%) !important; }
+          .hero-grad { background: linear-gradient(to bottom, ${C.bg}18 0%, ${C.bg}d0 40%, ${C.bg}f7 100%) !important; }
           .hero-inner { padding: 0 24px !important; align-items: flex-end !important; padding-bottom: 80px !important; }
           .hero-content { max-width: 100% !important; }
           .stats-grid { grid-template-columns: repeat(2,1fr) !important; padding: 40px 24px !important; gap: 24px !important; }
@@ -211,24 +244,55 @@ export default function DentalPage() {
 
       {/* ── HERO ── */}
       <section style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
-        <img src={photos.hero} alt="Dental clinic treatment room" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
-        <div className="hero-grad" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(250,248,244,0.92) 38%, rgba(250,248,244,0.2) 70%, transparent 100%)' }} />
+        {/* Photo — filtered per pack for tonal consistency */}
+        <img
+          src={photos.hero}
+          alt="Dental clinic"
+          style={{
+            width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center',
+            filter: PACK.photoFilter,
+          }}
+        />
+
+        {/* PACK COLOR OVERLAY — "The Vibe Blend" — tints stock photo to match brand */}
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute', inset: 0,
+            background: PACK.heroOverlay.gradient,
+            mixBlendMode: PACK.heroOverlay.blend as any,
+            opacity: PACK.heroOverlay.opacity,
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Readability wash — keeps text legible above the blend */}
+        <div
+          className="hero-grad"
+          style={{
+            position: 'absolute', inset: 0,
+            background: `linear-gradient(to right, ${C.bg}e8 38%, ${C.bg}30 70%, transparent 100%)`,
+          }}
+        />
+
         <div className="hero-inner" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 80px', maxWidth: 1200, margin: '0 auto', left: 0, right: 0 }}>
           <div className="hero-content" style={{ maxWidth: 560 }}>
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-              <Tag>Premium Dental Care · {BIZ.city}</Tag>
+              <Tag>{COPY.sectionLabel}</Tag>
             </motion.div>
             <motion.h1
               initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.15 }}
               style={{ fontFamily: F.serif, fontSize: 'clamp(40px, 5.5vw, 72px)', fontWeight: 700, lineHeight: 1.08, color: C.charcoal, marginTop: 24, marginBottom: 24, letterSpacing: '-0.03em' }}
             >
-              Your Smile,<br /><span style={{ color: C.forest }}>Our Passion</span>
+              {COPY.h1
+                ? <span>{COPY.h1}</span>
+                : <>Your Smile,<br /><span style={{ color: C.forest }}>Our Passion</span></>}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.3 }}
               style={{ fontSize: 18, color: C.muted, lineHeight: 1.75, marginBottom: 40, maxWidth: 420 }}
             >
-              {BIZ.tagline}
+              {COPY.heroSubtitle || BIZ.tagline}
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.45 }}
@@ -243,7 +307,7 @@ export default function DentalPage() {
                 }}
                   onMouseEnter={e => { e.currentTarget.style.background = C.forestDim; e.currentTarget.style.transform = 'translateY(-2px)'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = C.forest; e.currentTarget.style.transform = 'translateY(0)'; }}>
-                  Book a Free Consultation
+                  {COPY.ctaMain}
                 </button>
               </CalBooking>
               <button style={{
@@ -252,7 +316,7 @@ export default function DentalPage() {
               }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = C.forest; e.currentTarget.style.color = C.forest; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(42,42,42,0.20)'; e.currentTarget.style.color = C.charcoal; }}>
-                View Our Services
+                {COPY.ctaSecondary}
               </button>
             </motion.div>
           </div>
