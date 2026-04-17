@@ -166,7 +166,7 @@ export default function DentalPage() {
   const services     = content.services;
   const testimonials = content.testimonials;
   const stats        = content.stats;
-  const photos       = content.photos;
+  const photos       = content.photos as Record<string, any>;
 
   return (
     <div dir="rtl" style={{ background: C.bg, minHeight: '100vh', fontFamily: F.body }}>
