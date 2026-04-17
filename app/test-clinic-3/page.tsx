@@ -275,8 +275,8 @@ export default function DentalPage() {
           }}
         />
 
-        <div className="hero-inner" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: '0 80px', maxWidth: 1200, margin: '0 auto', left: 0, right: 0 }}>
-          <div className="hero-content" style={{ maxWidth: 560 }}>
+        <div className="hero-inner" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 80px' }}>
+          <div className="hero-content" style={{ maxWidth: 560, textAlign: 'left' as const, direction: 'ltr' as const }}>
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
               <Tag>{COPY.sectionLabel}</Tag>
             </motion.div>
