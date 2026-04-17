@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-04-17T16:16:23.620Z",
+  "updatedAt": "2026-04-17T16:19:17.626Z",
   "images": [
     {
       "id": "heroes/Gemini_Generated_Image_amvponamvponamvp.png",
@@ -49,9 +49,9 @@
       "id": "heroes/atikah-akhtar-XJptUS8nbhs-unsplash.jpg",
       "type": "hero",
       "path": "/pool/dental/heroes/atikah-akhtar-XJptUS8nbhs-unsplash.jpg",
-      "status": "available",
-      "assignedTo": null,
-      "assignedAt": null,
+      "status": "in-use",
+      "assignedTo": "test-clinic-3",
+      "assignedAt": "2026-04-17T16:19:17.618Z",
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.814Z",
       "notes": ""
@@ -104,9 +104,9 @@
       "id": "patients/Gemini_Generated_Image_p1spoap1spoap1sp.png",
       "type": "patient",
       "path": "/pool/dental/patients/Gemini_Generated_Image_p1spoap1spoap1sp.png",
-      "status": "available",
-      "assignedTo": null,
-      "assignedAt": null,
+      "status": "in-use",
+      "assignedTo": "test-clinic-3",
+      "assignedAt": "2026-04-17T16:19:17.626Z",
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.816Z",
       "notes": ""

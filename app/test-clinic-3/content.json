@@ -1,7 +1,7 @@
 {
   "biz": {
     "name": "מרפאת כרמל",
-    "tagline": "חיוך בריא. נפש רגועה.",
+    "tagline": "דיוק. חמימות. תוצאות.",
     "city": "חיפה",
     "address": "חיפה",
     "phone": "04-1234567",
@@ -36,10 +36,10 @@
     }
   ],
   "photos": {
-    "hero": "/pool/dental/heroes/Gemini_Generated_Image_z6mpqvz6mpqvz6mp.png",
-    "about": "/pool/dental/heroes/Gemini_Generated_Image_z6mpqvz6mpqvz6mp.png",
-    "results": "/pool/dental/patients/Gemini_Generated_Image_ew0abyew0abyew0a.png",
-    "cta": "/pool/dental/heroes/Gemini_Generated_Image_z6mpqvz6mpqvz6mp.png",
+    "hero": "/pool/dental/heroes/atikah-akhtar-XJptUS8nbhs-unsplash.jpg",
+    "about": "/pool/dental/heroes/atikah-akhtar-XJptUS8nbhs-unsplash.jpg",
+    "results": "/pool/dental/patients/Gemini_Generated_Image_p1spoap1spoap1sp.png",
+    "cta": "/pool/dental/heroes/atikah-akhtar-XJptUS8nbhs-unsplash.jpg",
     "gallery": []
   },
   "testimonials": [
@@ -81,12 +81,12 @@
     "packId": "rose-gentle-feminine"
   },
   "copy": {
-    "h1": "טיפול שיניים שהופך חוויה",
-    "heroSubtitle": "מרפאה מודרנית, צוות קשוב, תוצאות שמחייכות.",
-    "tagline": "חיוך בריא. נפש רגועה.",
-    "about": "אנחנו מאמינים שטיפולי שיניים לא חייבים להיות מלחיצים. הצוות שלנו משקיע זמן בלהכיר כל מטופל, להקשיב לחששות ולתפור פתרון שמרגיש נכון. טכנולוגיה מתקדמת, אבל תמיד עם הלב.",
-    "ctaMain": "קבע תור",
-    "ctaSecondary": "דבר איתנו",
-    "sectionLabel": "המרפאה שלנו"
+    "h1": "שיניים יפות בידיים טובות",
+    "heroSubtitle": "צוות מומחים שמטפל בך כמו בבית — עם דיוק של מרפאה מובילה.",
+    "tagline": "דיוק. חמימות. תוצאות.",
+    "about": "אנחנו משלבים ציוד מהדור האחרון עם גישה אנושית ואמיתית. כל תור מתוכנן להיות קצר, נוח ויעיל — כי הזמן שלך יקר.",
+    "ctaMain": "קבע תור עכשיו",
+    "ctaSecondary": "לכל השירותים",
+    "sectionLabel": "מה אנחנו מציעים"
   }
 }
