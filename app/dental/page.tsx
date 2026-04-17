@@ -271,11 +271,11 @@ export default function DentalPage() {
           className="hero-grad"
           style={{
             position: 'absolute', inset: 0,
-            background: `linear-gradient(to left, ${C.bg}e8 38%, ${C.bg}30 70%, transparent 100%)`,
+            background: `linear-gradient(to right, ${C.bg}e8 38%, ${C.bg}30 70%, transparent 100%)`,
           }}
         />
 
-        <div className="hero-inner" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 80px', maxWidth: 1200, margin: '0 auto', left: 0, right: 0 }}>
+        <div className="hero-inner" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 80px', maxWidth: 1200, margin: '0 auto', left: 0, right: 0 }}>
           <div className="hero-content" style={{ maxWidth: 560 }}>
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
               <Tag>{COPY.sectionLabel}</Tag>
