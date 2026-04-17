@@ -28,6 +28,10 @@ import fs   from 'fs';
 import path from 'path';
 import { execSync }  from 'child_process';
 import { parseArgs } from 'node:util';
+import { config as dotenvConfig } from 'dotenv';
+
+// Load .env from repo root (picks up GEMINI_API_KEY, etc.)
+dotenvConfig({ path: path.join(process.cwd(), '.env') });
 import { pickVariant }                                from '../lib/variance';
 import { getPack }                                   from '../lib/design-packs';
 import { generateCopy }                              from '../lib/generate-copy';
