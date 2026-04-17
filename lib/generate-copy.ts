@@ -20,14 +20,67 @@ export interface GeneratedCopy {
   sectionLabel: string   // Section eyebrow label
 }
 
-const FALLBACK: GeneratedCopy = {
-  h1:           'טיפול שיניים שהופך חוויה',
-  heroSubtitle: 'מרפאה מודרנית, צוות קשוב, תוצאות שמחייכות.',
-  tagline:      'חיוך בריא. נפש רגועה.',
-  about:        'אנחנו מאמינים שטיפולי שיניים לא חייבים להיות מלחיצים. הצוות שלנו משקיע זמן בלהכיר כל מטופל, להקשיב לחששות ולתפור פתרון שמרגיש נכון. טכנולוגיה מתקדמת, אבל תמיד עם הלב.',
-  ctaMain:      'קבע תור',
-  ctaSecondary: 'דבר איתנו',
-  sectionLabel: 'המרפאה שלנו',
+// Varied fallback pool — picked deterministically by businessName hash
+// so each demo gets a different H1 even without a Gemini API key.
+const FALLBACK_POOL: GeneratedCopy[] = [
+  {
+    h1:           'טיפול שיניים שהופך חוויה',
+    heroSubtitle: 'מרפאה מודרנית, צוות קשוב, תוצאות שמחייכות.',
+    tagline:      'חיוך בריא. נפש רגועה.',
+    about:        'אנחנו מאמינים שטיפולי שיניים לא חייבים להיות מלחיצים. הצוות שלנו משקיע זמן בלהכיר כל מטופל ולהתאים פתרון שמרגיש נכון. טכנולוגיה מתקדמת, תמיד עם הלב.',
+    ctaMain:      'קבע תור',
+    ctaSecondary: 'דבר איתנו',
+    sectionLabel: 'המרפאה שלנו',
+  },
+  {
+    h1:           'החיוך שמגיע לך, כאן',
+    heroSubtitle: 'טכנולוגיה מתקדמת, גישה אישית — תוצאות שמדברות בעד עצמן.',
+    tagline:      'מקצועיות שמרגישה כמו בית.',
+    about:        'כל מטופל מגיע עם סיפור שונה. אנחנו מקשיבים, מתכננים בדיוק ומלווים לאורך כל הדרך. כי החיוך שלך לא צריך להיות פשרה.',
+    ctaMain:      'קבע ייעוץ',
+    ctaSecondary: 'הכירו אותנו',
+    sectionLabel: 'השירותים שלנו',
+  },
+  {
+    h1:           'שיניים יפות בידיים טובות',
+    heroSubtitle: 'צוות מומחים שמטפל בך כמו בבית — עם דיוק של מרפאה מובילה.',
+    tagline:      'דיוק. חמימות. תוצאות.',
+    about:        'אנחנו משלבים ציוד מהדור האחרון עם גישה אנושית ואמיתית. כל תור מתוכנן להיות קצר, נוח ויעיל — כי הזמן שלך יקר.',
+    ctaMain:      'קבע תור עכשיו',
+    ctaSecondary: 'לכל השירותים',
+    sectionLabel: 'מה אנחנו מציעים',
+  },
+  {
+    h1:           'מהפך חיוך — תור אחד',
+    heroSubtitle: 'מהבדיקה הראשונה ועד החיוך המושלם — אנחנו לידך בכל שלב.',
+    tagline:      'כי חיוך טוב משנה הכל.',
+    about:        'לא סתם עוד מרפאה. אנחנו בנינו מקום שבו מטופלים מרגישים בטוחים, שמועים ומטופלים בידיים של אנשי מקצוע שבאמת אכפת להם.',
+    ctaMain:      'התחל היום',
+    ctaSecondary: 'דבר איתנו',
+    sectionLabel: 'הטיפולים שלנו',
+  },
+  {
+    h1:           'פה בריא. חיים שמחים.',
+    heroSubtitle: 'מרפאה שמכבדת את הזמן שלך ומביאה תוצאות שמרגישות טבעיות.',
+    tagline:      'בריאות שמתחילה בחיוך.',
+    about:        'אנחנו מאמינים שבריאות הפה היא חלק מאיכות החיים. לכן אנחנו לא רק מטפלים — אנחנו מלמדים, מלווים ובונים מערכת יחסים לטווח ארוך.',
+    ctaMain:      'קבע בדיקה',
+    ctaSecondary: 'אודות המרפאה',
+    sectionLabel: 'הגישה שלנו',
+  },
+]
+
+function hashIndex(seed: string, len: number): number {
+  let h = 0x811c9dc5
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i)
+    h = (h * 0x01000193) >>> 0
+  }
+  return h % len
+}
+
+function getFallback(businessName: string, city = ''): GeneratedCopy {
+  return FALLBACK_POOL[hashIndex(businessName + city, FALLBACK_POOL.length)]
 }
 
 interface Args {
@@ -43,8 +96,9 @@ interface Args {
 export async function generateCopy(args: Args): Promise<GeneratedCopy> {
   const apiKey = args.apiKey ?? process.env.GEMINI_API_KEY
   if (!apiKey) {
-    console.warn('[copy] GEMINI_API_KEY not set — using fallback copy')
-    return FALLBACK
+    const fb = getFallback(args.businessName, args.city)
+    console.warn(`[copy] GEMINI_API_KEY not set — fallback h1="${fb.h1}"`)
+    return fb
   }
 
   const lang = args.language ?? 'he'
@@ -118,6 +172,6 @@ Return this exact JSON shape (all fields ${langLabel}):
     }
   } catch (e: any) {
     console.warn('[copy] generation failed:', e.message)
-    return FALLBACK
+    return getFallback(args.businessName, args.city)
   }
 }
