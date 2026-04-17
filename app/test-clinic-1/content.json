@@ -1,0 +1,95 @@
+{
+  "biz": {
+    "name": "מרפאת בדיקה",
+    "tagline": "חיוך בריא. נפש רגועה.",
+    "city": "תל אביב",
+    "address": "תל אביב",
+    "phone": "03-1234567",
+    "email": "test@test.com",
+    "hours": "Sun–Thu 9:00–18:00",
+    "calLink": "ilay-lankin/15min",
+    "alertEmail": "test@test.com",
+    "alertWhatsapp": "972501234567",
+    "domain": null,
+    "template": "dental"
+  },
+  "services": [
+    {
+      "icon": "✦",
+      "title": "Aesthetic Dentistry",
+      "desc": "Veneers, whitening, and smile design crafted to complement your natural beauty."
+    },
+    {
+      "icon": "◈",
+      "title": "Dental Implants",
+      "desc": "Titanium implants that feel and look completely natural. Lifetime results."
+    },
+    {
+      "icon": "◉",
+      "title": "Orthodontics",
+      "desc": "Invisible aligners and clear braces — straighten your smile discreetly."
+    },
+    {
+      "icon": "○",
+      "title": "Root Canal",
+      "desc": "Painless, precise endodontic treatment with full digital guidance."
+    }
+  ],
+  "photos": {
+    "hero": "/clients/dental/hero.jpg",
+    "about": "/clients/dental/about.jpg",
+    "results": "/dental-smile.png",
+    "cta": "/dental-reception.png",
+    "gallery": [
+      "/clients/dental/gallery-1.jpg",
+      "/clients/dental/gallery-2.jpg"
+    ]
+  },
+  "testimonials": [
+    {
+      "quote": "I've never felt so comfortable at a dentist. The clinic feels like a spa — the team is warm, professional and incredibly skilled.",
+      "name": "Noa Levi",
+      "detail": "Smile Design Patient"
+    },
+    {
+      "quote": "My implants look completely natural. Six months later I still can't believe how painless the whole process was.",
+      "name": "Avi Cohen",
+      "detail": "Implant Patient"
+    },
+    {
+      "quote": "My kids actually look forward to their appointments here. That says everything you need to know.",
+      "name": "Miri Shapiro",
+      "detail": "Family Patient"
+    }
+  ],
+  "stats": [
+    {
+      "value": "3,200+",
+      "label": "Happy Patients"
+    },
+    {
+      "value": "14 Yrs",
+      "label": "Experience"
+    },
+    {
+      "value": "98%",
+      "label": "Satisfaction Rate"
+    },
+    {
+      "value": "12",
+      "label": "Specialists"
+    }
+  ],
+  "design": {
+    "packId": "slate-tech-clean"
+  },
+  "copy": {
+    "h1": "טיפול שיניים שהופך חוויה",
+    "heroSubtitle": "מרפאה מודרנית, צוות קשוב, תוצאות שמחייכות.",
+    "tagline": "חיוך בריא. נפש רגועה.",
+    "about": "אנחנו מאמינים שטיפולי שיניים לא חייבים להיות מלחיצים. הצוות שלנו משקיע זמן בלהכיר כל מטופל, להקשיב לחששות ולתפור פתרון שמרגיש נכון. טכנולוגיה מתקדמת, אבל תמיד עם הלב.",
+    "ctaMain": "קבע תור",
+    "ctaSecondary": "דבר איתנו",
+    "sectionLabel": "המרפאה שלנו"
+  }
+}
