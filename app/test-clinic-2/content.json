@@ -1,0 +1,92 @@
+{
+  "biz": {
+    "name": "ד״ר לוי שיניים",
+    "tagline": "חיוך בריא. נפש רגועה.",
+    "city": "חיפה",
+    "address": "חיפה",
+    "phone": "04-9876543",
+    "email": "levi@test.com",
+    "hours": "Sun–Thu 9:00–18:00",
+    "calLink": "ilay-lankin/15min",
+    "alertEmail": "levi@test.com",
+    "alertWhatsapp": "972521234567",
+    "domain": null,
+    "template": "dental"
+  },
+  "services": [
+    {
+      "icon": "✦",
+      "title": "אסתטיקת שיניים",
+      "desc": "ציפויים, הלבנה ועיצוב חיוך — מותאמים בדיוק ליופי הטבעי שלך."
+    },
+    {
+      "icon": "◈",
+      "title": "שתלי שיניים",
+      "desc": "שתלי טיטניום שמרגישים ונראים כמו שן טבעית. תוצאות לכל החיים."
+    },
+    {
+      "icon": "◉",
+      "title": "יישור שיניים",
+      "desc": "מיישרים שקופים ומסילות בלתי נראות — יישרי את החיוך בדיסקרטיות."
+    },
+    {
+      "icon": "○",
+      "title": "טיפול שורש",
+      "desc": "טיפול שורש ללא כאב, מדויק ומונחה דיגיטלית לאורך כל הדרך."
+    }
+  ],
+  "photos": {
+    "hero": "/pool/dental/heroes/Gemini_Generated_Image_vtdf96vtdf96vtdf.png",
+    "about": "/pool/dental/heroes/Gemini_Generated_Image_vtdf96vtdf96vtdf.png",
+    "results": "/pool/dental/patients/Gemini_Generated_Image_bfkwrebfkwrebfkw.png",
+    "cta": "/pool/dental/heroes/Gemini_Generated_Image_vtdf96vtdf96vtdf.png",
+    "gallery": []
+  },
+  "testimonials": [
+    {
+      "quote": "מעולם לא הרגשתי כל כך בנוח אצל רופא שיניים. המרפאה מרגישה כמו ספא — הצוות חם, מקצועי ומיומן להפליא.",
+      "name": "נועה לוי",
+      "detail": "מטופלת עיצוב חיוך"
+    },
+    {
+      "quote": "השתלים שלי נראים טבעיים לחלוטין. שישה חודשים אחרי אני עדיין לא מאמין כמה כל התהליך היה פשוט וללא כאב.",
+      "name": "אבי כהן",
+      "detail": "מטופל שתלים"
+    },
+    {
+      "quote": "הילדים שלי ממש מצפים לביקורים כאן. זה אומר הכל.",
+      "name": "מירי שפירו",
+      "detail": "מטופלת משפחתית"
+    }
+  ],
+  "stats": [
+    {
+      "value": "3,200+",
+      "label": "מטופלים מרוצים"
+    },
+    {
+      "value": "14",
+      "label": "שנות ניסיון"
+    },
+    {
+      "value": "98%",
+      "label": "שביעות רצון"
+    },
+    {
+      "value": "12",
+      "label": "מומחים"
+    }
+  ],
+  "design": {
+    "packId": "navy-sans-sharp"
+  },
+  "copy": {
+    "h1": "טיפול שיניים שהופך חוויה",
+    "heroSubtitle": "מרפאה מודרנית, צוות קשוב, תוצאות שמחייכות.",
+    "tagline": "חיוך בריא. נפש רגועה.",
+    "about": "אנחנו מאמינים שטיפולי שיניים לא חייבים להיות מלחיצים. הצוות שלנו משקיע זמן בלהכיר כל מטופל, להקשיב לחששות ולתפור פתרון שמרגיש נכון. טכנולוגיה מתקדמת, אבל תמיד עם הלב.",
+    "ctaMain": "קבע תור",
+    "ctaSecondary": "דבר איתנו",
+    "sectionLabel": "המרפאה שלנו"
+  }
+}
