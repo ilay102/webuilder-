@@ -6,7 +6,7 @@
     "address": "תל אביב",
     "phone": "03-1234567",
     "email": "test@test.com",
-    "hours": "Sun–Thu 9:00–18:00",
+    "hours": "א׳–ה׳ 09:00–18:00",
     "calLink": "ilay-lankin/15min",
     "alertEmail": "test@test.com",
     "alertWhatsapp": "972501234567",
@@ -16,69 +16,54 @@
   "services": [
     {
       "icon": "✦",
-      "title": "Aesthetic Dentistry",
-      "desc": "Veneers, whitening, and smile design crafted to complement your natural beauty."
+      "title": "אסתטיקת שיניים",
+      "desc": "ציפויים, הלבנה ועיצוב חיוך — מותאמים בדיוק ליופי הטבעי שלך."
     },
     {
       "icon": "◈",
-      "title": "Dental Implants",
-      "desc": "Titanium implants that feel and look completely natural. Lifetime results."
+      "title": "שתלי שיניים",
+      "desc": "שתלי טיטניום שמרגישים ונראים כמו שן טבעית. תוצאות לכל החיים."
     },
     {
       "icon": "◉",
-      "title": "Orthodontics",
-      "desc": "Invisible aligners and clear braces — straighten your smile discreetly."
+      "title": "יישור שיניים",
+      "desc": "מיישרים שקופים ומסילות בלתי נראות — יישרי את החיוך בדיסקרטיות."
     },
     {
       "icon": "○",
-      "title": "Root Canal",
-      "desc": "Painless, precise endodontic treatment with full digital guidance."
+      "title": "טיפול שורש",
+      "desc": "טיפול שורש ללא כאב, מדויק ומונחה דיגיטלית לאורך כל הדרך."
     }
   ],
   "photos": {
-    "hero": "/clients/dental/hero.jpg",
-    "about": "/clients/dental/about.jpg",
-    "results": "/dental-smile.png",
-    "cta": "/dental-reception.png",
-    "gallery": [
-      "/clients/dental/gallery-1.jpg",
-      "/clients/dental/gallery-2.jpg"
-    ]
+    "hero": "/pool/dental/heroes/Gemini_Generated_Image_mf4i5umf4i5umf4i.png",
+    "about": "/pool/dental/heroes/Gemini_Generated_Image_mf4i5umf4i5umf4i.png",
+    "results": "/pool/dental/patients/Gemini_Generated_Image_a2k33ta2k33ta2k3.png",
+    "cta": "/pool/dental/heroes/Gemini_Generated_Image_mf4i5umf4i5umf4i.png",
+    "gallery": []
   },
   "testimonials": [
     {
-      "quote": "I've never felt so comfortable at a dentist. The clinic feels like a spa — the team is warm, professional and incredibly skilled.",
-      "name": "Noa Levi",
-      "detail": "Smile Design Patient"
+      "quote": "מעולם לא הרגשתי כל כך בנוח אצל רופא שיניים. המרפאה מרגישה כמו ספא — הצוות חם, מקצועי ומיומן להפליא.",
+      "name": "נועה לוי",
+      "detail": "מטופלת עיצוב חיוך"
     },
     {
-      "quote": "My implants look completely natural. Six months later I still can't believe how painless the whole process was.",
-      "name": "Avi Cohen",
-      "detail": "Implant Patient"
+      "quote": "השתלים שלי נראים טבעיים לחלוטין. שישה חודשים אחרי אני עדיין לא מאמין כמה כל התהליך היה פשוט וללא כאב.",
+      "name": "אבי כהן",
+      "detail": "מטופל שתלים"
     },
     {
-      "quote": "My kids actually look forward to their appointments here. That says everything you need to know.",
-      "name": "Miri Shapiro",
-      "detail": "Family Patient"
+      "quote": "הילדים שלי ממש מצפים לביקורים כאן. זה אומר הכל.",
+      "name": "מירי שפירו",
+      "detail": "מטופלת משפחתית"
     }
   ],
   "stats": [
-    {
-      "value": "3,200+",
-      "label": "Happy Patients"
-    },
-    {
-      "value": "14 Yrs",
-      "label": "Experience"
-    },
-    {
-      "value": "98%",
-      "label": "Satisfaction Rate"
-    },
-    {
-      "value": "12",
-      "label": "Specialists"
-    }
+    { "value": "3,200+", "label": "מטופלים מרוצים" },
+    { "value": "14", "label": "שנות ניסיון" },
+    { "value": "98%", "label": "שביעות רצון" },
+    { "value": "12", "label": "מומחים" }
   ],
   "design": {
     "packId": "slate-tech-clean"
@@ -87,7 +72,6 @@
     "h1": "טיפול שיניים שהופך חוויה",
     "heroSubtitle": "מרפאה מודרנית, צוות קשוב, תוצאות שמחייכות.",
     "tagline": "חיוך בריא. נפש רגועה.",
-    "about": "אנחנו מאמינים שטיפולי שיניים לא חייבים להיות מלחיצים. הצוות שלנו משקיע זמן בלהכיר כל מטופל, להקשיב לחששות ולתפור פתרון שמרגיש נכון. טכנולוגיה מתקדמת, אבל תמיד עם הלב.",
     "ctaMain": "קבע תור",
     "ctaSecondary": "דבר איתנו",
     "sectionLabel": "המרפאה שלנו"
