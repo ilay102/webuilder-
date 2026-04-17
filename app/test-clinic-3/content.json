@@ -6,7 +6,7 @@
     "address": "חיפה",
     "phone": "04-1234567",
     "email": "carmel@test.com",
-    "hours": "א׳–ה׳ 09:00–18:00",
+    "hours": "Sun–Thu 9:00–18:00",
     "calLink": "ilay-lankin/15min",
     "alertEmail": "carmel@test.com",
     "alertWhatsapp": "972541234567",
@@ -36,10 +36,10 @@
     }
   ],
   "photos": {
-    "hero": "/pool/dental/heroes/atikah-akhtar-XJptUS8nbhs-unsplash.jpg",
-    "about": "/pool/dental/heroes/atikah-akhtar-XJptUS8nbhs-unsplash.jpg",
-    "results": "/pool/dental/patients/Gemini_Generated_Image_p1spoap1spoap1sp.png",
-    "cta": "/pool/dental/heroes/atikah-akhtar-XJptUS8nbhs-unsplash.jpg",
+    "hero": "/pool/dental/heroes/Gemini_Generated_Image_amvponamvponamvp.png",
+    "about": "/pool/dental/heroes/Gemini_Generated_Image_amvponamvponamvp.png",
+    "results": "/pool/dental/patients/Gemini_Generated_Image_4bei9g4bei9g4bei.png",
+    "cta": "/pool/dental/heroes/Gemini_Generated_Image_amvponamvponamvp.png",
     "gallery": []
   },
   "testimonials": [
