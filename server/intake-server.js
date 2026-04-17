@@ -23,7 +23,60 @@ const PORT = process.env.PORT || 3004;
 
 const INTAKE_SECRET  = process.env.INTAKE_SECRET  || '';
 const REPO_ROOT      = path.resolve(__dirname, '..');
+
+// Legacy default photos (old pool before library model)
 const DEFAULT_PHOTOS = ['/dental-hero.png', '/dental-consult.png', '/dental-smile.png', '/dental-reception.png'];
+
+// ── Pool Manager (inline CJS — mirrors lib/pool-manager.ts) ─────────────────
+// intake-server is plain CommonJS; this avoids a TS compile dependency.
+// Schema matches pool-state.json exactly — keep in sync with lib/pool-manager.ts.
+
+const POOL_STATE_PATH = path.join(REPO_ROOT, 'pool-state.json');
+
+function _readPool() {
+  if (!fs.existsSync(POOL_STATE_PATH)) return { updatedAt: new Date().toISOString(), images: [] };
+  try   { return JSON.parse(fs.readFileSync(POOL_STATE_PATH, 'utf-8')); }
+  catch { return { updatedAt: new Date().toISOString(), images: [] }; }
+}
+
+function _writePool(pool) {
+  pool.updatedAt = new Date().toISOString();
+  fs.writeFileSync(POOL_STATE_PATH, JSON.stringify(pool, null, 2) + '\n');
+}
+
+/**
+ * Release a pool image back to 'available' when a client replaces it
+ * with their own upload via the intake form or WhatsApp bot.
+ *
+ * @param {string} slug       - the client's route slug
+ * @param {string} imagePath  - the /pool/... path that was in content.json before replacement
+ * @returns {boolean}         - true if the image was found and freed
+ */
+function freePoolImage(slug, imagePath) {
+  if (!imagePath || !imagePath.startsWith('/pool/')) return false;
+  const pool = _readPool();
+  const img  = pool.images.find(
+    i => i.assignedTo === slug && i.path === imagePath && i.status === 'in-use',
+  );
+  if (!img) return false;
+  img.status     = 'available';
+  img.assignedTo = null;
+  img.assignedAt = null;
+  _writePool(pool);
+  console.log(`[pool] Freed ${img.id} ← ${slug} replaced it with own photo`);
+  return true;
+}
+
+/**
+ * Returns true for any photo path that is a system-assigned default
+ * (old stock OR pool library) — i.e. one the client hasn't personally uploaded.
+ * Used by auto-slot detection to decide which slot to fill next.
+ */
+function isDefaultPhoto(photoPath) {
+  return !photoPath ||
+    DEFAULT_PHOTOS.includes(photoPath) ||
+    photoPath.startsWith('/pool/');
+}
 
 app.use(express.json());
 
@@ -106,17 +159,22 @@ app.post('/api/photo', auth, express.raw({ type: '*/*', limit: '25mb' }), (req, 
   const content     = JSON.parse(fs.readFileSync(contentPath, 'utf-8'));
   const photos      = content.photos || {};
 
-  // Auto-detect best slot if not specified
+  // Auto-detect best slot — fills the first slot that still has a system default
+  // (either the old stock photos OR a pool-library image the client hasn't replaced yet)
   if (slot === 'auto') {
-    if (!photos.hero   || DEFAULT_PHOTOS.includes(photos.hero))   slot = 'hero';
-    else if (!photos.about   || DEFAULT_PHOTOS.includes(photos.about))   slot = 'about';
-    else if (!photos.results || DEFAULT_PHOTOS.includes(photos.results)) slot = 'results';
-    else slot = 'gallery';
+    if      (isDefaultPhoto(photos.hero))    slot = 'hero';
+    else if (isDefaultPhoto(photos.about))   slot = 'about';
+    else if (isDefaultPhoto(photos.results)) slot = 'results';
+    else                                     slot = 'gallery';
   }
 
   try {
     const clientPublicDir = path.join(REPO_ROOT, 'public', 'clients', slug);
     fs.mkdirSync(clientPublicDir, { recursive: true });
+
+    // Capture the current path for this slot BEFORE overwriting —
+    // needed to release it from the pool if it was a library image.
+    const oldSlotPath = (slot !== 'gallery') ? (photos[slot] || null) : null;
 
     let fileName, publicPath;
     if (slot === 'gallery') {
@@ -134,11 +192,15 @@ app.post('/api/photo', auth, express.raw({ type: '*/*', limit: '25mb' }), (req, 
     fs.writeFileSync(contentPath, JSON.stringify(content, null, 2) + '\n');
     console.log(`[photo] Saved ${publicPath} for ${slug}`);
 
+    // Release the old pool image if the client replaced a library default
+    freePoolImage(slug, oldSlotPath);
+
     const relImg  = `public/clients/${slug}/${fileName}`;
     const relJson = `app/${slug}/content.json`;
-    execSync(`git add "${relImg}" "${relJson}"`,                { cwd: REPO_ROOT, stdio: 'pipe' });
-    execSync(`git commit -m "photos: ${slot} for ${slug}"`,    { cwd: REPO_ROOT, stdio: 'pipe' });
-    execSync('git push',                                        { cwd: REPO_ROOT, stdio: 'pipe' });
+    // pool-state.json is always staged — git add is a no-op if unchanged
+    execSync(`git add "${relImg}" "${relJson}" "pool-state.json"`, { cwd: REPO_ROOT, stdio: 'pipe' });
+    execSync(`git commit -m "photos: ${slot} for ${slug}"`,        { cwd: REPO_ROOT, stdio: 'pipe' });
+    execSync('git push',                                            { cwd: REPO_ROOT, stdio: 'pipe' });
     console.log(`[photo] Pushed — Vercel rebuilding ${slug}`);
 
     res.json({ ok: true, slot, path: publicPath });

@@ -1,0 +1,159 @@
+{
+  "updatedAt": "2026-04-17T09:57:09.822Z",
+  "images": [
+    {
+      "id": "heroes/Gemini_Generated_Image_amvponamvponamvp.png",
+      "type": "hero",
+      "path": "/pool/dental/heroes/Gemini_Generated_Image_amvponamvponamvp.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-17T09:57:09.810Z",
+      "notes": ""
+    },
+    {
+      "id": "heroes/Gemini_Generated_Image_mf4i5umf4i5umf4i.png",
+      "type": "hero",
+      "path": "/pool/dental/heroes/Gemini_Generated_Image_mf4i5umf4i5umf4i.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-17T09:57:09.812Z",
+      "notes": ""
+    },
+    {
+      "id": "heroes/Gemini_Generated_Image_vtdf96vtdf96vtdf.png",
+      "type": "hero",
+      "path": "/pool/dental/heroes/Gemini_Generated_Image_vtdf96vtdf96vtdf.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-17T09:57:09.812Z",
+      "notes": ""
+    },
+    {
+      "id": "heroes/Gemini_Generated_Image_z6mpqvz6mpqvz6mp.png",
+      "type": "hero",
+      "path": "/pool/dental/heroes/Gemini_Generated_Image_z6mpqvz6mpqvz6mp.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-17T09:57:09.813Z",
+      "notes": ""
+    },
+    {
+      "id": "heroes/atikah-akhtar-XJptUS8nbhs-unsplash.jpg",
+      "type": "hero",
+      "path": "/pool/dental/heroes/atikah-akhtar-XJptUS8nbhs-unsplash.jpg",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-17T09:57:09.814Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_4bei9g4bei9g4bei.png",
+      "type": "patient",
+      "path": "/pool/dental/patients/Gemini_Generated_Image_4bei9g4bei9g4bei.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-17T09:57:09.815Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_a2k33ta2k33ta2k3.png",
+      "type": "patient",
+      "path": "/pool/dental/patients/Gemini_Generated_Image_a2k33ta2k33ta2k3.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-17T09:57:09.815Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_bfkwrebfkwrebfkw.png",
+      "type": "patient",
+      "path": "/pool/dental/patients/Gemini_Generated_Image_bfkwrebfkwrebfkw.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-17T09:57:09.815Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_ew0abyew0abyew0a.png",
+      "type": "patient",
+      "path": "/pool/dental/patients/Gemini_Generated_Image_ew0abyew0abyew0a.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-17T09:57:09.816Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_p1spoap1spoap1sp.png",
+      "type": "patient",
+      "path": "/pool/dental/patients/Gemini_Generated_Image_p1spoap1spoap1sp.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-17T09:57:09.816Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_so8q1xso8q1xso8q.png",
+      "type": "patient",
+      "path": "/pool/dental/patients/Gemini_Generated_Image_so8q1xso8q1xso8q.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-17T09:57:09.818Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_uudiu6uudiu6uudi (1).png",
+      "type": "patient",
+      "path": "/pool/dental/patients/Gemini_Generated_Image_uudiu6uudiu6uudi (1).png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-17T09:57:09.819Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_whdnwkwhdnwkwhdn.png",
+      "type": "patient",
+      "path": "/pool/dental/patients/Gemini_Generated_Image_whdnwkwhdnwkwhdn.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-17T09:57:09.820Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_z3fwvrz3fwvrz3fw.png",
+      "type": "patient",
+      "path": "/pool/dental/patients/Gemini_Generated_Image_z3fwvrz3fwvrz3fw.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-17T09:57:09.822Z",
+      "notes": ""
+    }
+  ]
+}

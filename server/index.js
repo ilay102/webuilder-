@@ -19,7 +19,48 @@ const REPO_ROOT    = path.resolve(__dirname, '..')
 const INTAKE_PORT  = process.env.INTAKE_PORT   || 3001
 const INTAKE_SECRET = process.env.INTAKE_SECRET || ''
 const SITE_BASE_URL = process.env.SITE_BASE_URL || 'https://webuilder-liart.vercel.app'
-const CLIENTS_FILE  = path.join(REPO_ROOT, 'clients.json')
+const CLIENTS_FILE    = path.join(REPO_ROOT, 'clients.json')
+const POOL_STATE_PATH = path.join(REPO_ROOT, 'pool-state.json')
+
+// ── Pool Manager (inline CJS — mirrors lib/pool-manager.ts) ──────────────────
+function _readPool() {
+  if (!fs.existsSync(POOL_STATE_PATH)) return { updatedAt: new Date().toISOString(), images: [] }
+  try   { return JSON.parse(fs.readFileSync(POOL_STATE_PATH, 'utf-8')) }
+  catch { return { updatedAt: new Date().toISOString(), images: [] } }
+}
+function _writePool(pool) {
+  pool.updatedAt = new Date().toISOString()
+  fs.writeFileSync(POOL_STATE_PATH, JSON.stringify(pool, null, 2) + '\n')
+}
+/** Free all in-use pool images for a slug. Called on client churn. */
+function _freeImages(slug) {
+  const pool  = _readPool()
+  const freed = []
+  for (const img of pool.images) {
+    if (img.assignedTo === slug && img.status === 'in-use') {
+      img.status     = 'available'
+      img.assignedTo = null
+      img.assignedAt = null
+      freed.push(img.id)
+    }
+  }
+  if (freed.length > 0) _writePool(pool)
+  return freed
+}
+/** Permanently lock all in-use pool images for a slug. Called on confirmed payment. */
+function _lockImages(slug) {
+  const pool   = _readPool()
+  const locked = []
+  for (const img of pool.images) {
+    if (img.assignedTo === slug && img.status === 'in-use') {
+      img.status   = 'locked'
+      img.lockedAt = new Date().toISOString()
+      locked.push(img.id)
+    }
+  }
+  if (locked.length > 0) _writePool(pool)
+  return locked
+}
 
 app.use(cors())
 app.use(express.json())
@@ -477,15 +518,26 @@ app.patch('/api/clients/:slug', (req, res) => {
   res.json(client)
 })
 
-// DELETE /api/clients/:slug — mark as churned (soft delete)
+// DELETE /api/clients/:slug — mark as churned + free pool images
 app.delete('/api/clients/:slug', (req, res) => {
   const clients = readClients()
   const idx = clients.findIndex(c => c.slug === req.params.slug)
   if (idx === -1) return res.status(404).json({ error: 'Not found' })
-  clients[idx].status = 'churned'
+  const slug = req.params.slug
+  clients[idx].status    = 'churned'
   clients[idx].updatedAt = new Date().toISOString()
   writeClients(clients)
-  res.json({ ok: true })
+  const freed = _freeImages(slug)
+  if (freed.length > 0) console.log(`[pool] Churn ${slug} → freed: ${freed.join(', ')}`)
+  res.json({ ok: true, freedImages: freed })
+})
+
+// POST /api/clients/:slug/lock — permanently lock pool images (client paid + kept defaults)
+app.post('/api/clients/:slug/lock', (req, res) => {
+  const slug   = req.params.slug
+  const locked = _lockImages(slug)
+  if (locked.length > 0) console.log(`[pool] Lock ${slug} → locked: ${locked.join(', ')}`)
+  res.json({ ok: true, lockedImages: locked })
 })
 
 // ── Health check ──────────────────────────────────────────────────────────────

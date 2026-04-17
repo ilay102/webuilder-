@@ -28,9 +28,10 @@ import fs   from 'fs';
 import path from 'path';
 import { execSync }  from 'child_process';
 import { parseArgs } from 'node:util';
-import { pickVariant } from '../lib/variance';
-import { getPack }     from '../lib/design-packs';
-import { generateCopy } from '../lib/generate-copy';
+import { pickVariant }                                from '../lib/variance';
+import { getPack }                                   from '../lib/design-packs';
+import { generateCopy }                              from '../lib/generate-copy';
+import { allocateImage, freeImages, type PoolImage } from '../lib/pool-manager';
 
 const BASE_URL        = 'https://webuilder-liart.vercel.app';
 const VERCEL_TOKEN    = process.env.VERCEL_TOKEN ?? '';
@@ -221,10 +222,23 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     ? JSON.parse(fs.readFileSync(templateContentPath, 'utf-8'))
     : { biz: {}, services: [], photos: {}, testimonials: [], stats: [] };
 
-  // ── Automated Variance: design pack + hero assignment ──────────
+  // ── Design pack: deterministic hash from slug (vibe flag can restrict later) ──
   const variant = pickVariant(c.route, c.template, c.city);
   const pack    = getPack(variant.packId);
-  process.stderr.write(`[variance] ${c.route} → pack=${pack.id}, hero=${variant.heroPhoto}\n`);
+
+  // ── Image pool: allocate hero + patient from unified library (FIFO) ──────────
+  let hero!:    PoolImage;
+  let patient!: PoolImage;
+  try {
+    hero    = allocateImage('hero',    c.route);
+    patient = allocateImage('patient', c.route);
+    process.stderr.write(
+      `[pool] ${c.route} → pack=${pack.id}  hero=${hero.id}  patient=${patient.id}\n`,
+    );
+  } catch (e: any) {
+    freeImages(c.route); // roll back any partial allocation before failing
+    throw new Error(`Image pool exhausted — ${e.message}`);
+  }
 
   // ── AI copy generation (unique H1/tagline per client) ──────────
   let copy;
@@ -259,13 +273,14 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     template:      c.template,
   };
 
-  // Seed photo slots with deterministic hero pool selections (client can override later)
+  // Seed photo slots from pool — client overrides any slot via intake form or WhatsApp
   baseContent.photos = {
     ...(baseContent.photos || {}),
-    hero:    baseContent.photos?.hero    || variant.heroPhoto,
-    about:   baseContent.photos?.about   || variant.aboutPhoto,
-    results: baseContent.photos?.results || variant.resultsPhoto,
-    cta:     baseContent.photos?.cta     || variant.ctaPhoto,
+    hero:    baseContent.photos?.hero    || hero.path,     // clinic environment
+    about:   baseContent.photos?.about   || hero.path,     // reuse hero for about section
+    results: baseContent.photos?.results || patient.path,  // patient portrait for results
+    cta:     baseContent.photos?.cta     || hero.path,     // reuse hero for CTA section
+    gallery: baseContent.photos?.gallery || [],
   };
 
   // Bake in design pack id + AI copy
@@ -284,11 +299,19 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     await addDomainToVercel(domain);
   }
 
-  // Git push → Vercel auto-deploys (skip commit if nothing changed)
-  execSync(
-    `git add app/${c.route} domains.json && (git diff --staged --quiet || git commit -m "demo: ${c.route}") && git pull --rebase && git push`,
-    { cwd: process.cwd(), stdio: 'pipe' }
-  );
+  // Git push → Vercel auto-deploys. pool-state.json committed alongside demo files.
+  try {
+    execSync(
+      `git add app/${c.route} domains.json pool-state.json && ` +
+      `(git diff --staged --quiet || git commit -m "demo: ${c.route}") && ` +
+      `git pull --rebase && git push`,
+      { cwd: process.cwd(), stdio: 'pipe' },
+    );
+  } catch (gitErr: any) {
+    // Push failed — release the pool images so they can be used by the next demo
+    freeImages(c.route);
+    throw new Error(`Git push failed (images released back to pool): ${gitErr.message}`);
+  }
 
   const siteUrl = c.domain
     ? `https://${c.domain.replace(/^www\./, '')}`
