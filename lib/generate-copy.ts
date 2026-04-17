@@ -153,7 +153,7 @@ Return this exact JSON shape (all fields ${langLabel}):
 
     if (!res.ok) {
       console.warn('[copy] Gemini non-200:', res.status)
-      return FALLBACK
+      return getFallback(args.businessName, args.city)
     }
 
     const data = await res.json() as any
@@ -166,14 +166,15 @@ Return this exact JSON shape (all fields ${langLabel}):
     const parsed = JSON.parse(raw)
 
     // Validate all fields present; fall back per-field if missing
+    const fb = getFallback(args.businessName, args.city)
     return {
-      h1:           (parsed.h1           || FALLBACK.h1).trim(),
-      heroSubtitle: (parsed.heroSubtitle || FALLBACK.heroSubtitle).trim(),
-      tagline:      (parsed.tagline      || FALLBACK.tagline).trim(),
-      about:        (parsed.about        || FALLBACK.about).trim(),
-      ctaMain:      (parsed.ctaMain      || FALLBACK.ctaMain).trim(),
-      ctaSecondary: (parsed.ctaSecondary || FALLBACK.ctaSecondary).trim(),
-      sectionLabel: (parsed.sectionLabel || FALLBACK.sectionLabel).trim(),
+      h1:           (parsed.h1           || fb.h1).trim(),
+      heroSubtitle: (parsed.heroSubtitle || fb.heroSubtitle).trim(),
+      tagline:      (parsed.tagline      || fb.tagline).trim(),
+      about:        (parsed.about        || fb.about).trim(),
+      ctaMain:      (parsed.ctaMain      || fb.ctaMain).trim(),
+      ctaSecondary: (parsed.ctaSecondary || fb.ctaSecondary).trim(),
+      sectionLabel: (parsed.sectionLabel || fb.sectionLabel).trim(),
     }
   } catch (e: any) {
     console.warn('[copy] generation failed:', e.message)
