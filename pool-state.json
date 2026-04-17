@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-04-17T11:01:11.823Z",
+  "updatedAt": "2026-04-17T11:13:54.082Z",
   "images": [
     {
       "id": "heroes/Gemini_Generated_Image_amvponamvponamvp.png",
@@ -16,9 +16,9 @@
       "id": "heroes/Gemini_Generated_Image_mf4i5umf4i5umf4i.png",
       "type": "hero",
       "path": "/pool/dental/heroes/Gemini_Generated_Image_mf4i5umf4i5umf4i.png",
-      "status": "available",
-      "assignedTo": null,
-      "assignedAt": null,
+      "status": "in-use",
+      "assignedTo": "test-clinic-1",
+      "assignedAt": "2026-04-17T11:13:54.082Z",
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.812Z",
       "notes": ""
@@ -71,9 +71,9 @@
       "id": "patients/Gemini_Generated_Image_a2k33ta2k33ta2k3.png",
       "type": "patient",
       "path": "/pool/dental/patients/Gemini_Generated_Image_a2k33ta2k33ta2k3.png",
-      "status": "available",
-      "assignedTo": null,
-      "assignedAt": null,
+      "status": "in-use",
+      "assignedTo": "test-clinic-1",
+      "assignedAt": "2026-04-17T11:13:54.082Z",
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.815Z",
       "notes": ""
