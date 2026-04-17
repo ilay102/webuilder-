@@ -44,9 +44,9 @@ const COPY = {
   heroSubtitle: (content as any).copy?.heroSubtitle ?? null,
   tagline:      (content as any).copy?.tagline      ?? null,
   about:        (content as any).copy?.about        ?? null,
-  ctaMain:      (content as any).copy?.ctaMain      ?? 'Book a Free Consultation',
-  ctaSecondary: (content as any).copy?.ctaSecondary ?? 'View Our Services',
-  sectionLabel: (content as any).copy?.sectionLabel ?? `Premium Dental Care · ${content.biz.city}`,
+  ctaMain:      (content as any).copy?.ctaMain      ?? 'קבע ייעוץ חינם',
+  ctaSecondary: (content as any).copy?.ctaSecondary ?? 'לכל השירותים',
+  sectionLabel: (content as any).copy?.sectionLabel ?? `מרפאת שיניים מובילה · ${content.biz.city}`,
 };
 
 /* Google Fonts loader — injects the pack's heading + body fonts at runtime. */
@@ -169,7 +169,7 @@ export default function DentalPage() {
   const photos       = content.photos;
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', fontFamily: F.body }}>
+    <div dir="rtl" style={{ background: C.bg, minHeight: '100vh', fontFamily: F.body }}>
       {/* Pack-aware font loader (injects Google Fonts for the assigned design pack) */}
       <DesignPackFonts />
 
@@ -223,11 +223,11 @@ export default function DentalPage() {
             </span>
           </div>
           <div className="nav-links" style={{ display: 'flex', gap: 40, alignItems: 'center' }}>
-            {['Services', 'About', 'Testimonials'].map(item => (
-              <a key={item} href={`#${item.toLowerCase()}`} style={{ fontFamily: F.body, fontSize: 15, color: C.charcoal, textDecoration: 'none', fontWeight: 500, opacity: 0.75, transition: 'opacity 0.2s' }}
+            {[['שירותים', 'services'], ['אודות', 'about'], ['המלצות', 'testimonials']].map(([label, id]) => (
+              <a key={id} href={`#${id}`} style={{ fontFamily: F.body, fontSize: 15, color: C.charcoal, textDecoration: 'none', fontWeight: 500, opacity: 0.75, transition: 'opacity 0.2s' }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
                 onMouseLeave={e => (e.currentTarget.style.opacity = '0.75')}>
-                {item}
+                {label}
               </a>
             ))}
             <button className="nav-book" style={{
@@ -236,7 +236,7 @@ export default function DentalPage() {
             }}
               onMouseEnter={e => (e.currentTarget.style.background = C.forestDim)}
               onMouseLeave={e => (e.currentTarget.style.background = C.forest)}>
-              Book Now
+              קבע תור
             </button>
           </div>
         </div>
@@ -271,7 +271,7 @@ export default function DentalPage() {
           className="hero-grad"
           style={{
             position: 'absolute', inset: 0,
-            background: `linear-gradient(to right, ${C.bg}e8 38%, ${C.bg}30 70%, transparent 100%)`,
+            background: `linear-gradient(to left, ${C.bg}e8 38%, ${C.bg}30 70%, transparent 100%)`,
           }}
         />
 
@@ -286,7 +286,7 @@ export default function DentalPage() {
             >
               {COPY.h1
                 ? <span>{COPY.h1}</span>
-                : <>Your Smile,<br /><span style={{ color: C.forest }}>Our Passion</span></>}
+                : <>החיוך שלך,<br /><span style={{ color: C.forest }}>הסיפור שלנו</span></>}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.3 }}
@@ -318,6 +318,7 @@ export default function DentalPage() {
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(42,42,42,0.20)'; e.currentTarget.style.color = C.charcoal; }}>
                 {COPY.ctaSecondary}
               </button>
+
             </motion.div>
           </div>
         </div>
@@ -338,13 +339,13 @@ export default function DentalPage() {
 
       {/* ── SERVICES ── */}
       <section id="services" className="services-wrap" style={{ padding: '120px 80px', maxWidth: 1200, margin: '0 auto' }}>
-        <SectionLabel>What We Offer</SectionLabel>
+        <SectionLabel>מה אנחנו מציעים</SectionLabel>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 64, gap: 32 }}>
           <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 480 }}>
-            Complete Care,<br /><span style={{ color: C.forest }}>One Trusted Place</span>
+            טיפול מלא,<br /><span style={{ color: C.forest }}>מקום אחד בטוח</span>
           </h2>
           <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.75, maxWidth: 340 }}>
-            From your first check-up to full smile transformations — every treatment is performed by specialists who genuinely care.
+            מהבדיקה הראשונה ועד לשינוי חיוך מלא — כל טיפול מבוצע על ידי מומחים שבאמת אכפת להם.
           </p>
         </div>
         <div className="services-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
@@ -357,29 +358,29 @@ export default function DentalPage() {
         <div className="about-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
           <motion.div initial={{ opacity: 0, x: -32 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} style={{ position: 'relative' }}>
             <img src={photos.about} alt="Dentist consulting with patient" style={{ width: '100%', height: 480, objectFit: 'cover', borderRadius: 24, display: 'block' }} />
-            <div className="hide-mobile" style={{ position: 'absolute', bottom: 28, left: -28, background: C.white, borderRadius: 16, padding: '20px 24px', boxShadow: '0 16px 48px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div className="hide-mobile" style={{ position: 'absolute', bottom: 28, right: -28, background: C.white, borderRadius: 16, padding: '20px 24px', boxShadow: '0 16px 48px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 48, height: 48, borderRadius: 12, background: C.sageLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🏆</div>
               <div>
-                <div style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 15, color: C.charcoal }}>Top Rated Clinic</div>
+                <div style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 15, color: C.charcoal }}>המרפאה המובילה</div>
                 <div style={{ fontFamily: F.body, fontSize: 13, color: C.muted }}>{BIZ.city} · 2024</div>
               </div>
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, x: 32 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.15 }}>
-            <SectionLabel>About Us</SectionLabel>
+            <SectionLabel>אודות המרפאה</SectionLabel>
             <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 24 }}>
-              Dentistry That Feels Like a <span style={{ color: C.forest }}>Sanctuary</span>
+              רפואת שיניים שמרגישה כמו <span style={{ color: C.forest }}>מקלט</span>
             </h2>
             <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 20 }}>
-              We built {BIZ.name} because we believed dental visits shouldn&apos;t feel clinical or stressful. Our clinic is designed from the ground up to be calm, beautiful and reassuring — without compromising on precision.
+              הקמנו את {BIZ.name} כי האמנו שביקור אצל רופא שיניים לא חייב להרגיש קליני או מלחיץ. המרפאה שלנו תוכננה מהיסוד להיות רגועה, יפה ומרגיעה — מבלי להתפשר על הדיוק.
             </p>
             <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 40 }}>
-              Every detail — from the oak cabinetry to the large garden-facing windows — is intentional. Our team of specialists brings warmth and expertise together, every single appointment.
+              כל פרט — מהעיצוב הפנימי ועד לחלונות הגדולים — הוא מכוון. הצוות שלנו משלב חום ומקצועיות בכל תור ותור.
             </p>
             <button style={{ background: C.forest, color: '#fff', fontFamily: F.label, fontWeight: 700, fontSize: 14, padding: '14px 32px', borderRadius: 99, border: 'none', cursor: 'pointer', transition: 'all 0.2s ease' }}
               onMouseEnter={e => { e.currentTarget.style.background = C.forestDim; }}
               onMouseLeave={e => { e.currentTarget.style.background = C.forest; }}>
-              Meet Our Team →
+              הכירו את הצוות ←
             </button>
           </motion.div>
         </div>
@@ -388,15 +389,15 @@ export default function DentalPage() {
       {/* ── RESULTS ── */}
       <section className="results-section" style={{ padding: '120px 80px', maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
         <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
-          <SectionLabel>Results</SectionLabel>
+          <SectionLabel>תוצאות</SectionLabel>
           <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 24 }}>
-            Real Smiles,<br /><span style={{ color: C.forest }}>Real Confidence</span>
+            חיוכים אמיתיים,<br /><span style={{ color: C.forest }}>ביטחון אמיתי</span>
           </h2>
           <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 40 }}>
-            Every smile we transform is a story. Whether it&apos;s whitening, veneers, or a complete smile makeover — we work with your natural features to create results that feel authentically you.
+            כל חיוך שאנו משנים הוא סיפור. בין אם מדובר בהלבנה, ציפויים או שינוי חיוך מלא — אנחנו עובדים עם המאפיינים הטבעיים שלך כדי ליצור תוצאות שמרגישות כמוך.
           </p>
           <div className="results-mini" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-            {[{ value: '1,200+', label: 'Smile Makeovers' }, { value: '4.9★', label: 'Average Rating' }].map(({ value, label }) => (
+            {[{ value: '1,200+', label: 'שיפורי חיוך' }, { value: '4.9★', label: 'דירוג ממוצע' }].map(({ value, label }) => (
               <div key={label} style={{ background: C.sageLight, borderRadius: 16, padding: '24px 20px' }}>
                 <div style={{ fontFamily: F.serif, fontSize: 28, fontWeight: 800, color: C.forest }}>{value}</div>
                 <div style={{ fontFamily: F.body, fontSize: 13, color: C.sage, marginTop: 4 }}>{label}</div>
@@ -412,9 +413,9 @@ export default function DentalPage() {
       {/* ── TESTIMONIALS ── */}
       <section id="testimonials" className="testimonials-wrap" style={{ background: C.bgAlt, padding: '120px 80px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <SectionLabel>Testimonials</SectionLabel>
+          <SectionLabel>המלצות</SectionLabel>
           <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 64 }}>
-            What Our Patients Say
+            מה המטופלים שלנו אומרים
           </h2>
           <div className="testimonials-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
             {testimonials.map((t, i) => <Testimonial key={t.name} {...t} delay={i * 0.1} />)}
@@ -428,12 +429,12 @@ export default function DentalPage() {
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(45,107,85,0.75)' }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', textAlign: 'center' as const, padding: '0 40px' }}>
           <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
-            <Tag>Ready to Start?</Tag>
+            <Tag>מוכנים להתחיל?</Tag>
             <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(32px, 4.5vw, 56px)', fontWeight: 700, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.1, margin: '24px 0', maxWidth: 640 }}>
-              Your Perfect Smile is One Appointment Away
+              החיוך המושלם שלך במרחק תור אחד
             </h2>
             <p style={{ fontFamily: F.body, fontSize: 17, color: 'rgba(255,255,255,0.80)', marginBottom: 40, maxWidth: 440 }}>
-              First consultation is free. No pressure, no commitment — just a friendly conversation about your smile goals.
+              הייעוץ הראשון חינם. ללא לחץ, ללא התחייבות — רק שיחה ידידותית על מטרות החיוך שלך.
             </p>
             <CalBooking calLink={BIZ.calLink} brandColor={C.forest}>
               <button style={{
@@ -443,7 +444,7 @@ export default function DentalPage() {
               }}
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 16px 48px rgba(0,0,0,0.25)'; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.20)'; }}>
-                Book Free Consultation
+                קבע ייעוץ חינם
               </button>
             </CalBooking>
           </motion.div>
@@ -462,13 +463,13 @@ export default function DentalPage() {
                 <span style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 18, color: '#fff' }}>{BIZ.name}</span>
               </div>
               <p style={{ fontFamily: F.body, fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.8, maxWidth: 260 }}>
-                Premium dental care in the heart of {BIZ.city}. Where your comfort and confidence come first.
+                טיפול שיניים פרמיום בלב {BIZ.city}. הנוחות והביטחון שלך הם העדיפות שלנו.
               </p>
             </div>
             {[
-              { title: 'Services', links: ['Aesthetic Dentistry', 'Implants', 'Orthodontics', 'Preventive Care'] },
-              { title: 'Clinic',   links: ['About Us', 'Our Team', 'Gallery', 'Blog'] },
-              { title: 'Contact',  links: [BIZ.phone, BIZ.email, BIZ.address, BIZ.hours] },
+              { title: 'שירותים', links: ['אסתטיקת שיניים', 'שתלים', 'יישור שיניים', 'טיפול מונע'] },
+              { title: 'המרפאה', links: ['אודות', 'הצוות שלנו', 'גלריה', 'בלוג'] },
+              { title: 'צור קשר', links: [BIZ.phone, BIZ.email, BIZ.address, BIZ.hours] },
             ].map(({ title, links }) => (
               <div key={title}>
                 <div style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 14, color: '#fff', marginBottom: 20, letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>{title}</div>
@@ -479,8 +480,8 @@ export default function DentalPage() {
             ))}
           </div>
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>© 2026 {BIZ.name}. All rights reserved.</span>
-            <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>Built with care ✦</span>
+            <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>© 2026 {BIZ.name}. כל הזכויות שמורות.</span>
+            <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>נבנה באהבה ✦</span>
           </div>
         </div>
       </footer>
@@ -497,20 +498,20 @@ export default function DentalPage() {
       {/* ── CHATBOT ── */}
       <Chatbot config={{
         name:          BIZ.name,
-        type:          'dental clinic',
+        type:          'מרפאת שיניים',
         location:      BIZ.city,
         phone:         BIZ.phone,
         hours:         BIZ.hours,
         services:      services.map(s => s.title),
-        offer:         'Free first consultation',
+        offer:         'ייעוץ ראשון חינם',
         brandColor:    C.forest,
-        greeting:      `Hi! 👋 I'm the ${BIZ.name} assistant. How can I help you today?`,
+        greeting:      `שלום! 👋 אני העוזר של ${BIZ.name}. במה אוכל לעזור?`,
         clientEmail:   BIZ.alertEmail,
         clientWhatsapp: BIZ.alertWhatsapp,
       }} />
 
       {/* ── FLOATING BOOK BUTTON ── */}
-      <CalFloatingButton calLink={BIZ.calLink} brandColor={C.forest} label="Book Appointment" buttonStyle={{ borderRadius: 99 }} />
+      <CalFloatingButton calLink={BIZ.calLink} brandColor={C.forest} label="קבע תור" buttonStyle={{ borderRadius: 99 }} />
 
     </div>
   );

@@ -273,14 +273,13 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     template:      c.template,
   };
 
-  // Seed photo slots from pool — client overrides any slot via intake form or WhatsApp
+  // Always use fresh pool images — never inherit template photos
   baseContent.photos = {
-    ...(baseContent.photos || {}),
-    hero:    baseContent.photos?.hero    || hero.path,     // clinic environment
-    about:   baseContent.photos?.about   || hero.path,     // reuse hero for about section
-    results: baseContent.photos?.results || patient.path,  // patient portrait for results
-    cta:     baseContent.photos?.cta     || hero.path,     // reuse hero for CTA section
-    gallery: baseContent.photos?.gallery || [],
+    hero:    hero.path,
+    about:   hero.path,
+    results: patient.path,
+    cta:     hero.path,
+    gallery: [],
   };
 
   // Bake in design pack id + AI copy

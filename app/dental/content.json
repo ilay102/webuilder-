@@ -1,12 +1,12 @@
 {
   "biz": {
-    "name": "typeeee",
-    "tagline": "A boutique dental clinic where cutting-edge technology meets a calm, welcoming environment. Because great dental care should feel like self-care.",
-    "city": "Tel Aviv",
-    "address": "Rothschild Blvd, TLV",
+    "name": "מרפאת השיניים שלנו",
+    "tagline": "מרפאה בוטיק שבה טכנולוגיה מתקדמת פוגשת סביבה רגועה ומזמינה. כי טיפול שיניים מעולה צריך להרגיש כמו טיפול עצמי.",
+    "city": "תל אביב",
+    "address": "רוטשילד בלבד, תל אביב",
     "phone": "03-000-0000",
     "email": "",
-    "hours": "Sun–Thu 8:00–17:00",
+    "hours": "א׳–ה׳ 08:00–17:00",
     "calLink": "ilay-lankin/15min",
     "alertEmail": "ilay1bgu@gmail.com",
     "alertWhatsapp": "972534638880"
@@ -14,68 +14,65 @@
   "services": [
     {
       "icon": "✦",
-      "title": "Aesthetic Dentistry",
-      "desc": "Veneers, whitening, and smile design crafted to complement your natural beauty."
+      "title": "אסתטיקת שיניים",
+      "desc": "ציפויים, הלבנה ועיצוב חיוך — מותאמים בדיוק ליופי הטבעי שלך."
     },
     {
       "icon": "◈",
-      "title": "Dental Implants",
-      "desc": "Titanium implants that feel and look completely natural. Lifetime results."
+      "title": "שתלי שיניים",
+      "desc": "שתלי טיטניום שמרגישים ונראים כמו שן טבעית. תוצאות לכל החיים."
     },
     {
       "icon": "◉",
-      "title": "Orthodontics",
-      "desc": "Invisible aligners and clear braces — straighten your smile discreetly."
+      "title": "יישור שיניים",
+      "desc": "מיישרים שקופים ומסילות בלתי נראות — יישרי את החיוך בדיסקרטיות."
     },
     {
       "icon": "○",
-      "title": "Root Canal",
-      "desc": "Painless, precise endodontic treatment with full digital guidance."
+      "title": "טיפול שורש",
+      "desc": "טיפול שורש ללא כאב, מדויק ומונחה דיגיטלית לאורך כל הדרך."
     }
   ],
   "photos": {
-    "hero": "/clients/dental/hero.jpg",
-    "about": "/clients/dental/about.jpg",
-    "results": "/dental-smile.png",
-    "cta": "/dental-reception.png",
-    "gallery": [
-      "/clients/dental/gallery-1.jpg",
-      "/clients/dental/gallery-2.jpg"
-    ]
+    "hero": null,
+    "about": null,
+    "results": null,
+    "cta": null,
+    "gallery": []
   },
   "testimonials": [
     {
-      "quote": "I've never felt so comfortable at a dentist. The clinic feels like a spa — the team is warm, professional and incredibly skilled.",
-      "name": "Noa Levi",
-      "detail": "Smile Design Patient"
+      "quote": "מעולם לא הרגשתי כל כך בנוח אצל רופא שיניים. המרפאה מרגישה כמו ספא — הצוות חם, מקצועי ומיומן להפליא.",
+      "name": "נועה לוי",
+      "detail": "מטופלת עיצוב חיוך"
     },
     {
-      "quote": "My implants look completely natural. Six months later I still can't believe how painless the whole process was.",
-      "name": "Avi Cohen",
-      "detail": "Implant Patient"
+      "quote": "השתלים שלי נראים טבעיים לחלוטין. שישה חודשים אחרי אני עדיין לא מאמין כמה כל התהליך היה פשוט וללא כאב.",
+      "name": "אבי כהן",
+      "detail": "מטופל שתלים"
     },
     {
-      "quote": "My kids actually look forward to their appointments here. That says everything you need to know.",
-      "name": "Miri Shapiro",
-      "detail": "Family Patient"
+      "quote": "הילדים שלי ממש מצפים לביקורים כאן. זה אומר הכל.",
+      "name": "מירי שפירו",
+      "detail": "מטופלת משפחתית"
     }
   ],
   "stats": [
     {
       "value": "3,200+",
-      "label": "Happy Patients"
+      "label": "מטופלים מרוצים"
     },
     {
-      "value": "14 Yrs",
-      "label": "Experience"
+      "value": "14",
+      "label": "שנות ניסיון"
     },
     {
       "value": "98%",
-      "label": "Satisfaction Rate"
+      "label": "שביעות רצון"
     },
     {
       "value": "12",
-      "label": "Specialists"
+      "label": "מומחים"
     }
   ]
 }
