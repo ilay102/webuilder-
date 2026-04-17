@@ -157,7 +157,12 @@ Return this exact JSON shape (all fields ${langLabel}):
     }
 
     const data = await res.json() as any
-    const raw  = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}'
+    let raw = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}'
+    // Strip markdown code fences if Gemini wraps JSON in ```json ... ```
+    raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()
+    // Extract first valid JSON object if there's surrounding text
+    const jsonMatch = raw.match(/\{[\s\S]*\}/)
+    raw = jsonMatch ? jsonMatch[0] : raw
     const parsed = JSON.parse(raw)
 
     // Validate all fields present; fall back per-field if missing
