@@ -1,15 +1,15 @@
 {
   "biz": {
-    "name": "מרפאת בדיקה",
-    "tagline": "חיוך בריא. נפש רגועה.",
+    "name": "מרפאת השיניים של ד״ר לוי",
+    "tagline": "שקט. דיוק. חיוך.",
     "city": "תל אביב",
     "address": "תל אביב",
-    "phone": "03-1234567",
-    "email": "test@test.com",
+    "phone": "03-555-0001",
+    "email": "test1@example.com",
     "hours": "א׳–ה׳ 09:00–18:00",
     "calLink": "ilay-lankin/15min",
-    "alertEmail": "test@test.com",
-    "alertWhatsapp": "972501234567",
+    "alertEmail": "test1@example.com",
+    "alertWhatsapp": "972500000001",
     "domain": null,
     "template": "dental"
   },
@@ -17,61 +17,75 @@
     {
       "icon": "✦",
       "title": "אסתטיקת שיניים",
-      "desc": "ציפויים, הלבנה ועיצוב חיוך — מותאמים בדיוק ליופי הטבעי שלך."
+      "desc": "הלבנה, ציפויים ועיצוב חיוך — בגישה שמרנית שמכבדת את היופי הטבעי שלך."
     },
     {
       "icon": "◈",
       "title": "שתלי שיניים",
-      "desc": "שתלי טיטניום שמרגישים ונראים כמו שן טבעית. תוצאות לכל החיים."
+      "desc": "שתלי טיטניום בתכנון תלת-מימדי, עם תוצאות יציבות לעשרות שנים."
     },
     {
       "icon": "◉",
       "title": "יישור שיניים",
-      "desc": "מיישרים שקופים ומסילות בלתי נראות — יישרי את החיוך בדיסקרטיות."
+      "desc": "מיישרים שקופים בהתאמה אישית — נוחים, דיסקרטיים, יעילים."
     },
     {
       "icon": "○",
       "title": "טיפול שורש",
-      "desc": "טיפול שורש ללא כאב, מדויק ומונחה דיגיטלית לאורך כל הדרך."
+      "desc": "טיפול שורש שקט, מהיר ומדויק — בעזרת מיקרוסקופ ומכשור מתקדם."
     }
   ],
   "photos": {
-    "hero": "/pool/dental/heroes/Gemini_Generated_Image_mf4i5umf4i5umf4i.png",
-    "about": "/pool/dental/heroes/Gemini_Generated_Image_mf4i5umf4i5umf4i.png",
-    "results": "/pool/dental/patients/Gemini_Generated_Image_a2k33ta2k33ta2k3.png",
-    "cta": "/pool/dental/heroes/Gemini_Generated_Image_mf4i5umf4i5umf4i.png",
+    "hero": "/pool/dental/heroes/Gemini_Generated_Image_amvponamvponamvp.png",
+    "about": "/pool/dental/heroes/Gemini_Generated_Image_amvponamvponamvp.png",
+    "results": "/pool/dental/patients/Gemini_Generated_Image_4bei9g4bei9g4bei.png",
+    "cta": "/pool/dental/heroes/Gemini_Generated_Image_amvponamvponamvp.png",
     "gallery": []
   },
   "testimonials": [
     {
-      "quote": "מעולם לא הרגשתי כל כך בנוח אצל רופא שיניים. המרפאה מרגישה כמו ספא — הצוות חם, מקצועי ומיומן להפליא.",
-      "name": "נועה לוי",
+      "quote": "מעולם לא חשבתי שאחכה לתור אצל רופא שיניים. הצוות פשוט יודע איך לגרום לך להרגיש בנוח.",
+      "name": "רותם אבני",
       "detail": "מטופלת עיצוב חיוך"
     },
     {
-      "quote": "השתלים שלי נראים טבעיים לחלוטין. שישה חודשים אחרי אני עדיין לא מאמין כמה כל התהליך היה פשוט וללא כאב.",
-      "name": "אבי כהן",
+      "quote": "הטיפול עבר בלי כאב, בלי לחץ. ממליץ לכל מי שמפחד מרופא שיניים — תנו להם הזדמנות.",
+      "name": "יואב שטרן",
       "detail": "מטופל שתלים"
     },
     {
-      "quote": "הילדים שלי ממש מצפים לביקורים כאן. זה אומר הכל.",
-      "name": "מירי שפירו",
+      "quote": "מרפאה אסתטית, צוות חם, שירות מקצועי. הילדים שלי כבר לא מתנגדים לבוא.",
+      "name": "דנה כץ",
       "detail": "מטופלת משפחתית"
     }
   ],
   "stats": [
-    { "value": "3,200+", "label": "מטופלים מרוצים" },
-    { "value": "14", "label": "שנות ניסיון" },
-    { "value": "98%", "label": "שביעות רצון" },
-    { "value": "12", "label": "מומחים" }
+    {
+      "value": "2,800+",
+      "label": "מטופלים מרוצים"
+    },
+    {
+      "value": "12",
+      "label": "שנות פעילות"
+    },
+    {
+      "value": "96%",
+      "label": "שביעות רצון"
+    },
+    {
+      "value": "8",
+      "label": "מומחים בצוות"
+    }
   ],
   "design": {
-    "packId": "slate-tech-clean"
+    "packId": "slate-tech-clean",
+    "textPackId": "calm-trust"
   },
   "copy": {
-    "h1": "טיפול שיניים שהופך חוויה",
-    "heroSubtitle": "מרפאה מודרנית, צוות קשוב, תוצאות שמחייכות.",
-    "tagline": "חיוך בריא. נפש רגועה.",
+    "h1": "טיפול שיניים שמרגיש כמו רגע של שקט",
+    "heroSubtitle": "מרפאה בוטיק שבה כל ביקור מתוכנן להיות נעים, מהיר ומדויק — בלי לחץ, בלי הפתעות.",
+    "tagline": "שקט. דיוק. חיוך.",
+    "about": "בנינו מקום שבו מטופלים מרגישים שהם בידיים טובות מהרגע הראשון. צוות קשוב, טכנולוגיה מתקדמת וגישה אנושית — זה מה שמייחד אותנו. אנחנו מאמינים שטיפול שיניים טוב לא חייב להלחיץ.",
     "ctaMain": "קבע תור",
     "ctaSecondary": "דבר איתנו",
     "sectionLabel": "המרפאה שלנו"
