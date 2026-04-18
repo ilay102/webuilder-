@@ -1,0 +1,627 @@
+# Webuilder — System Architecture & Handoff Document
+_Last updated: 2026-04-18 | Paste this as the first message in a new chat to sync instantly._
+
+---
+
+## 1. WHAT IS THIS PROJECT?
+
+**Webuilder** is a fully automated B2B website-builder SaaS for Israeli small businesses (dental clinics, accountants, lawyers). The workflow:
+
+1. **JJ** (WhatsApp sales agent) finds leads → qualifies → closes
+2. **Carti** (builder agent) auto-builds a personalized demo site from a queue
+3. Client sees demo → fills intake form → `content.json` updates → git push → Vercel rebuilds in ~60s
+4. Client sends photos via WhatsApp → auto-uploaded + slot-detected → git push → site updates
+5. Client pays (Stripe — wiring next) → site locks, goes fully live
+6. Every client gets a **unique design** from the variance engine — same template, completely different look + AI copy
+
+**Flagship gold standard demo:** `https://webuilder-liart.vercel.app/cohen-dental-v2`
+This is the reference. Every new demo must match or exceed this quality.
+
+---
+
+## 2. STACK & INFRASTRUCTURE
+
+| Layer | Tech | Details |
+|---|---|---|
+| Frontend | Next.js 14 App Router | `/app/[route]/page.tsx` + `/app/[route]/content.json` |
+| Styling | Inline styles + Tailwind (Mission Control only) | Dental template uses pure inline |
+| Deployment | Vercel (auto on push) | Project: `webuilder-liart.vercel.app` |
+| VPS | Hetzner Ubuntu, IP `204.168.207.116` | Runs PM2 processes |
+| Process Manager | PM2 | See process table below |
+| AI (chatbot) | Gemini 2.5 Flash | `app/api/chat/route.ts` |
+| AI (copy gen) | Gemini 2.5 Flash | `lib/generate-copy.ts` (build-time only, baked into content.json) |
+| WhatsApp | Baileys (@whiskeysockets/baileys) | Photo uploads + JJ bot |
+| Git repo | GitHub: `ilay102/webuilder-` | Main branch → auto-deploys to Vercel |
+| Accessibility | UserWay widget (`ng4NjUQs2R`) + IS 5568 / WCAG 2.1 AA footer | |
+
+### PM2 Process Map (VPS)
+| ID | Name | Port | File | Purpose |
+|---|---|---|---|---|
+| 0 | simple-jj | — | `/root/simple-jj/` | JJ WhatsApp sales agent |
+| 1 | carti-watcher | — | — | Demo queue builder agent |
+| 2 | approval-bridge | — | — | Approval relay |
+| 4 | dashboard-backend | 3000 | `/root/webuilder/server/index.js` | Mission Control API |
+| 5 | dashboard-frontend | — | — | (legacy, Vercel now serves MC) |
+| 14 | intake-server | 3004 | `/root/webuilder/server/intake-server.js` | Handles form submissions + photo git pushes |
+| 16 | whatsapp-baileys | — | `/root/webuilder/baileys-server.js` | Photo upload interceptor |
+
+### Key Environment Variables (VPS `/root/webuilder/.env`)
+```
+NEXT_PUBLIC_SUPABASE_URL=https://cqpwjdwnzgrblhvhbqza.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+GEMINI_API_KEY=AIzaSyDHJsHjboQoKIOpXksgo28rgiiZ2iNXbm0
+```
+The `.env` file is loaded by `dotenv` in `scripts/new-demo.ts` at the top of the file.
+`INTAKE_SECRET` is set inline when starting PM2 processes (see §15).
+
+---
+
+## 3. DIRECTORY STRUCTURE
+
+```
+webuilder/
+├── app/
+│   ├── dental/                  ← MASTER template (SINGLE SOURCE OF TRUTH)
+│   │   ├── page.tsx             ← Pack-aware, Hebrew, RTL, fully featured
+│   │   └── content.json         ← Template defaults (photos: null, Hebrew content)
+│   ├── [slug]/                  ← Each client/demo gets their own folder
+│   │   ├── page.tsx             ← ALWAYS a copy of dental/page.tsx at creation time
+│   │   └── content.json         ← Client-specific: biz, services, photos (pool paths), copy, design
+│   ├── api/
+│   │   ├── chat/route.ts        ← Gemini chatbot endpoint (Hebrew dental)
+│   │   └── intake/route.ts      ← Receives intake form → forwards to VPS port 3004
+│   ├── clients/page.tsx         ← Mission Control: Clients tab
+│   ├── tasks/page.tsx           ← Mission Control: Task Board
+│   ├── leads/page.tsx           ← Mission Control: Leads
+│   ├── approvals/page.tsx       ← Mission Control: Approvals (with badge)
+│   ├── layout.tsx               ← Global layout (UserWay widget injection)
+│   ├── shell.tsx                ← MC shell wrapper
+│   └── page.tsx                 ← Landing page
+│
+├── components/
+│   ├── Sidebar.tsx
+│   └── ui/
+│       ├── chatbot.tsx          ← Dental chatbot v2 (Hebrew chips, emergency, WhatsApp CTA)
+│       ├── AccessibilityFooter.tsx ← IS 5568 / WCAG 2.1 AA compliant footer
+│       └── cal-booking.tsx      ← Cal.com booking integration
+│
+├── lib/
+│   ├── design-packs.ts          ← 12 design packs (THE VARIANCE ENGINE)
+│   ├── variance.ts              ← Deterministic hash → packId selector
+│   ├── generate-copy.ts         ← Gemini AI copy (5-entry fallback pool, dotenv-loaded)
+│   ├── pool-manager.ts          ← IMAGE POOL LIFECYCLE ENGINE (new)
+│   ├── api.ts                   ← MC API fetchers
+│   └── types.ts                 ← TypeScript interfaces
+│
+├── scripts/
+│   ├── new-demo.ts              ← CLI: creates new client demo (allocates pool images)
+│   └── pool-init.ts             ← One-time: scans /public/pool/ → registers images in pool-state.json
+│
+├── server/
+│   ├── index.js                 ← VPS API port 3000: clients CRUD + pool free on churn + lock endpoint
+│   └── intake-server.js         ← VPS port 3004: form→content.json + photo→freePoolImage on upload
+│
+├── pool-state.json              ← IMAGE POOL STATE (git-tracked, single source of truth)
+├── clients.json                 ← Client registry (git-tracked)
+├── domains.json                 ← Custom domain → slug map
+├── middleware.ts                ← Custom domain router (edge)
+├── vercel.json                  ← Vercel config
+└── public/
+    ├── pool/
+    │   └── dental/
+    │       ├── heroes/          ← 5 pool hero images (Gemini-generated + Unsplash)
+    │       └── patients/        ← 9 pool patient/smile images (Gemini-generated)
+    └── clients/[slug]/          ← Per-client uploaded photos (git-tracked)
+```
+
+---
+
+## 4. CONTENT.JSON SCHEMA (FULL)
+
+```json
+{
+  "biz": {
+    "name": "ד״ר כהן שיניים",
+    "tagline": "...",
+    "city": "תל אביב",
+    "address": "רוטשילד, תל אביב",
+    "phone": "03-123-4567",
+    "email": "cohen@gmail.com",
+    "hours": "א׳–ה׳ 09:00–18:00",
+    "calLink": "username/15min",
+    "alertEmail": "cohen@gmail.com",
+    "alertWhatsapp": "972501234567",
+    "domain": "cohen-dental.co.il",
+    "template": "dental"
+  },
+  "services": [
+    { "icon": "✦", "title": "אסתטיקת שיניים", "desc": "..." }
+  ],
+  "photos": {
+    "hero":    "/pool/dental/heroes/Gemini_Generated_Image_xxx.png",
+    "about":   "/pool/dental/heroes/Gemini_Generated_Image_xxx.png",
+    "results": "/pool/dental/patients/Gemini_Generated_Image_yyy.png",
+    "cta":     "/pool/dental/heroes/Gemini_Generated_Image_xxx.png",
+    "gallery": []
+  },
+  "testimonials": [
+    { "quote": "...", "name": "נועה לוי", "detail": "מטופלת עיצוב חיוך" }
+  ],
+  "stats": [
+    { "value": "3,200+", "label": "מטופלים מרוצים" }
+  ],
+  "design": { "packId": "navy-sans-sharp" },
+  "copy": {
+    "h1":           "AI-generated unique Hebrew headline",
+    "heroSubtitle": "AI-generated supporting sentence",
+    "tagline":      "קצר. מדויק. בולט.",
+    "about":        "AI-generated 2-3 sentence about paragraph",
+    "ctaMain":      "קבע תור",
+    "ctaSecondary": "דבר איתנו",
+    "sectionLabel": "המרפאה שלנו"
+  }
+}
+```
+
+**CRITICAL RULE:** The `dental/content.json` template always has `"photos": { "hero": null, ... }` (all null). Pool images are ONLY set in per-client content.json files. Never let template photos get overwritten by client/test uploads.
+
+---
+
+## 5. AUTOMATED VARIANCE ENGINE
+
+> **Goal:** Same Next.js template → visually and textually distinct per client. Fully automated at demo creation. Zero manual work after `new-demo.ts` runs.
+
+### 5a. Design Packs (`lib/design-packs.ts`)
+
+12 coordinated "brand personalities". Each defines:
+
+| Field | Controls |
+|---|---|
+| `colors.*` | Full 8-token palette (primary, accent, bg, bgAlt, white, text, muted, light) |
+| `fonts.heading/body` | Google Fonts family + weights |
+| `radius` | Base border-radius (2px → 24px) |
+| `heroOverlay.blend` | CSS `mix-blend-mode` for photo tinting |
+| `heroOverlay.gradient` | Color gradient layered over photo |
+| `heroOverlay.opacity` | Overlay strength |
+| `photoFilter` | CSS `filter` applied to ALL photos site-wide |
+| `vibe` | Short phrase fed to Gemini so copy tone matches visual tone |
+
+**The 12 packs:**
+1. `forest-serif-soft` — sage green, warm, nurturing
+2. `navy-sans-sharp` — deep blue, confident, sharp
+3. `coral-warm-friendly` — coral/orange, family-friendly
+4. `charcoal-mono-tech` — near-greyscale, clinical precision
+5. `teal-modern-airy` — teal, wellness-forward, fresh
+6. `ivory-editorial-classic` — ivory/burgundy, boutique, Cormorant font
+7. `midnight-luxe-gold` — **dark theme**, gold accents, luxury
+8. `sand-minimal-zen` — sand/terracotta, spa-like
+9. `rose-gentle-feminine` — rose/mauve, cosmetic/aesthetic
+10. `emerald-pro-trust` — emerald, established professional
+11. `amber-friendly-family` — amber/gold, neighbourhood clinic
+12. `slate-tech-clean` — slate/cyan, high-tech, IBM Plex Sans
+
+### 5b. Vibe Blend CSS Logic
+
+The hero section layers **three stacked elements**:
+```
+[1] <img>  — pool photo, CSS filter applied (PACK.photoFilter)
+[2] <div>  — PACK color overlay, mix-blend-mode: [multiply|soft-light|overlay|color]
+             "The Vibe Blend" — tints any photo to match brand palette
+[3] <div>  — Readability wash (bg color + opacity hex suffix)
+             gradient: linear-gradient(to right, ${bg}e8 38%, ${bg}30 70%, transparent 100%)
+```
+Result: any stock dental photo looks like it was shot for that specific brand's palette.
+
+### 5c. Deterministic Hash (`lib/variance.ts`)
+```
+slug + city → FNV-1a hash → modulo 12 → packId
+Same slug always = same design (reproducible)
+Different slugs = different designs (guaranteed)
+```
+
+### 5d. AI Copy (`lib/generate-copy.ts`)
+
+Runs **once at build time** inside `new-demo.ts`. Result baked into `content.json → copy{}`.
+- Uses Gemini 2.5 Flash, temperature 0.85 (high variety)
+- Loaded from `.env` via `dotenv` at script startup
+- **Fallback pool**: 5 hand-crafted Hebrew headline sets, picked by `FNV hash(businessName + city) % 5`
+  → Different demos get different fallback headlines even without API
+- Strips markdown code fences from Gemini response (handles ```json wrapping)
+- Falls back gracefully on 503/non-200/parse errors
+
+### 5e. Full Pipeline (inside `new-demo.ts`)
+```
+new-demo.ts --route, --name, --city, --template, etc.
+│
+├─ 1. Load .env (dotenv) → GEMINI_API_KEY available
+├─ 2. pickVariant(slug, template, city) → packId
+├─ 3. getPack(packId) → full pack object
+├─ 4. allocateImage('hero', slug) → pool image (FIFO)
+├─ 5. allocateImage('patient', slug) → pool image (FIFO)
+├─ 6. generateCopy({ name, city, packVibe, services }) → copy object
+├─ 7. Build content.json: biz + Hebrew services/stats/testimonials + pool photos + design + copy
+├─ 8. Copy dental/page.tsx to app/[route]/page.tsx
+├─ 9. Register domain (if --domain) → domains.json + Vercel API
+├─ 10. git add + commit + pull --rebase + push  (pool-state.json included)
+│      On git failure → freeImages(slug) rollback
+└─ 11. POST /api/clients on VPS → clients.json entry
+```
+
+---
+
+## 6. NEW: IMAGE POOL LIBRARY MODEL
+
+> **Why:** Automated demos need real dental photos. We can't use random stock images or the same photo for every client. The Library Model gives each demo a unique, high-quality photo from a curated pool, with full lifecycle management.
+
+### 6a. Pool Structure
+
+```
+public/pool/dental/
+├── heroes/    ← 5 clinic environment photos
+└── patients/  ← 9 patient/smile portrait photos
+```
+
+**pool-state.json** (repo root, git-tracked):
+```json
+{
+  "updatedAt": "2026-04-18T...",
+  "images": [
+    {
+      "id": "heroes/Gemini_Generated_Image_xxx.png",
+      "path": "/pool/dental/heroes/Gemini_Generated_Image_xxx.png",
+      "type": "hero",
+      "status": "in-use",
+      "assignedTo": "test-clinic-1",
+      "assignedAt": "2026-04-17T...",
+      "addedAt": "2026-04-17T..."
+    }
+  ]
+}
+```
+
+**Statuses:**
+- `available` — free to allocate to next demo
+- `in-use` — assigned to a client (demo created, not yet paid)
+- `locked` — client paid; image is permanently theirs
+
+### 6b. `lib/pool-manager.ts` — The Lifecycle Engine
+
+Key functions:
+```ts
+allocateImage(type: 'hero'|'patient', slug: string): PoolImage
+  // FIFO: picks oldest available image of that type
+  // Sets status → 'in-use', assignedTo = slug
+  // Throws detailed error if pool exhausted
+
+freeImages(slug: string): string[]
+  // Releases ALL images assigned to slug back to 'available'
+  // Called on: git push failure (rollback), client churn (delete)
+
+freeImageByPath(slug: string, imagePath: string): boolean
+  // Releases ONE specific image
+  // Called when client uploads their own photo (replaces the pool image)
+
+lockImages(slug: string): string[]
+  // Sets status → 'locked' for all images assigned to slug
+  // Called on: Stripe payment confirmed
+
+poolStats(): { hero: {...}, patient: {...} }
+  // Returns counts per type: available / in-use / locked / total
+```
+
+### 6c. Full Image Lifecycle
+
+```
+1. DEMO CREATED (new-demo.ts)
+   allocateImage('hero', slug)    → status: available → in-use
+   allocateImage('patient', slug) → status: available → in-use
+   [On git push failure] freeImages(slug) → rollback to available
+
+2. CLIENT UPLOADS OWN PHOTO (intake-server.js /api/photo)
+   Detect if old slot was a pool image (path.startsWith('/pool/'))
+   freePoolImage(slug, oldPath) → status: in-use → available
+   Save new client photo to /public/clients/[slug]/[slot].jpg
+   Update content.json with new path
+
+3. CLIENT CHURNS (server/index.js DELETE /api/clients/:slug)
+   _freeImages(slug) → all in-use images → available
+   (locked images stay locked — already paid for)
+
+4. CLIENT PAYS (Stripe webhook → POST /api/clients/:slug/lock)
+   _lockImages(slug) → all in-use images → locked
+   Update client status: trial → active
+   [TODO: trigger JJ to send congratulations + domain setup instructions]
+```
+
+### 6d. Pool Initialization
+
+Run once to register all images:
+```bash
+npm run pool:init
+```
+Script: `scripts/pool-init.ts` — scans `public/pool/dental/heroes/` and `public/pool/dental/patients/`, registers each file in pool-state.json (idempotent).
+
+Check pool health anytime:
+```bash
+npm run pool:stats
+# Output: { hero: { available: 1, inUse: 4, locked: 0, total: 5 }, patient: { ... } }
+```
+
+### 6e. Pool Coverage (Current)
+- **Heroes:** 5 total (4 Gemini-generated + 1 Unsplash). Supports up to 5 simultaneous active demos.
+- **Patients:** 9 total (all Gemini-generated). Supports up to 9 simultaneous active demos.
+- **When pool runs out:** `allocateImage` throws with a detailed error. New demos fail gracefully.
+- **To expand:** Drop new images in `public/pool/dental/heroes/` or `patients/`, run `npm run pool:init` again (idempotent — skips already registered files), commit + push.
+
+### 6f. CJS Inline Helpers (servers)
+
+`server/intake-server.js` and `server/index.js` are plain CommonJS and cannot import TypeScript modules. Both files contain **inline CJS versions** of the pool helpers (`_readPool`, `_writePool`, `_freeImages`, `_lockImages`, `freePoolImage`, `isDefaultPhoto`). Keep these in sync with `lib/pool-manager.ts` if you ever change the pool-state.json schema.
+
+---
+
+## 7. THE DENTAL PAGE TEMPLATE (`app/dental/page.tsx`)
+
+**This is the single source of truth for all client site layouts.** Every demo's `page.tsx` is a COPY of this file made at demo-creation time.
+
+### Key Architecture Decisions:
+
+**RTL + Hebrew:**
+- Root div has `dir="rtl"` for correct Hebrew layout
+- Hero content block has `direction: 'ltr', textAlign: 'left'` so text reads naturally on the left side
+- **CRITICAL RTL FLEX RULE:** In `dir="rtl"`, `flex-end` = physical LEFT, `flex-start` = physical RIGHT. Always verify visually after RTL changes.
+
+**Hero gradient direction:**
+- `linear-gradient(to right, ...)` → fade covers LEFT side where text lives ✅
+
+**Hero layout:**
+- `hero-inner`: `justifyContent: 'flex-end'` (= physical left in RTL), NO maxWidth/margin constraints (full inset-0)
+- `hero-content`: `maxWidth: 560`, `direction: ltr`, `textAlign: left`
+
+**Photo cast:**
+```tsx
+const photos = content.photos as Record<string, any>;
+// Needed because template content.json has null photos (TypeScript strict mode)
+```
+
+**All hardcoded text is Hebrew:**
+- Nav: שירותים | אודות | המלצות | קבע תור
+- Sections: מה אנחנו מציעים, אודות המרפאה, תוצאות, המלצות
+- CTA: מוכנים להתחיל?, החיוך המושלם שלך במרחק תור אחד
+- Footer: שירותים | המרפאה | צור קשר
+- Chatbot greeting in Hebrew
+
+---
+
+## 8. INTAKE FORM SYSTEM
+
+**Flow:**
+1. After demo is built, client receives link: `https://webuilder-liart.vercel.app/intake/[slug]`
+2. Client fills: business name, phone, services, hours, address
+3. Form POSTs to `app/api/intake/route.ts` → forwards to VPS port 3004
+4. `server/intake-server.js` receives → updates `app/[slug]/content.json` → git commit + push
+5. Vercel rebuilds → live site updated in ~60 seconds
+
+**Photo upload via WhatsApp:**
+- Client sends photo with Hebrew caption: `שער` / `אודות` / `תוצאות` / `גלריה`
+- No caption = auto-fills next empty/default slot
+- intake-server detects if replaced slot was a pool image → calls `freePoolImage()`
+- Saved to `public/clients/[slug]/[slot].jpg` → git push → Vercel rebuilds
+
+---
+
+## 9. AUTOMATED VARIANCE ENGINE RECAP
+
+**The full stack of what makes each demo unique:**
+1. **Different design pack** (12 options, hash-determined) → colors, fonts, overlays
+2. **Different pool images** (FIFO allocation) → unique hero + patient photos
+3. **Different AI copy** (Gemini, temperature 0.85) → unique H1, tagline, about text
+4. **Vibe alignment** → pack vibe phrase fed to Gemini so copy tone matches visual tone
+
+Result: Even with the same template code, two demos for dental clinics in Tel Aviv look and read completely differently.
+
+---
+
+## 10. MISSION CONTROL
+
+**URL:** `https://webuilder-liart.vercel.app/tasks` (Vercel) | `http://204.168.207.116:3000` (VPS)
+
+**Clients tab features:** stats cards (Active/Paid/Trial/Churned), full table with search, Add/Edit modal, Churn button (calls DELETE → frees pool images), auto-refresh every 15s.
+
+**Relevant API endpoints (VPS port 3000):**
+```
+GET    /api/clients              → all clients
+POST   /api/clients              → create (called by new-demo.ts)
+PUT    /api/clients/:slug        → update
+DELETE /api/clients/:slug        → churn + freeImages(slug)
+POST   /api/clients/:slug/lock   → lock images (Stripe webhook target) ← READY, not yet wired
+GET    /health                   → { ok: true, uptime }
+```
+
+---
+
+## 11. WHAT'S WORKING RIGHT NOW ✅
+
+- [x] Demo generation: `npx ts-node scripts/new-demo.ts` → full site live in ~2 min
+- [x] Image pool: FIFO allocation, 14 images (5 hero + 9 patient), all lifecycle hooks wired
+- [x] Design packs: 12 packs, hash-deterministic per route
+- [x] AI copy: Gemini generates unique Hebrew H1/tagline/about per demo
+- [x] Fallback copy: 5-entry pool, hashed by businessName+city (no two demos get same fallback)
+- [x] Hebrew + RTL: full translation of all template text, correct RTL hero layout
+- [x] Photo isolation: each demo gets pool images, client uploads go to `/clients/[slug]/`
+- [x] Intake form: form → VPS → content.json → git push → Vercel rebuild
+- [x] WhatsApp photo upload: slot detection, pool image release on replacement
+- [x] Churn: DELETE client → images freed back to pool
+- [x] Lock endpoint: `POST /api/clients/:slug/lock` ready for Stripe
+- [x] Dotenv: `.env` loaded in new-demo.ts so GEMINI_API_KEY works on VPS
+- [x] Vercel build: TypeScript errors fixed (`photos as Record<string, any>`)
+
+**3 live test demos:**
+- `https://webuilder-liart.vercel.app/test-clinic-1` — slate-tech-clean (cyan/teal)
+- `https://webuilder-liart.vercel.app/test-clinic-2` — navy-sans-sharp (deep blue)
+- `https://webuilder-liart.vercel.app/test-clinic-3` — rose-gentle-feminine (rose/mauve)
+
+---
+
+## 12. NEXT IMMEDIATE STEPS 🔴
+
+### A. Stripe Payment (Priority 1)
+Wire `POST /api/clients/:slug/lock` to Stripe webhook `checkout.session.completed`.
+
+```
+Stripe checkout created → client pays
+→ Stripe fires POST to https://webuilder-liart.vercel.app/api/stripe-webhook
+→ Read slug from metadata → POST /api/clients/:slug/lock
+→ Updates: client status trial→active, images in-use→locked
+→ JJ sends WhatsApp: "האתר שלך פעיל! הנה הלינק + טופס אינטייק"
+```
+
+Need:
+- `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET`
+- Create `app/api/stripe-webhook/route.ts`
+- Create Stripe product (e.g. ₪299/month or ₪2,990 annual)
+
+### B. Real Leads
+- Start sending demos to real leads
+- Monitor with `npm run pool:stats` — when pool drops to 2 available, generate more images
+- Add `GEMINI_API_KEY` to Vercel env vars for chatbot (currently only on VPS .env)
+
+### C. Pool Expansion
+Current pool supports 5 simultaneous demos max (hero-limited). Add more hero images:
+1. Generate with Gemini (see `ai-prompt-playbook.md` for exact prompts)
+2. Drop in `public/pool/dental/heroes/`
+3. Run `npm run pool:init` → commit + push
+4. No other changes needed — pool-manager picks them up automatically
+
+### D. Domain Flow
+After payment, ask client for their domain → run:
+```bash
+npx ts-node scripts/new-demo.ts --route [slug] --domain [domain] ...
+```
+Or add domain via Mission Control → triggers Vercel API + domains.json update.
+
+---
+
+## 13. KNOWN ISSUES / WATCH OUT FOR
+
+1. **RTL flex direction is REVERSED:**
+   - `flex-end` = physical LEFT ✅
+   - `flex-start` = physical RIGHT ❌
+   - Always test visually after changing hero layout in RTL context.
+
+2. **Template photos must stay null:**
+   - `app/dental/content.json` photos are all `null`
+   - Client WhatsApp test uploads go to `dental/` slug — DON'T use dental as a real client
+   - If template gets contaminated, new demos inherit the photo. Fix: reset photos to null, commit.
+
+3. **new-demo.ts copies page.tsx at creation time:**
+   - If you update `dental/page.tsx`, existing demos have the old version
+   - To update all demos: `cp app/dental/page.tsx app/[slug]/page.tsx` for each + commit
+   - New demos created after the update will automatically get the new version
+
+4. **VPS git push race condition:**
+   - When VPS runs `new-demo.ts` AND local pushes at same time → push rejected
+   - Fix: always `git stash && git pull --rebase && git push && git stash pop` locally
+
+5. **Gemini copy 503 errors:**
+   - Free tier rate limits → falls back to pool gracefully
+   - Not a code bug — just API quota
+
+6. **Pool exhaustion:**
+   - When `allocateImage` throws, the demo fails and images are rolled back
+   - Monitor with `npm run pool:stats` before batch demo creation
+
+---
+
+## 14. QUICK REFERENCE: COMMON COMMANDS
+
+### Generate a new demo
+```bash
+npx ts-node scripts/new-demo.ts \
+  --template dental \
+  --route cohen-dental \
+  --name "ד״ר כהן שיניים" \
+  --city "תל אביב" \
+  --phone "03-123-4567" \
+  --email "cohen@gmail.com" \
+  --whatsapp "972501234567" \
+  --hours "א׳–ה׳ 09:00–18:00" \
+  --cal "ilay-lankin/15min"
+```
+
+### Pool management
+```bash
+npm run pool:init     # register all images in public/pool/
+npm run pool:stats    # check available/in-use/locked counts
+```
+
+### VPS deployment
+```bash
+# SSH
+ssh root@204.168.207.116
+# password: vB8#qR2!mZ5*pL9$wX1^
+
+# After any push
+cd /root/webuilder && git pull --rebase
+pm2 restart intake-server
+pm2 restart dashboard-backend
+
+# Check logs
+pm2 logs intake-server --lines 50
+pm2 logs dashboard-backend --lines 50
+
+# Test intake endpoint
+curl -X POST http://204.168.207.116:3004/api/intake \
+  -H "Content-Type: application/json" \
+  -H "x-intake-secret: jvne84h98nfunkf" \
+  -d '{"slug":"test-clinic-1","biz":{"phone":"03-000-0000"}}'
+
+# Test lock endpoint
+curl -X POST http://204.168.207.116:3000/api/clients/test-clinic-1/lock \
+  -H "Content-Type: application/json"
+```
+
+### Update all existing demos with latest dental/page.tsx
+```bash
+for slug in test-clinic-1 test-clinic-2 test-clinic-3; do
+  cp app/dental/page.tsx app/$slug/page.tsx
+done
+git add app/*/page.tsx && git commit -m "sync: update all demos to latest page.tsx"
+git push
+```
+
+---
+
+## 15. LIVE URLS
+
+| URL | What |
+|---|---|
+| `https://webuilder-liart.vercel.app/cohen-dental-v2` | 🏆 Flagship gold standard |
+| `https://webuilder-liart.vercel.app/test-clinic-1` | slate-tech-clean demo |
+| `https://webuilder-liart.vercel.app/test-clinic-2` | navy-sans-sharp demo |
+| `https://webuilder-liart.vercel.app/test-clinic-3` | rose-gentle-feminine demo |
+| `https://webuilder-liart.vercel.app/tasks` | Mission Control |
+| `https://webuilder-liart.vercel.app/clients` | Clients registry tab |
+| `http://204.168.207.116:3000` | Standalone MC (VPS) |
+| `http://204.168.207.116:3000/api/clients` | Clients API |
+| `http://204.168.207.116:3004/api/intake` | Intake endpoint |
+| `http://204.168.207.116:3004/health` | Intake server health |
+
+---
+
+## 16. ASSETS & PHOTO GENERATION
+
+See `ai-prompt-playbook.md` for the exact Gemini image generation prompts (Kodak Portra 400 style, Duchenne smile, camera triplet, etc.).
+
+**Current pool contents:**
+- Heroes: `Gemini_Generated_Image_amvponamvp`, `mf4i5umf4i5u`, `vtdf96vtdf96`, `z6mpqvz6mpqv`, `atikah-akhtar-XJptUS8nbhs-unsplash`
+- Patients: 9 Gemini-generated (see `pool-state.json` for full list)
+
+**To add more images:**
+1. Generate with Gemini using `ai-prompt-playbook.md` prompts
+2. Drop files in `public/pool/dental/heroes/` or `patients/`
+3. `npm run pool:init` (idempotent, skips registered files)
+4. `git add public/pool/ pool-state.json && git commit -m "pool: add N new images" && git push`
+
+---
+
+_End of handoff document. Paste this at the top of a new chat for instant full context. Next task: Stripe webhook → lock flow._
