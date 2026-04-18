@@ -1,0 +1,69 @@
+{
+  "updatedAt": "2026-04-18T11:50:58.870Z",
+  "packs": [
+    {
+      "id": "calm-trust",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-18T11:50:58.864Z"
+    },
+    {
+      "id": "precision-tech",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-18T11:50:58.866Z"
+    },
+    {
+      "id": "family-warm",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-18T11:50:58.867Z"
+    },
+    {
+      "id": "luxury-aesthetic",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-18T11:50:58.868Z"
+    },
+    {
+      "id": "fast-efficient",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-18T11:50:58.869Z"
+    },
+    {
+      "id": "trusted-veteran",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-18T11:50:58.869Z"
+    },
+    {
+      "id": "gentle-care",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-18T11:50:58.870Z"
+    },
+    {
+      "id": "smile-focused",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-04-18T11:50:58.870Z"
+    }
+  ]
+}

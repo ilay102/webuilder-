@@ -19,8 +19,9 @@ const REPO_ROOT    = path.resolve(__dirname, '..')
 const INTAKE_PORT  = process.env.INTAKE_PORT   || 3001
 const INTAKE_SECRET = process.env.INTAKE_SECRET || ''
 const SITE_BASE_URL = process.env.SITE_BASE_URL || 'https://webuilder-liart.vercel.app'
-const CLIENTS_FILE    = path.join(REPO_ROOT, 'clients.json')
-const POOL_STATE_PATH = path.join(REPO_ROOT, 'pool-state.json')
+const CLIENTS_FILE         = path.join(REPO_ROOT, 'clients.json')
+const POOL_STATE_PATH      = path.join(REPO_ROOT, 'pool-state.json')
+const TEXT_POOL_STATE_PATH = path.join(REPO_ROOT, 'text-pool-state.json')
 
 // ── Pool Manager (inline CJS — mirrors lib/pool-manager.ts) ──────────────────
 function _readPool() {
@@ -59,6 +60,46 @@ function _lockImages(slug) {
     }
   }
   if (locked.length > 0) _writePool(pool)
+  return locked
+}
+
+// ── Text Pool Manager (inline CJS — mirrors lib/text-pool-manager.ts) ────────
+function _readTextPool() {
+  if (!fs.existsSync(TEXT_POOL_STATE_PATH)) return { updatedAt: new Date().toISOString(), packs: [] }
+  try   { return JSON.parse(fs.readFileSync(TEXT_POOL_STATE_PATH, 'utf-8')) }
+  catch { return { updatedAt: new Date().toISOString(), packs: [] } }
+}
+function _writeTextPool(state) {
+  state.updatedAt = new Date().toISOString()
+  fs.writeFileSync(TEXT_POOL_STATE_PATH, JSON.stringify(state, null, 2) + '\n')
+}
+/** Free in-use text pack(s) for a slug. Called on client churn. */
+function _freeTextPack(slug) {
+  const state = _readTextPool()
+  const freed = []
+  for (const p of state.packs) {
+    if (p.assignedTo === slug && p.status === 'in-use') {
+      p.status     = 'available'
+      p.assignedTo = null
+      p.assignedAt = null
+      freed.push(p.id)
+    }
+  }
+  if (freed.length > 0) _writeTextPool(state)
+  return freed
+}
+/** Permanently lock in-use text pack(s) for a slug. Called on confirmed payment. */
+function _lockTextPack(slug) {
+  const state  = _readTextPool()
+  const locked = []
+  for (const p of state.packs) {
+    if (p.assignedTo === slug && p.status === 'in-use') {
+      p.status   = 'locked'
+      p.lockedAt = new Date().toISOString()
+      locked.push(p.id)
+    }
+  }
+  if (locked.length > 0) _writeTextPool(state)
   return locked
 }
 
@@ -518,7 +559,7 @@ app.patch('/api/clients/:slug', (req, res) => {
   res.json(client)
 })
 
-// DELETE /api/clients/:slug — mark as churned + free pool images
+// DELETE /api/clients/:slug — mark as churned + free pool images + free text pack
 app.delete('/api/clients/:slug', (req, res) => {
   const clients = readClients()
   const idx = clients.findIndex(c => c.slug === req.params.slug)
@@ -527,17 +568,21 @@ app.delete('/api/clients/:slug', (req, res) => {
   clients[idx].status    = 'churned'
   clients[idx].updatedAt = new Date().toISOString()
   writeClients(clients)
-  const freed = _freeImages(slug)
-  if (freed.length > 0) console.log(`[pool] Churn ${slug} → freed: ${freed.join(', ')}`)
-  res.json({ ok: true, freedImages: freed })
+  const freedImages   = _freeImages(slug)
+  const freedTextPack = _freeTextPack(slug)
+  if (freedImages.length   > 0) console.log(`[pool] Churn ${slug} → freed images: ${freedImages.join(', ')}`)
+  if (freedTextPack.length > 0) console.log(`[text-pool] Churn ${slug} → freed text packs: ${freedTextPack.join(', ')}`)
+  res.json({ ok: true, freedImages, freedTextPack })
 })
 
-// POST /api/clients/:slug/lock — permanently lock pool images (client paid + kept defaults)
+// POST /api/clients/:slug/lock — permanently lock pool images + text pack (client paid)
 app.post('/api/clients/:slug/lock', (req, res) => {
-  const slug   = req.params.slug
-  const locked = _lockImages(slug)
-  if (locked.length > 0) console.log(`[pool] Lock ${slug} → locked: ${locked.join(', ')}`)
-  res.json({ ok: true, lockedImages: locked })
+  const slug           = req.params.slug
+  const lockedImages   = _lockImages(slug)
+  const lockedTextPack = _lockTextPack(slug)
+  if (lockedImages.length   > 0) console.log(`[pool] Lock ${slug} → locked images: ${lockedImages.join(', ')}`)
+  if (lockedTextPack.length > 0) console.log(`[text-pool] Lock ${slug} → locked text packs: ${lockedTextPack.join(', ')}`)
+  res.json({ ok: true, lockedImages, lockedTextPack })
 })
 
 // ── Health check ──────────────────────────────────────────────────────────────

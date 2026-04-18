@@ -9,6 +9,8 @@
     "lint": "next lint",
     "pool:init": "ts-node scripts/pool-init.ts",
     "pool:stats": "ts-node -e \"const {poolStats}=require('./lib/pool-manager');console.log(JSON.stringify(poolStats(),null,2))\"",
+    "text-pool:init": "ts-node scripts/text-pool-init.ts",
+    "text-pool:stats": "ts-node -e \"const {textPoolStats}=require('./lib/text-pool-manager');console.log(JSON.stringify(textPoolStats(),null,2))\"",
     "new-demo": "ts-node scripts/new-demo.ts"
   },
   "dependencies": {

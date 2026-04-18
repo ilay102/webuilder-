@@ -34,8 +34,8 @@ import { config as dotenvConfig } from 'dotenv';
 dotenvConfig({ path: path.join(process.cwd(), '.env') });
 import { pickVariant }                                from '../lib/variance';
 import { getPack }                                   from '../lib/design-packs';
-import { generateCopy }                              from '../lib/generate-copy';
 import { allocateImage, freeImages, type PoolImage } from '../lib/pool-manager';
+import { allocateTextPack, freeTextPack }            from '../lib/text-pool-manager';
 
 const BASE_URL        = 'https://webuilder-liart.vercel.app';
 const VERCEL_TOKEN    = process.env.VERCEL_TOKEN ?? '';
@@ -236,35 +236,33 @@ async function buildDemo(c: DemoConfig): Promise<string> {
   try {
     hero    = allocateImage('hero',    c.route);
     patient = allocateImage('patient', c.route);
-    process.stderr.write(
-      `[pool] ${c.route} → pack=${pack.id}  hero=${hero.id}  patient=${patient.id}\n`,
-    );
   } catch (e: any) {
-    freeImages(c.route); // roll back any partial allocation before failing
+    freeImages(c.route); // roll back any partial image allocation
     throw new Error(`Image pool exhausted — ${e.message}`);
   }
 
-  // ── AI copy generation (unique H1/tagline per client) ──────────
-  let copy;
+  // ── Text pool: allocate one pack (FIFO). Same lifecycle as images. ──────────
+  let textAlloc;
   try {
-    copy = await generateCopy({
-      businessName: c.businessName,
-      city:         c.city,
-      template:     c.template,
-      packVibe:     pack.vibe,
-      services:     (baseContent.services || []).map((s: any) => s.title).slice(0, 6),
-      language:     'he',
-    });
-    process.stderr.write(`[copy] h1="${copy.h1}"\n`);
+    textAlloc = allocateTextPack(c.route);
   } catch (e: any) {
-    process.stderr.write(`[copy] generation failed: ${e.message}\n`);
-    copy = undefined;
+    freeImages(c.route);    // give the images back
+    freeTextPack(c.route);  // safety: nothing to free, but keeps rollback symmetric
+    throw new Error(`Text pool exhausted — ${e.message}`);
   }
+  const textPack = textAlloc.pack;
 
+  process.stderr.write(
+    `[pool] ${c.route} → design=${pack.id}  text=${textPack.id}  ` +
+    `hero=${hero.id}  patient=${patient.id}\n`,
+  );
+
+  // ── Assemble content.json from KNOWN sources only — NO template inheritance ──
+  // Sources: (1) intake fields  (2) design pack  (3) text pack  (4) image pool
   baseContent.biz = {
     ...baseContent.biz,
     name:          c.businessName,
-    tagline:       copy?.tagline || c.tagline || `Professional ${c.template} care in ${c.city}`,
+    tagline:       textPack.copy.tagline,
     city:          c.city,
     address:       c.city,
     phone:         c.phone,
@@ -277,7 +275,12 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     template:      c.template,
   };
 
-  // Always use fresh pool images — never inherit template photos
+  // Full overwrite — kills cross-demo contamination of names/quotes/stats/services
+  baseContent.services     = textPack.services;
+  baseContent.testimonials = textPack.testimonials;
+  baseContent.stats        = textPack.stats;
+
+  // Fresh pool images — never inherit template photos
   baseContent.photos = {
     hero:    hero.path,
     about:   hero.path,
@@ -286,9 +289,9 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     gallery: [],
   };
 
-  // Bake in design pack id + AI copy
-  baseContent.design = { packId: pack.id };
-  if (copy) baseContent.copy = copy;
+  // Bake in design pack id + text pack copy
+  baseContent.design = { packId: pack.id, textPackId: textPack.id };
+  baseContent.copy   = textPack.copy;
 
   fs.writeFileSync(
     path.join(outDir, 'content.json'),
@@ -302,18 +305,19 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     await addDomainToVercel(domain);
   }
 
-  // Git push → Vercel auto-deploys. pool-state.json committed alongside demo files.
+  // Git push → Vercel auto-deploys. Both pool state files committed alongside demo files.
   try {
     execSync(
-      `git add app/${c.route} domains.json pool-state.json && ` +
+      `git add app/${c.route} domains.json pool-state.json text-pool-state.json && ` +
       `(git diff --staged --quiet || git commit -m "demo: ${c.route}") && ` +
       `git pull --rebase && git push`,
       { cwd: process.cwd(), stdio: 'pipe' },
     );
   } catch (gitErr: any) {
-    // Push failed — release the pool images so they can be used by the next demo
+    // Push failed — release both pools so the slot can be reused
     freeImages(c.route);
-    throw new Error(`Git push failed (images released back to pool): ${gitErr.message}`);
+    freeTextPack(c.route);
+    throw new Error(`Git push failed (images + text pack released back to pool): ${gitErr.message}`);
   }
 
   const siteUrl = c.domain
