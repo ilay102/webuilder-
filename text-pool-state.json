@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-04-18T11:55:39.296Z",
+  "updatedAt": "2026-04-18T11:56:23.552Z",
   "packs": [
     {
       "id": "calm-trust",
@@ -11,9 +11,9 @@
     },
     {
       "id": "precision-tech",
-      "status": "available",
-      "assignedTo": null,
-      "assignedAt": null,
+      "status": "in-use",
+      "assignedTo": "test-clinic-1",
+      "assignedAt": "2026-04-18T11:56:23.552Z",
       "lockedAt": null,
       "addedAt": "2026-04-18T11:50:58.866Z"
     },
