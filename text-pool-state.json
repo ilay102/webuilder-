@@ -1,19 +1,19 @@
 {
-  "updatedAt": "2026-04-18T11:57:23.469Z",
+  "updatedAt": "2026-04-18T11:59:54.277Z",
   "packs": [
     {
       "id": "calm-trust",
-      "status": "in-use",
-      "assignedTo": "test-clinic-1",
-      "assignedAt": "2026-04-18T11:55:39.296Z",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
       "lockedAt": null,
       "addedAt": "2026-04-18T11:50:58.864Z"
     },
     {
       "id": "precision-tech",
-      "status": "in-use",
-      "assignedTo": "test-clinic-1",
-      "assignedAt": "2026-04-18T11:56:23.552Z",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
       "lockedAt": null,
       "addedAt": "2026-04-18T11:50:58.866Z"
     },

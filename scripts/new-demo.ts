@@ -305,19 +305,40 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     await addDomainToVercel(domain);
   }
 
-  // Git push → Vercel auto-deploys. Both pool state files committed alongside demo files.
+  // Git push → Vercel auto-deploys.
+  //
+  // Two-phase to prevent orphan commits on push failure:
+  //   Phase 1: pull --rebase --autostash (handles unrelated working-tree noise).
+  //   Phase 2: stage → commit → push. If push fails, soft-reset the commit so
+  //            the rollback freeImages/freeTextPack can restore disk state
+  //            without leaving a stale "in-use" mark in git history.
+  try {
+    execSync('git pull --rebase --autostash', { cwd: process.cwd(), stdio: 'pipe' });
+  } catch (rebaseErr: any) {
+    freeImages(c.route);
+    freeTextPack(c.route);
+    throw new Error(`git pull --rebase failed (no commit made; pools released): ${rebaseErr.message}`);
+  }
+
+  let committed = false;
   try {
     execSync(
       `git add app/${c.route} domains.json pool-state.json text-pool-state.json && ` +
-      `(git diff --staged --quiet || git commit -m "demo: ${c.route}") && ` +
-      `git pull --rebase && git push`,
+      `(git diff --staged --quiet || git commit -m "demo: ${c.route}")`,
       { cwd: process.cwd(), stdio: 'pipe' },
     );
+    // Detect whether a commit actually happened (vs nothing to commit)
+    const lastMsg = execSync('git log -1 --pretty=%s', { cwd: process.cwd() }).toString().trim();
+    committed = lastMsg === `demo: ${c.route}`;
+
+    execSync('git push', { cwd: process.cwd(), stdio: 'pipe' });
   } catch (gitErr: any) {
-    // Push failed — release both pools so the slot can be reused
+    if (committed) {
+      try { execSync('git reset --soft HEAD~1', { cwd: process.cwd(), stdio: 'pipe' }); } catch { /* ignore */ }
+    }
     freeImages(c.route);
     freeTextPack(c.route);
-    throw new Error(`Git push failed (images + text pack released back to pool): ${gitErr.message}`);
+    throw new Error(`Git push failed (commit reverted, pools released): ${gitErr.message}`);
   }
 
   const siteUrl = c.domain
