@@ -1,15 +1,15 @@
 {
   "biz": {
-    "name": "ד״ר לוי שיניים",
-    "tagline": "חיוך בריא. נפש רגועה.",
-    "city": "חיפה",
-    "address": "חיפה",
-    "phone": "04-9876543",
-    "email": "levi@test.com",
-    "hours": "א׳–ה׳ 09:00–18:00",
+    "name": "מרפאת חיוך הזהב",
+    "tagline": "יוקרה שמרגישה טבעי.",
+    "city": "ירושלים",
+    "address": "ירושלים",
+    "phone": "02-555-0002",
+    "email": "test2@example.com",
+    "hours": "א׳–ה׳ 08:30–17:30",
     "calLink": "ilay-lankin/15min",
-    "alertEmail": "levi@test.com",
-    "alertWhatsapp": "972521234567",
+    "alertEmail": "test2@example.com",
+    "alertWhatsapp": "972500000002",
     "domain": null,
     "template": "dental"
   },
@@ -17,76 +17,77 @@
     {
       "icon": "✦",
       "title": "אסתטיקת שיניים",
-      "desc": "ציפויים, הלבנה ועיצוב חיוך — מותאמים בדיוק ליופי הטבעי שלך."
+      "desc": "ציפויי פורצלן בעבודת יד — מתוכננים לפי קווי הפנים שלך, לא לפי תבנית."
     },
     {
       "icon": "◈",
       "title": "שתלי שיניים",
-      "desc": "שתלי טיטניום שמרגישים ונראים כמו שן טבעית. תוצאות לכל החיים."
+      "desc": "שתלים פרימיום עם כתרי זירקוניה — תוצאה שלא ניתן להבחין מהשן הטבעית."
     },
     {
       "icon": "◉",
       "title": "יישור שיניים",
-      "desc": "מיישרים שקופים ומסילות בלתי נראות — יישרי את החיוך בדיסקרטיות."
+      "desc": "יישור דיסקרטי בליווי אישי, עם תכנון אסתטי של החיוך הסופי."
     },
     {
       "icon": "○",
       "title": "טיפול שורש",
-      "desc": "טיפול שורש ללא כאב, מדויק ומונחה דיגיטלית לאורך כל הדרך."
+      "desc": "אנדודונטיה מתקדמת לשמירה על המבנה האסתטי של השן."
     }
   ],
   "photos": {
-    "hero": "/pool/dental/heroes/Gemini_Generated_Image_vtdf96vtdf96vtdf.png",
-    "about": "/pool/dental/heroes/Gemini_Generated_Image_vtdf96vtdf96vtdf.png",
-    "results": "/pool/dental/patients/Gemini_Generated_Image_bfkwrebfkwrebfkw.png",
-    "cta": "/pool/dental/heroes/Gemini_Generated_Image_vtdf96vtdf96vtdf.png",
+    "hero": "/pool/dental/heroes/Gemini_Generated_Image_z6mpqvz6mpqvz6mp.png",
+    "about": "/pool/dental/heroes/Gemini_Generated_Image_z6mpqvz6mpqvz6mp.png",
+    "results": "/pool/dental/patients/Gemini_Generated_Image_ew0abyew0abyew0a.png",
+    "cta": "/pool/dental/heroes/Gemini_Generated_Image_z6mpqvz6mpqvz6mp.png",
     "gallery": []
   },
   "testimonials": [
     {
-      "quote": "מעולם לא הרגשתי כל כך בנוח אצל רופא שיניים. המרפאה מרגישה כמו ספא — הצוות חם, מקצועי ומיומן להפליא.",
-      "name": "נועה לוי",
-      "detail": "מטופלת עיצוב חיוך"
+      "quote": "התוצאה עוברת כל מה שדמיינתי. הציפויים נראים לחלוטין כמו השיניים שלי — רק טובים יותר.",
+      "name": "גיא בלום",
+      "detail": "מטופל ציפויים"
     },
     {
-      "quote": "השתלים שלי נראים טבעיים לחלוטין. שישה חודשים אחרי אני עדיין לא מאמין כמה כל התהליך היה פשוט וללא כאב.",
-      "name": "אבי כהן",
-      "detail": "מטופל שתלים"
+      "quote": "הליווי האישי, האסתטיקה, הדיוק — אני מבין עכשיו למה ממליצים על המקום הזה בלחישה.",
+      "name": "נועם פלד",
+      "detail": "מטופל עיצוב חיוך"
     },
     {
-      "quote": "הילדים שלי ממש מצפים לביקורים כאן. זה אומר הכל.",
-      "name": "מירי שפירו",
-      "detail": "מטופלת משפחתית"
+      "quote": "המרפאה היפה ביותר שביקרתי בה. וזה רק החלק החיצוני — הרמה הקלינית עוד יותר גבוהה.",
+      "name": "אלה שמיר",
+      "detail": "מטופלת שתלים"
     }
   ],
   "stats": [
     {
-      "value": "3,200+",
-      "label": "מטופלים מרוצים"
+      "value": "2,200+",
+      "label": "חיוכים שעיצבנו"
     },
     {
-      "value": "14",
-      "label": "שנות ניסיון"
+      "value": "9",
+      "label": "שנות בוטיק"
     },
     {
-      "value": "98%",
-      "label": "שביעות רצון"
+      "value": "99%",
+      "label": "תוצאות מושלמות"
     },
     {
-      "value": "12",
-      "label": "מומחים"
+      "value": "6",
+      "label": "מומחי אסתטיקה"
     }
   ],
   "design": {
-    "packId": "navy-sans-sharp"
+    "packId": "amber-friendly-family",
+    "textPackId": "luxury-aesthetic"
   },
   "copy": {
-    "h1": "שיניים יפות בידיים טובות",
-    "heroSubtitle": "צוות מומחים שמטפל בך כמו בבית — עם דיוק של מרפאה מובילה.",
-    "tagline": "דיוק. חמימות. תוצאות.",
-    "about": "אנחנו משלבים ציוד מהדור האחרון עם גישה אנושית ואמיתית. כל תור מתוכנן להיות קצר, נוח ויעיל — כי הזמן שלך יקר.",
-    "ctaMain": "קבע תור עכשיו",
-    "ctaSecondary": "לכל השירותים",
-    "sectionLabel": "מה אנחנו מציעים"
+    "h1": "אסתטיקה מהמדרגה הראשונה",
+    "heroSubtitle": "מרפאת בוטיק לעיצוב חיוך — לאלו שמחפשים את התוצאה המדויקת ביותר, ללא פשרות.",
+    "tagline": "יוקרה שמרגישה טבעי.",
+    "about": "אנחנו לא מרפאה רגילה. אנחנו סטודיו אסתטי לעיצוב חיוך, שמטפל במספר מצומצם של מטופלים בשנה — כדי שכל אחד יקבל את הזמן, הקשב והדיוק שמגיעים לו.",
+    "ctaMain": "קבעו ייעוץ",
+    "ctaSecondary": "גלו עוד",
+    "sectionLabel": "הסטודיו שלנו"
   }
 }
