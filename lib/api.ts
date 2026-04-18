@@ -67,6 +67,87 @@ export async function churnClient(slug: string): Promise<void> {
   await fetch(`${BASE}/api/clients/${slug}`, { method: 'DELETE' }).catch(() => {})
 }
 
+// ── Pool Review ───────────────────────────────────────────────────────────────
+
+export type PoolReviewImage = {
+  id: string
+  subtype: 'heroes' | 'patients'
+  url: string
+  size: number
+  addedAt: string
+}
+
+export type PoolReviewText = {
+  id: string
+  vibe?: string
+  copy?: Record<string, string>
+  services?: Array<{ title: string; desc?: string; icon?: string }>
+  testimonials?: Array<{ name: string; quote: string }>
+  stats?: Array<{ label: string; value: string }>
+  addedAt?: string
+}
+
+export type PoolReviewData = {
+  images: { heroes: PoolReviewImage[]; patients: PoolReviewImage[] }
+  texts: PoolReviewText[]
+  stats: {
+    imagePool: { available: number; inUse: number; locked: number; total: number }
+    textPool:  { available: number; inUse: number; locked: number; total: number }
+    pending:   { heroes: number; patients: number; texts: number }
+  }
+}
+
+const POOL_REVIEW_FALLBACK: PoolReviewData = {
+  images: { heroes: [], patients: [] },
+  texts: [],
+  stats: {
+    imagePool: { available: 0, inUse: 0, locked: 0, total: 0 },
+    textPool:  { available: 0, inUse: 0, locked: 0, total: 0 },
+    pending:   { heroes: 0, patients: 0, texts: 0 },
+  },
+}
+
+export const fetchPoolReview = () =>
+  get<PoolReviewData>('/pool-review/candidates', POOL_REVIEW_FALLBACK)
+
+export async function approvePoolItem(
+  type: 'image' | 'text',
+  id: string,
+  subtype?: 'heroes' | 'patients',
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${BASE}/api/pool-review/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, id, subtype }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) return { ok: false, error: data.error || `HTTP ${res.status}` }
+    return { ok: true }
+  } catch (e: any) {
+    return { ok: false, error: e.message || 'Network error' }
+  }
+}
+
+export async function rejectPoolItem(
+  type: 'image' | 'text',
+  id: string,
+  subtype?: 'heroes' | 'patients',
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${BASE}/api/pool-review/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, id, subtype }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) return { ok: false, error: data.error || `HTTP ${res.status}` }
+    return { ok: true }
+  } catch (e: any) {
+    return { ok: false, error: e.message || 'Network error' }
+  }
+}
+
 // ── Mock data (shown when server is unreachable) ──────────────────────────────
 
 const MOCK_TASKS: Task[] = [

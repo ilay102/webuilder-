@@ -13,6 +13,7 @@ const NAV = [
   { href: '/clients',   icon: '🏢', label: 'Clients' },
   { href: '/leads',     icon: '🎯', label: 'Leads' },
   { href: '/approvals', icon: '✅', label: 'Approvals' },
+  { href: '/admin/pool-review', icon: '🖼️', label: 'Pool Review' },
 ]
 
 export default function Sidebar({ pendingCount }: { pendingCount?: number }) {

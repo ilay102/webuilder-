@@ -585,6 +585,267 @@ app.post('/api/clients/:slug/lock', (req, res) => {
   res.json({ ok: true, lockedImages, lockedTextPack })
 })
 
+// ── Pool Review (Tinder-style approval of candidate images + text packs) ─────
+const CANDIDATES_DIR       = path.join(REPO_ROOT, 'public', 'pool', 'dental', '_candidates')
+const ARCHIVE_DIR          = path.join(REPO_ROOT, 'public', 'pool', 'dental', '_archive')
+const HEROES_LIVE_DIR      = path.join(REPO_ROOT, 'public', 'pool', 'dental', 'heroes')
+const PATIENTS_LIVE_DIR    = path.join(REPO_ROOT, 'public', 'pool', 'dental', 'patients')
+const TEXT_CANDIDATES_PATH = path.join(REPO_ROOT, 'text-pack-candidates.json')
+
+const IMAGE_EXT_RE = /\.(jpe?g|png|webp|gif|avif)$/i
+
+function _listCandidateImages(subtype) {
+  const dir = path.join(CANDIDATES_DIR, subtype)
+  if (!fs.existsSync(dir)) return []
+  return fs.readdirSync(dir)
+    .filter(f => IMAGE_EXT_RE.test(f))
+    .map(f => {
+      const full = path.join(dir, f)
+      const stat = fs.statSync(full)
+      return {
+        id:        f,
+        subtype,
+        url:       `/pool/dental/_candidates/${subtype}/${f}`,
+        size:      stat.size,
+        addedAt:   stat.mtime.toISOString(),
+      }
+    })
+    .sort((a, b) => a.addedAt.localeCompare(b.addedAt))
+}
+
+function _readTextCandidates() {
+  if (!fs.existsSync(TEXT_CANDIDATES_PATH)) return { updatedAt: new Date().toISOString(), candidates: [] }
+  try   { return JSON.parse(fs.readFileSync(TEXT_CANDIDATES_PATH, 'utf-8')) }
+  catch { return { updatedAt: new Date().toISOString(), candidates: [] } }
+}
+
+function _writeTextCandidates(state) {
+  state.updatedAt = new Date().toISOString()
+  fs.writeFileSync(TEXT_CANDIDATES_PATH, JSON.stringify(state, null, 2) + '\n')
+}
+
+/** Register an image id into the live pool state file (available). */
+function _registerImage(id, subtype) {
+  const pool = _readPool()
+  const existing = pool.images.find(i => i.id === id)
+  if (existing) return existing
+  const rec = {
+    id,
+    subtype,
+    url:        `/pool/dental/${subtype}/${id}`,
+    status:     'available',
+    assignedTo: null,
+    assignedAt: null,
+    lockedAt:   null,
+    addedAt:    new Date().toISOString(),
+  }
+  pool.images.push(rec)
+  _writePool(pool)
+  return rec
+}
+
+/** Register a text pack id into the live text pool state (available). */
+function _registerTextPack(id) {
+  const state = _readTextPool()
+  const existing = state.packs.find(p => p.id === id)
+  if (existing) return existing
+  const rec = {
+    id,
+    status:     'available',
+    assignedTo: null,
+    assignedAt: null,
+    lockedAt:   null,
+    addedAt:    new Date().toISOString(),
+  }
+  state.packs.push(rec)
+  _writeTextPool(state)
+  return rec
+}
+
+function _gitCommitPush(filesToAdd, message) {
+  try {
+    execSync('git pull --rebase --autostash', { cwd: REPO_ROOT, stdio: 'pipe' })
+  } catch (e) {
+    throw new Error(`git pull --rebase failed: ${e.message}`)
+  }
+  for (const f of filesToAdd) {
+    try { execSync(`git add "${f}"`, { cwd: REPO_ROOT, stdio: 'pipe' }) } catch {}
+  }
+  try {
+    execSync(`git commit -m "${message}"`, { cwd: REPO_ROOT, stdio: 'pipe' })
+  } catch {
+    // nothing staged
+  }
+  try {
+    execSync('git push', { cwd: REPO_ROOT, stdio: 'pipe' })
+  } catch (e) {
+    throw new Error(`git push failed: ${e.message}`)
+  }
+}
+
+// GET /api/pool-review/candidates → { images: { heroes, patients }, texts, stats }
+app.get('/api/pool-review/candidates', (req, res) => {
+  try {
+    const heroes   = _listCandidateImages('heroes')
+    const patients = _listCandidateImages('patients')
+    const textState = _readTextCandidates()
+    const pool      = _readPool()
+    const textPool  = _readTextPool()
+    res.json({
+      images: { heroes, patients },
+      texts:  textState.candidates || [],
+      stats: {
+        imagePool: {
+          available: pool.images.filter(i => i.status === 'available').length,
+          inUse:     pool.images.filter(i => i.status === 'in-use').length,
+          locked:    pool.images.filter(i => i.status === 'locked').length,
+          total:     pool.images.length,
+        },
+        textPool: {
+          available: textPool.packs.filter(p => p.status === 'available').length,
+          inUse:     textPool.packs.filter(p => p.status === 'in-use').length,
+          locked:    textPool.packs.filter(p => p.status === 'locked').length,
+          total:     textPool.packs.length,
+        },
+        pending: {
+          heroes:   heroes.length,
+          patients: patients.length,
+          texts:    (textState.candidates || []).length,
+        },
+      },
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/pool-review/approve  { type: 'image'|'text', id, subtype? }
+app.post('/api/pool-review/approve', (req, res) => {
+  const { type, id, subtype } = req.body || {}
+  if (!type || !id) return res.status(400).json({ error: 'type and id are required' })
+
+  try {
+    if (type === 'image') {
+      if (subtype !== 'heroes' && subtype !== 'patients') {
+        return res.status(400).json({ error: "subtype must be 'heroes' or 'patients'" })
+      }
+      const src = path.join(CANDIDATES_DIR, subtype, id)
+      if (!fs.existsSync(src)) return res.status(404).json({ error: 'Candidate not found' })
+      const liveDir = subtype === 'heroes' ? HEROES_LIVE_DIR : PATIENTS_LIVE_DIR
+      fs.mkdirSync(liveDir, { recursive: true })
+      const dest = path.join(liveDir, id)
+      fs.renameSync(src, dest)
+      const record = _registerImage(id, subtype)
+      _gitCommitPush(
+        [
+          `public/pool/dental/${subtype}/${id}`,
+          `public/pool/dental/_candidates/${subtype}/${id}`,
+          'pool-state.json',
+        ],
+        `pool-review: approve image ${subtype}/${id}`,
+      )
+      console.log(`[pool-review] Approved image ${subtype}/${id}`)
+      return res.json({ ok: true, type, id, subtype, record })
+    }
+
+    if (type === 'text') {
+      const state = _readTextCandidates()
+      const idx   = (state.candidates || []).findIndex(c => c.id === id)
+      if (idx === -1) return res.status(404).json({ error: 'Text candidate not found' })
+      const pack = state.candidates[idx]
+
+      // Append pack definition into lib/text-packs.ts via a side-car JSON
+      // (cannot safely patch the TS source from here — instead record it into
+      // a supplemental file that lib/text-packs.ts can import or the admin
+      // can hand-move).  For now: store approved pack into
+      // `text-pack-approved.json` as a queue of accepted-but-not-yet-merged
+      // definitions and also register the id in text-pool-state.json.
+      const approvedPath = path.join(REPO_ROOT, 'text-pack-approved.json')
+      let approved = { updatedAt: new Date().toISOString(), packs: [] }
+      if (fs.existsSync(approvedPath)) {
+        try { approved = JSON.parse(fs.readFileSync(approvedPath, 'utf-8')) } catch {}
+      }
+      if (!approved.packs.find(p => p.id === pack.id)) approved.packs.push(pack)
+      approved.updatedAt = new Date().toISOString()
+      fs.writeFileSync(approvedPath, JSON.stringify(approved, null, 2) + '\n')
+
+      const record = _registerTextPack(pack.id)
+
+      // Remove from candidates
+      state.candidates.splice(idx, 1)
+      _writeTextCandidates(state)
+
+      _gitCommitPush(
+        ['text-pack-candidates.json', 'text-pack-approved.json', 'text-pool-state.json'],
+        `pool-review: approve text pack ${pack.id}`,
+      )
+      console.log(`[pool-review] Approved text pack ${pack.id}`)
+      return res.json({ ok: true, type, id, record })
+    }
+
+    return res.status(400).json({ error: `Unknown type: ${type}` })
+  } catch (err) {
+    console.error('[pool-review] approve error:', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/pool-review/reject  { type: 'image'|'text', id, subtype? }
+app.post('/api/pool-review/reject', (req, res) => {
+  const { type, id, subtype } = req.body || {}
+  if (!type || !id) return res.status(400).json({ error: 'type and id are required' })
+
+  try {
+    if (type === 'image') {
+      if (subtype !== 'heroes' && subtype !== 'patients') {
+        return res.status(400).json({ error: "subtype must be 'heroes' or 'patients'" })
+      }
+      const src = path.join(CANDIDATES_DIR, subtype, id)
+      if (!fs.existsSync(src)) return res.status(404).json({ error: 'Candidate not found' })
+      const archiveSub = path.join(ARCHIVE_DIR, subtype)
+      fs.mkdirSync(archiveSub, { recursive: true })
+      const dest = path.join(archiveSub, id)
+      fs.renameSync(src, dest)
+      _gitCommitPush(
+        [
+          `public/pool/dental/_archive/${subtype}/${id}`,
+          `public/pool/dental/_candidates/${subtype}/${id}`,
+        ],
+        `pool-review: reject image ${subtype}/${id}`,
+      )
+      console.log(`[pool-review] Rejected image ${subtype}/${id}`)
+      return res.json({ ok: true, type, id, subtype })
+    }
+
+    if (type === 'text') {
+      const state = _readTextCandidates()
+      const idx   = (state.candidates || []).findIndex(c => c.id === id)
+      if (idx === -1) return res.status(404).json({ error: 'Text candidate not found' })
+      const pack = state.candidates[idx]
+
+      // Archive into text-pack-archive.json (append) then remove from candidates
+      const archivePath = path.join(ARCHIVE_DIR, 'texts', `${pack.id}-${Date.now()}.json`)
+      fs.mkdirSync(path.dirname(archivePath), { recursive: true })
+      fs.writeFileSync(archivePath, JSON.stringify(pack, null, 2) + '\n')
+
+      state.candidates.splice(idx, 1)
+      _writeTextCandidates(state)
+
+      _gitCommitPush(
+        ['text-pack-candidates.json', `public/pool/dental/_archive/texts/${path.basename(archivePath)}`],
+        `pool-review: reject text pack ${pack.id}`,
+      )
+      console.log(`[pool-review] Rejected text pack ${pack.id}`)
+      return res.json({ ok: true, type, id })
+    }
+
+    return res.status(400).json({ error: `Unknown type: ${type}` })
+  } catch (err) {
+    console.error('[pool-review] reject error:', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ ok: true, uptime: process.uptime() }))
 
