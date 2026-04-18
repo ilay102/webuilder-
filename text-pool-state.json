@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-04-18T11:56:23.552Z",
+  "updatedAt": "2026-04-18T11:56:57.514Z",
   "packs": [
     {
       "id": "calm-trust",
@@ -19,9 +19,9 @@
     },
     {
       "id": "family-warm",
-      "status": "available",
-      "assignedTo": null,
-      "assignedAt": null,
+      "status": "in-use",
+      "assignedTo": "test-clinic-1",
+      "assignedAt": "2026-04-18T11:56:57.514Z",
       "lockedAt": null,
       "addedAt": "2026-04-18T11:50:58.867Z"
     },
