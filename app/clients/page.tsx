@@ -1,7 +1,8 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Shell from '@/app/shell'
-import { fetchClients, saveClient, createClient, churnClient } from '@/lib/api'
+import { fetchClients, saveClient, createClient, churnClient, createLSCheckout } from '@/lib/api'
 import type { Client } from '@/lib/types'
 import clsx from 'clsx'
 
@@ -11,20 +12,39 @@ const EMPTY: Partial<Client> & { slug: string } = {
 }
 
 export default function ClientsPage() {
-  const [clients, setClients]   = useState<Client[]>([])
-  const [loading, setLoading]   = useState(true)
-  const [search, setSearch]     = useState('')
-  const [modal, setModal]       = useState(false)
-  const [editing, setEditing]   = useState<(Partial<Client> & { slug: string }) | null>(null)
-  const [saving, setSaving]     = useState(false)
+  const [clients, setClients]       = useState<Client[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [search, setSearch]         = useState('')
+  const [modal, setModal]           = useState(false)
+  const [editing, setEditing]       = useState<(Partial<Client> & { slug: string }) | null>(null)
+  const [saving, setSaving]         = useState(false)
+  const [payingSlug, setPayingSlug] = useState<string | null>(null)
+  const [toast, setToast]           = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null)
 
-  const load = async () => {
+  const searchParams = useSearchParams()
+
+  const showToast = useCallback((kind: 'ok' | 'err', msg: string) => {
+    setToast({ kind, msg })
+    setTimeout(() => setToast(null), 3500)
+  }, [])
+
+  const load = useCallback(async () => {
     const data = await fetchClients()
     setClients(data)
     setLoading(false)
-  }
+  }, [])
 
-  useEffect(() => { load(); const t = setInterval(load, 15000); return () => clearInterval(t) }, [])
+  useEffect(() => { load(); const t = setInterval(load, 15000); return () => clearInterval(t) }, [load])
+
+  // Handle ?payment=success redirect back from Lemon Squeezy
+  useEffect(() => {
+    if (searchParams.get('payment') === 'success') {
+      const slug = searchParams.get('slug') || ''
+      showToast('ok', `Payment received${slug ? ` for ${slug}` : ''} — assets locked 🎉`)
+      // Clean URL without reload
+      window.history.replaceState({}, '', '/clients')
+    }
+  }, [searchParams, showToast])
 
   const filtered = clients.filter(c => {
     if (!search) return true
@@ -66,9 +86,33 @@ export default function ClientsPage() {
     setClients(prev => prev.map(c => c.slug === slug ? { ...c, status: 'churned' as const } : c))
   }
 
+  const handleCollect = async (c: Client) => {
+    setPayingSlug(c.slug)
+    const res = await createLSCheckout(c.slug, { email: c.email || '', name: c.name || '' })
+    setPayingSlug(null)
+    if (!res.ok || !res.url) {
+      showToast('err', res.error || 'Failed to create checkout')
+      return
+    }
+    // Open LS hosted checkout in new tab
+    window.open(res.url, '_blank', 'noopener,noreferrer')
+  }
+
   return (
     <Shell>
-      <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex flex-col h-full overflow-hidden relative">
+        {/* Toast */}
+        {toast && (
+          <div className={clsx(
+            'absolute top-4 right-5 z-50 px-4 py-2.5 rounded-lg border text-[12px] shadow-xl flex items-center gap-2',
+            toast.kind === 'ok'
+              ? 'bg-success/15 border-success/40 text-success'
+              : 'bg-danger/15 border-danger/40 text-danger',
+          )}>
+            {toast.kind === 'ok' ? '✓' : '✕'} {toast.msg}
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-3 border-b border-border bg-bg2 flex-shrink-0">
           <span className="text-lg">🏢</span>
@@ -115,7 +159,7 @@ export default function ClientsPage() {
             <table className="w-full text-[12px]">
               <thead className="sticky top-0 z-10 bg-bg3 border-b border-border">
                 <tr>
-                  {['Client', 'Contact', 'Template', 'Status', 'Plan', 'Site', 'Last Photo', 'Added', ''].map(h => (
+                  {['Client', 'Contact', 'Template', 'Status', 'Plan', 'Site', 'Last Photo', 'Added', 'Actions'].map(h => (
                     <th key={h} className="text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-faint whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -150,8 +194,20 @@ export default function ClientsPage() {
                       {c.createdAt ? new Date(c.createdAt).toLocaleDateString('he-IL') : '—'}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 items-center">
                         <button onClick={() => openEdit(c)} className="text-[10px] px-2 py-1 rounded border border-border hover:border-accent hover:text-accent transition-colors">Edit</button>
+                        {c.status !== 'churned' && c.plan !== 'paid' && (
+                          <button
+                            onClick={() => handleCollect(c)}
+                            disabled={payingSlug === c.slug}
+                            className="text-[10px] px-2 py-1 rounded border border-accent/40 text-accent hover:bg-accent/10 transition-colors disabled:opacity-50 disabled:cursor-wait whitespace-nowrap"
+                          >
+                            {payingSlug === c.slug ? '…' : '💳 Collect'}
+                          </button>
+                        )}
+                        {c.plan === 'paid' && (
+                          <span className="text-[10px] text-success">✓ paid</span>
+                        )}
                         {c.status !== 'churned' && (
                           <button onClick={() => handleChurn(c.slug)} className="text-[10px] px-2 py-1 rounded border border-danger/30 text-danger hover:bg-danger/10 transition-colors">×</button>
                         )}

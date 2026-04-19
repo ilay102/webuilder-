@@ -67,6 +67,30 @@ export async function churnClient(slug: string): Promise<void> {
   await fetch(`${BASE}/api/clients/${slug}`, { method: 'DELETE' }).catch(() => {})
 }
 
+export async function lockClient(slug: string): Promise<void> {
+  await fetch(`${BASE}/api/clients/${slug}/lock`, { method: 'POST' }).catch(() => {})
+}
+
+// ── Lemon Squeezy ─────────────────────────────────────────────────────────────
+
+export async function createLSCheckout(
+  slug: string,
+  opts: { email?: string; name?: string } = {},
+): Promise<{ ok: boolean; url?: string; error?: string }> {
+  try {
+    const res = await fetch('/api/ls/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, ...opts }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) return { ok: false, error: data.error || `HTTP ${res.status}` }
+    return { ok: true, url: data.url }
+  } catch (e: any) {
+    return { ok: false, error: e.message || 'Network error' }
+  }
+}
+
 // ── Pool Review ───────────────────────────────────────────────────────────────
 
 export type PoolReviewImage = {
