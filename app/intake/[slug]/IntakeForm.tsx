@@ -341,10 +341,10 @@ export function IntakeForm({ slug, initial }: IntakeFormProps) {
                 Let's build your website 🎉
               </h1>
               <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 12 }}>
-                Hi <strong style={{ color: C.charcoal }}>{initial.biz.name}</strong>! We just need a few quick details to personalize your site.
+                We just need a few quick details to personalize your site — takes about 2 minutes.
               </p>
               <p style={{ fontFamily: F.body, fontSize: 14, color: C.light, marginBottom: 40 }}>
-                Takes about 2 minutes · Photos via WhatsApp
+                Photos can be sent after via WhatsApp
               </p>
               <Btn onClick={advance} full>Let's go →</Btn>
             </motion.div>
