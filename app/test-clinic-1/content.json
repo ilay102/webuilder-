@@ -6,7 +6,7 @@
     "address": "תל אביב",
     "phone": "03-555-0001",
     "email": "test1@example.com",
-    "hours": "א׳–ה׳ 09:00–18:00",
+    "hours": "Sun–Thu 9:00–18:00",
     "calLink": "ilay-lankin/15min",
     "alertEmail": "test1@example.com",
     "alertWhatsapp": "972500000001",
