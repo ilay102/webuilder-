@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Shell from '@/app/shell'
 import { fetchClients, saveClient, createClient, churnClient, createLSCheckout } from '@/lib/api'
@@ -21,8 +21,6 @@ export default function ClientsPage() {
   const [payingSlug, setPayingSlug] = useState<string | null>(null)
   const [toast, setToast]           = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null)
 
-  const searchParams = useSearchParams()
-
   const showToast = useCallback((kind: 'ok' | 'err', msg: string) => {
     setToast({ kind, msg })
     setTimeout(() => setToast(null), 3500)
@@ -35,16 +33,6 @@ export default function ClientsPage() {
   }, [])
 
   useEffect(() => { load(); const t = setInterval(load, 15000); return () => clearInterval(t) }, [load])
-
-  // Handle ?payment=success redirect back from Lemon Squeezy
-  useEffect(() => {
-    if (searchParams.get('payment') === 'success') {
-      const slug = searchParams.get('slug') || ''
-      showToast('ok', `Payment received${slug ? ` for ${slug}` : ''} — assets locked 🎉`)
-      // Clean URL without reload
-      window.history.replaceState({}, '', '/clients')
-    }
-  }, [searchParams, showToast])
 
   const filtered = clients.filter(c => {
     if (!search) return true
@@ -100,6 +88,9 @@ export default function ClientsPage() {
 
   return (
     <Shell>
+      <Suspense fallback={null}>
+        <PaymentSuccessHandler showToast={showToast} />
+      </Suspense>
       <div className="flex flex-col h-full overflow-hidden relative">
         {/* Toast */}
         {toast && (
@@ -278,6 +269,18 @@ export default function ClientsPage() {
       )}
     </Shell>
   )
+}
+
+function PaymentSuccessHandler({ showToast }: { showToast: (kind: 'ok' | 'err', msg: string) => void }) {
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    if (searchParams.get('payment') === 'success') {
+      const slug = searchParams.get('slug') || ''
+      showToast('ok', `Payment received${slug ? ` for ${slug}` : ''} — assets locked 🎉`)
+      window.history.replaceState({}, '', '/clients')
+    }
+  }, [searchParams, showToast])
+  return null
 }
 
 function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
