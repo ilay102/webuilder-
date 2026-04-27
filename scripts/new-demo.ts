@@ -305,50 +305,46 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     await addDomainToVercel(domain);
   }
 
-  // Git push → Vercel auto-deploys.
-  //
-  // Two-phase to prevent orphan commits on push failure:
-  //   Phase 1: pull --rebase --autostash (handles unrelated working-tree noise).
-  //   Phase 2: stage → commit → push. If push fails, soft-reset the commit so
-  //            the rollback freeImages/freeTextPack can restore disk state
-  //            without leaving a stale "in-use" mark in git history.
+  // ── Domain setup ──────────────────────────────────────────────
+  // (already handled above — just git commit pool-state + domains, NOT app folder)
+
+  // ── Git: commit only pool state + domains (NOT the app/{route}/ folder) ───────
+  // The site content is now stored on VPS (siteContent field) — no Vercel rebuild
+  // needed for new clients. We only commit pool-state.json + text-pool-state.json
+  // + domains.json so the image/text allocations survive future git pulls.
   try {
     execSync('git pull --rebase --autostash', { cwd: process.cwd(), stdio: 'pipe' });
   } catch (rebaseErr: any) {
     freeImages(c.route);
     freeTextPack(c.route);
-    throw new Error(`git pull --rebase failed (no commit made; pools released): ${rebaseErr.message}`);
+    throw new Error(`git pull --rebase failed (pools released): ${rebaseErr.message}`);
   }
 
-  let committed = false;
   try {
     execSync(
-      `git add app/${c.route} domains.json pool-state.json text-pool-state.json && ` +
-      `(git diff --staged --quiet || git commit -m "demo: ${c.route}")`,
+      `git add pool-state.json text-pool-state.json domains.json && ` +
+      `(git diff --staged --quiet || git commit -m "pool: allocate ${c.route}")`,
       { cwd: process.cwd(), stdio: 'pipe' },
     );
-    // Detect whether a commit actually happened (vs nothing to commit)
-    const lastMsg = execSync('git log -1 --pretty=%s', { cwd: process.cwd() }).toString().trim();
-    committed = lastMsg === `demo: ${c.route}`;
-
     execSync('git push', { cwd: process.cwd(), stdio: 'pipe' });
   } catch (gitErr: any) {
-    if (committed) {
-      try { execSync('git reset --soft HEAD~1', { cwd: process.cwd(), stdio: 'pipe' }); } catch { /* ignore */ }
-    }
+    // Pool commit failed — rollback allocations so they can be reused
     freeImages(c.route);
     freeTextPack(c.route);
-    throw new Error(`Git push failed (commit reverted, pools released): ${gitErr.message}`);
+    throw new Error(`Git push failed (pools released): ${gitErr.message}`);
   }
 
   const siteUrl = c.domain
     ? `https://${c.domain.replace(/^www\./, '')}`
     : `${BASE_URL}/${c.route}`;
 
-  // Register client in Mission Control
+  // ── Register client + push siteContent to VPS in one PATCH ────────────
+  // The dynamic route at app/[slug]/page.tsx reads siteContent from VPS —
+  // the site is live within seconds, no Vercel redeploy needed.
   const VPS_API = process.env.VPS_API_URL ?? 'http://204.168.207.116:3000';
   try {
-    await fetch(`${VPS_API}/api/clients`, {
+    // Create client record (or update if already exists)
+    const createRes = await fetch(`${VPS_API}/api/clients`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -364,8 +360,23 @@ async function buildDemo(c: DemoConfig): Promise<string> {
         plan:     'trial',
       }),
     });
+    if (!createRes.ok) {
+      process.stderr.write(`[clients] POST /api/clients returned ${createRes.status}\n`);
+    }
+
+    // Push the full siteContent so the dynamic route serves it immediately
+    const patchRes = await fetch(`${VPS_API}/api/clients/${c.route}`, {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ siteContent: baseContent }),
+    });
+    if (patchRes.ok) {
+      process.stderr.write(`[vps] siteContent pushed for ${c.route} — site live at ${siteUrl}\n`);
+    } else {
+      process.stderr.write(`[vps] PATCH siteContent returned ${patchRes.status}\n`);
+    }
   } catch (e: any) {
-    process.stderr.write(`[clients] Could not register client: ${e.message}\n`);
+    process.stderr.write(`[clients] VPS registration failed: ${e.message}\n`);
   }
 
   return siteUrl;

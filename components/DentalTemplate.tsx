@@ -1,96 +1,72 @@
 'use client';
 
+/**
+ * DentalTemplate.tsx — The universal dental site renderer.
+ *
+ * Accepts `content` as a prop (the same shape as content.json) so it can
+ * be rendered from:
+ *   - app/[slug]/page.tsx (dynamic route, fetches from VPS)
+ *   - app/dental/page.tsx (canonical template preview)
+ *
+ * NEVER import content.json directly here — all data comes through props.
+ */
+
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { CalBooking, CalFloatingButton } from '@/components/ui/cal-booking';
 import { Chatbot } from '@/components/ui/chatbot';
 import { AccessibilityFooter } from '@/components/ui/AccessibilityFooter';
 import { getPack, googleFontsUrl } from '@/lib/design-packs';
-import content from './content.json';
 
-/* ══════════════════════════════════════════════════════════════
-   TIER 1 — DESIGN PACK  (automated variance — same template, per-client look)
-   Source of truth: content.json → design.packId (assigned by new-demo.ts).
-   Falls back to 'forest-serif-soft' if no pack specified.
-══════════════════════════════════════════════════════════════ */
-const PACK = getPack((content as any).design?.packId);
+/* ── Types ────────────────────────────────────────────────────────────────── */
 
-// Map pack colors → the semantic names already used throughout this template.
-const C = {
-  bg:        PACK.colors.bg,
-  bgAlt:     PACK.colors.bgAlt,
-  white:     PACK.colors.white,
-  forest:    PACK.colors.primary,
-  forestDim: PACK.colors.primaryDark,
-  sage:      PACK.colors.primary,
-  sageMid:   PACK.colors.primaryDark,
-  sageLight: PACK.colors.accentLight,
-  oak:       PACK.colors.accent,
-  oakLight:  PACK.colors.accentLight,
-  charcoal:  PACK.colors.text,
-  muted:     PACK.colors.muted,
-  light:     PACK.colors.light,
-} as const;
-
-const F = {
-  serif: `'${PACK.fonts.heading.family}', system-ui, serif`,
-  body:  `'${PACK.fonts.body.family}', system-ui, sans-serif`,
-  label: `'${PACK.fonts.body.family}', system-ui, sans-serif`,
-} as const;
-
-// AI-generated per-client copy (falls back to tasteful defaults if not generated yet)
-const COPY = {
-  h1:           (content as any).copy?.h1           ?? null,
-  heroSubtitle: (content as any).copy?.heroSubtitle ?? null,
-  tagline:      (content as any).copy?.tagline      ?? null,
-  about:        (content as any).copy?.about        ?? null,
-  ctaMain:      (content as any).copy?.ctaMain      ?? 'קבע ייעוץ חינם',
-  ctaSecondary: (content as any).copy?.ctaSecondary ?? 'לכל השירותים',
-  sectionLabel: (content as any).copy?.sectionLabel ?? `מרפאת שיניים מובילה · ${content.biz.city}`,
-};
-
-/* Google Fonts loader — injects the pack's heading + body fonts at runtime. */
-function DesignPackFonts() {
-  useEffect(() => {
-    const id = `pack-fonts-${PACK.id}`;
-    if (document.getElementById(id)) return;
-    const link = document.createElement('link');
-    link.id = id;
-    link.rel = 'stylesheet';
-    link.href = googleFontsUrl(PACK);
-    document.head.appendChild(link);
-  }, []);
-  return null;
+export interface SiteContent {
+  biz: {
+    name:           string;
+    tagline?:       string;
+    city:           string;
+    address?:       string;
+    phone:          string;
+    email?:         string;
+    hours?:         string;
+    calLink?:       string;
+    alertEmail?:    string;
+    alertWhatsapp?: string;
+    domain?:        string | null;
+    template?:      string;
+  };
+  services:     Array<{ icon: string; title: string; desc: string }>;
+  photos:       { hero: string; about: string; results: string; cta: string; gallery?: string[] };
+  testimonials: Array<{ quote: string; name: string; detail: string }>;
+  stats:        Array<{ value: string; label: string }>;
+  design?:      { packId?: string; textPackId?: string };
+  copy?: {
+    h1?:           string;
+    heroSubtitle?: string;
+    tagline?:      string;
+    about?:        string;
+    ctaMain?:      string;
+    ctaSecondary?: string;
+    sectionLabel?: string;
+  };
 }
 
-/* ══════════════════════════════════════════════════════════════
-   TIER 2 — BUSINESS  (loaded from content.json — edit that file)
-══════════════════════════════════════════════════════════════ */
-const BIZ = content.biz;
-
-/* ─── Helpers ───────────────────────────────────────────────── */
-function Tag({ children }: { children: React.ReactNode }) {
-  return (
-    <span style={{
-      fontFamily: F.label, fontSize: 11, letterSpacing: '0.18em',
-      textTransform: 'uppercase' as const, color: C.forest,
-      background: C.sageLight, padding: '4px 12px', borderRadius: 99, display: 'inline-block',
-    }}>{children}</span>
-  );
+export interface DentalTemplateProps {
+  content: SiteContent;
+  /** Show "Demo" banner — shown when slug has no registered client yet */
+  isDemo?: boolean;
 }
 
-function SectionLabel({ children }: { children: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-      <div style={{ width: 28, height: 2, background: C.forest, borderRadius: 2 }} />
-      <span style={{ fontFamily: F.label, fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: C.forest }}>{children}</span>
-    </div>
-  );
-}
+/* ── Sub-components ───────────────────────────────────────────────────────── */
 
-function ServiceCard({ icon, title, desc, delay }: { icon: string; title: string; desc: string; delay: number }) {
+function ServiceCard({
+  icon, title, desc, delay, colors,
+}: {
+  icon: string; title: string; desc: string; delay: number;
+  colors: { bg: string; white: string; forest: string; sageLight: string; charcoal: string; muted: string };
+}) {
   const [hovered, setHovered] = useState(false);
-  const ref = useRef(null);
+  const ref   = useRef(null);
   const inView = useInView(ref, { once: true });
   return (
     <motion.div
@@ -101,7 +77,7 @@ function ServiceCard({ icon, title, desc, delay }: { icon: string; title: string
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: hovered ? C.white : C.bg, borderRadius: 20, padding: '36px 32px',
+        background: hovered ? colors.white : colors.bg, borderRadius: 20, padding: '36px 32px',
         transition: 'all 0.3s ease',
         boxShadow: hovered ? '0 20px 48px rgba(45,107,85,0.10)' : '0 2px 12px rgba(0,0,0,0.04)',
         cursor: 'default',
@@ -109,18 +85,23 @@ function ServiceCard({ icon, title, desc, delay }: { icon: string; title: string
     >
       <div style={{
         width: 52, height: 52, borderRadius: 14,
-        background: hovered ? C.forest : C.sageLight,
+        background: hovered ? colors.forest : colors.sageLight,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 24, marginBottom: 20, transition: 'all 0.3s ease',
       }}>{icon}</div>
-      <h3 style={{ fontFamily: F.serif, fontSize: 19, fontWeight: 600, color: C.charcoal, marginBottom: 10 }}>{title}</h3>
-      <p style={{ fontFamily: F.body, fontSize: 15, color: C.muted, lineHeight: 1.7, margin: 0 }}>{desc}</p>
+      <h3 style={{ fontFamily: 'var(--f-serif)', fontSize: 19, fontWeight: 600, color: colors.charcoal, marginBottom: 10 }}>{title}</h3>
+      <p style={{ fontFamily: 'var(--f-body)', fontSize: 15, color: colors.muted, lineHeight: 1.7, margin: 0 }}>{desc}</p>
     </motion.div>
   );
 }
 
-function Testimonial({ quote, name, detail, delay }: { quote: string; name: string; detail: string; delay: number }) {
-  const ref = useRef(null);
+function Testimonial({
+  quote, name, detail, delay, colors,
+}: {
+  quote: string; name: string; detail: string; delay: number;
+  colors: { white: string; sageLight: string; forest: string; charcoal: string; muted: string };
+}) {
+  const ref   = useRef(null);
   const inView = useInView(ref, { once: true });
   return (
     <motion.div
@@ -128,59 +109,139 @@ function Testimonial({ quote, name, detail, delay }: { quote: string; name: stri
       initial={{ opacity: 0, y: 20 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.6, delay }}
-      style={{ background: C.white, borderRadius: 20, padding: '36px 32px', boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}
+      style={{ background: colors.white, borderRadius: 20, padding: '36px 32px', boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}
     >
-      <div style={{ fontSize: 36, color: C.sageLight, lineHeight: 1, marginBottom: 16, fontFamily: 'Georgia' }}>"</div>
-      <p style={{ fontFamily: F.body, fontSize: 16, color: C.charcoal, lineHeight: 1.75, marginBottom: 24 }}>{quote}</p>
+      <div style={{ fontSize: 36, color: colors.sageLight, lineHeight: 1, marginBottom: 16, fontFamily: 'Georgia' }}>"</div>
+      <p style={{ fontFamily: 'var(--f-body)', fontSize: 16, color: colors.charcoal, lineHeight: 1.75, marginBottom: 24 }}>{quote}</p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 99, background: C.sageLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: F.serif, fontWeight: 700, color: C.forest, fontSize: 16 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: 99, background: colors.sageLight,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: 'var(--f-serif)', fontWeight: 700, color: colors.forest, fontSize: 16,
+        }}>
           {name[0]}
         </div>
         <div>
-          <div style={{ fontFamily: F.serif, fontWeight: 600, fontSize: 15, color: C.charcoal }}>{name}</div>
-          <div style={{ fontFamily: F.body, fontSize: 13, color: C.muted }}>{detail}</div>
+          <div style={{ fontFamily: 'var(--f-serif)', fontWeight: 600, fontSize: 15, color: colors.charcoal }}>{name}</div>
+          <div style={{ fontFamily: 'var(--f-body)', fontSize: 13, color: colors.muted }}>{detail}</div>
         </div>
       </div>
     </motion.div>
   );
 }
 
-/* ─── Page ──────────────────────────────────────────────────── */
-export default function DentalPage() {
+/* ── Main Component ───────────────────────────────────────────────────────── */
+
+export default function DentalTemplate({ content, isDemo = false }: DentalTemplateProps) {
+  // ── Derive design pack from content (or fallback) ───────────────────────
+  const PACK = getPack(content.design?.packId);
+
+  const C = {
+    bg:        PACK.colors.bg,
+    bgAlt:     PACK.colors.bgAlt,
+    white:     PACK.colors.white,
+    forest:    PACK.colors.primary,
+    forestDim: PACK.colors.primaryDark,
+    sage:      PACK.colors.primary,
+    sageMid:   PACK.colors.primaryDark,
+    sageLight: PACK.colors.accentLight,
+    oak:       PACK.colors.accent,
+    oakLight:  PACK.colors.accentLight,
+    charcoal:  PACK.colors.text,
+    muted:     PACK.colors.muted,
+    light:     PACK.colors.light,
+  };
+
+  const F = {
+    serif: `'${PACK.fonts.heading.family}', system-ui, serif`,
+    body:  `'${PACK.fonts.body.family}', system-ui, sans-serif`,
+    label: `'${PACK.fonts.body.family}', system-ui, sans-serif`,
+  };
+
+  const BIZ  = content.biz;
+  const COPY = {
+    h1:           content.copy?.h1           ?? null,
+    heroSubtitle: content.copy?.heroSubtitle ?? null,
+    tagline:      content.copy?.tagline      ?? null,
+    about:        content.copy?.about        ?? null,
+    ctaMain:      content.copy?.ctaMain      ?? 'קבע ייעוץ חינם',
+    ctaSecondary: content.copy?.ctaSecondary ?? 'לכל השירותים',
+    sectionLabel: content.copy?.sectionLabel ?? `מרפאת שיניים מובילה · ${BIZ.city}`,
+  };
+
+  const photos       = content.photos;
+  const services     = content.services;
+  const testimonials = content.testimonials;
+  const stats        = content.stats;
+
+  // Shared colors object for sub-components
+  const SC = {
+    bg: C.bg, white: C.white, forest: C.forest, sageLight: C.sageLight,
+    charcoal: C.charcoal, muted: C.muted,
+  };
+
+  // ── Font loader ─────────────────────────────────────────────────────────
   useEffect(() => {
-    document.body.style.height = 'auto';
-    document.body.style.overflow = 'auto';
-    document.documentElement.style.height = 'auto';
+    const id = `pack-fonts-${PACK.id}`;
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id   = id;
+    link.rel  = 'stylesheet';
+    link.href = googleFontsUrl(PACK);
+    document.head.appendChild(link);
+  }, [PACK.id]);
+
+  // ── Scroll + overflow reset ────────────────────────────────────────────
+  useEffect(() => {
+    document.body.style.height     = 'auto';
+    document.body.style.overflow   = 'auto';
+    document.documentElement.style.height   = 'auto';
     document.documentElement.style.overflow = 'auto';
   }, []);
 
-  const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const services     = content.services;
-  const testimonials = content.testimonials;
-  const stats        = content.stats;
-  const photos       = content.photos as Record<string, any>;
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  function Tag({ children }: { children: React.ReactNode }) {
+    return (
+      <span style={{
+        fontFamily: F.label, fontSize: 11, letterSpacing: '0.18em',
+        textTransform: 'uppercase' as const, color: C.forest,
+        background: C.sageLight, padding: '4px 12px', borderRadius: 99, display: 'inline-block',
+      }}>{children}</span>
+    );
+  }
+
+  function SectionLabel({ children }: { children: string }) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <div style={{ width: 28, height: 2, background: C.forest, borderRadius: 2 }} />
+        <span style={{ fontFamily: F.label, fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: C.forest }}>{children}</span>
+      </div>
+    );
+  }
 
   return (
     <div dir="rtl" style={{ background: C.bg, minHeight: '100vh', fontFamily: F.body }}>
-      {/* Pack-aware font loader (injects Google Fonts for the assigned design pack) */}
-      <DesignPackFonts />
 
+      {/* CSS variables + responsive overrides */}
       <style dangerouslySetInnerHTML={{ __html: `
         @import url('${googleFontsUrl(PACK)}');
+        :root {
+          --f-serif: ${F.serif};
+          --f-body:  ${F.body};
+          --f-label: ${F.label};
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
         @media (max-width: 768px) {
           .nav-links { display: none !important; }
           .nav-book  { display: none !important; }
-          .nav-name  { font-size: 14px !important; }
           .hero-grad { background: linear-gradient(to bottom, ${C.bg}18 0%, ${C.bg}d0 40%, ${C.bg}f7 100%) !important; }
           .hero-inner { padding: 0 24px !important; align-items: flex-end !important; padding-bottom: 80px !important; }
           .hero-content { max-width: 100% !important; }
@@ -194,20 +255,29 @@ export default function DentalPage() {
           .testimonials-wrap { padding: 60px 24px !important; }
           .testimonials-grid { grid-template-columns: 1fr !important; }
           .cta-section { height: auto !important; padding: 80px 0 !important; }
-          .cta-inner { padding: 0 24px !important; }
-          .cta-content { max-width: 100% !important; }
           .hero-btns { flex-direction: column !important; align-items: flex-start !important; }
           .hero-btns button { width: 100% !important; text-align: center !important; }
           .footer-outer { padding: 48px 24px 32px !important; }
           .footer-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
-          .sec-pad { padding: 60px 24px !important; }
           .hide-mobile { display: none !important; }
         }
       `}} />
 
+      {/* ── DEMO BANNER ── */}
+      {isDemo && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
+          background: '#F59E0B', color: '#1C1917', fontFamily: F.body,
+          fontSize: 13, fontWeight: 600, textAlign: 'center',
+          padding: '10px 16px', letterSpacing: '0.02em',
+        }}>
+          🚧 דמו בלבד — זה אתר לדוגמה. פרטי העסק יתמלאו לאחר טופס הקבלה.
+        </div>
+      )}
+
       {/* ── NAV ── */}
       <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+        position: 'fixed', top: isDemo ? 40 : 0, left: 0, right: 0, zIndex: 100,
         background: scrolled ? 'rgba(250,248,244,0.92)' : 'transparent',
         backdropFilter: scrolled ? 'blur(16px)' : 'none',
         WebkitBackdropFilter: scrolled ? 'blur(16px)' : 'none',
@@ -219,12 +289,13 @@ export default function DentalPage() {
               <span style={{ color: '#fff', fontSize: 16 }}>✦</span>
             </div>
             <span style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 18, color: C.charcoal, letterSpacing: '-0.02em' }}>
-              {BIZ.name}
+              {BIZ.name || 'שם המרפאה'}
             </span>
           </div>
           <div className="nav-links" style={{ display: 'flex', gap: 40, alignItems: 'center' }}>
             {[['שירותים', 'services'], ['אודות', 'about'], ['המלצות', 'testimonials']].map(([label, id]) => (
-              <a key={id} href={`#${id}`} style={{ fontFamily: F.body, fontSize: 15, color: C.charcoal, textDecoration: 'none', fontWeight: 500, opacity: 0.75, transition: 'opacity 0.2s' }}
+              <a key={id} href={`#${id}`}
+                style={{ fontFamily: F.body, fontSize: 15, color: C.charcoal, textDecoration: 'none', fontWeight: 500, opacity: 0.75, transition: 'opacity 0.2s' }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
                 onMouseLeave={e => (e.currentTarget.style.opacity = '0.75')}>
                 {label}
@@ -243,38 +314,23 @@ export default function DentalPage() {
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
-        {/* Photo — filtered per pack for tonal consistency */}
+      <section style={{ position: 'relative', height: '100vh', overflow: 'hidden', marginTop: isDemo ? 40 : 0 }}>
         <img
           src={photos.hero}
           alt="Dental clinic"
-          style={{
-            width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center',
-            filter: PACK.photoFilter,
-          }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', filter: PACK.photoFilter }}
         />
-
-        {/* PACK COLOR OVERLAY — "The Vibe Blend" — tints stock photo to match brand */}
-        <div
-          aria-hidden
-          style={{
-            position: 'absolute', inset: 0,
-            background: PACK.heroOverlay.gradient,
-            mixBlendMode: PACK.heroOverlay.blend as any,
-            opacity: PACK.heroOverlay.opacity,
-            pointerEvents: 'none',
-          }}
-        />
-
-        {/* Readability wash — keeps text legible above the blend */}
-        <div
-          className="hero-grad"
-          style={{
-            position: 'absolute', inset: 0,
-            background: `linear-gradient(to right, ${C.bg}e8 38%, ${C.bg}30 70%, transparent 100%)`,
-          }}
-        />
-
+        <div aria-hidden style={{
+          position: 'absolute', inset: 0,
+          background: PACK.heroOverlay.gradient,
+          mixBlendMode: PACK.heroOverlay.blend as any,
+          opacity: PACK.heroOverlay.opacity,
+          pointerEvents: 'none',
+        }} />
+        <div className="hero-grad" style={{
+          position: 'absolute', inset: 0,
+          background: `linear-gradient(to right, ${C.bg}e8 38%, ${C.bg}30 70%, transparent 100%)`,
+        }} />
         <div className="hero-inner" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 80px' }}>
           <div className="hero-content" style={{ maxWidth: 560, textAlign: 'left' as const, direction: 'ltr' as const }}>
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
@@ -292,14 +348,14 @@ export default function DentalPage() {
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.3 }}
               style={{ fontSize: 18, color: C.muted, lineHeight: 1.75, marginBottom: 40, maxWidth: 420 }}
             >
-              {COPY.heroSubtitle || BIZ.tagline}
+              {COPY.heroSubtitle || BIZ.tagline || 'טיפול שיניים מקצועי עם גישה אישית'}
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.45 }}
               className="hero-btns"
               style={{ display: 'flex', gap: 16, flexWrap: 'wrap' as const }}
             >
-              <CalBooking calLink={BIZ.calLink} brandColor={C.forest}>
+              <CalBooking calLink={BIZ.calLink || 'ilay-lankin/15min'} brandColor={C.forest}>
                 <button style={{
                   background: C.forest, color: '#fff', fontFamily: F.label, fontWeight: 700, fontSize: 15,
                   padding: '16px 36px', borderRadius: 99, border: 'none', cursor: 'pointer',
@@ -318,7 +374,6 @@ export default function DentalPage() {
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(42,42,42,0.20)'; e.currentTarget.style.color = C.charcoal; }}>
                 {COPY.ctaSecondary}
               </button>
-
             </motion.div>
           </div>
         </div>
@@ -326,16 +381,18 @@ export default function DentalPage() {
       </section>
 
       {/* ── STATS ── */}
-      <section style={{ background: C.forest }}>
-        <div className="stats-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32, padding: '48px 80px' }}>
-          {stats.map(({ value, label }, i) => (
-            <motion.div key={label} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }} style={{ textAlign: 'center' as const }}>
-              <div style={{ fontFamily: F.serif, fontSize: 40, fontWeight: 800, color: '#fff', letterSpacing: '-0.03em' }}>{value}</div>
-              <div style={{ fontFamily: F.body, fontSize: 14, color: 'rgba(255,255,255,0.65)', marginTop: 4 }}>{label}</div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+      {stats.length > 0 && (
+        <section style={{ background: C.forest }}>
+          <div className="stats-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32, padding: '48px 80px' }}>
+            {stats.map(({ value, label }, i) => (
+              <motion.div key={label} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }} style={{ textAlign: 'center' as const }}>
+                <div style={{ fontFamily: F.serif, fontSize: 40, fontWeight: 800, color: '#fff', letterSpacing: '-0.03em' }}>{value}</div>
+                <div style={{ fontFamily: F.body, fontSize: 14, color: 'rgba(255,255,255,0.65)', marginTop: 4 }}>{label}</div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── SERVICES ── */}
       <section id="services" className="services-wrap" style={{ padding: '120px 80px', maxWidth: 1200, margin: '0 auto' }}>
@@ -348,8 +405,8 @@ export default function DentalPage() {
             מהבדיקה הראשונה ועד לשינוי חיוך מלא — כל טיפול מבוצע על ידי מומחים שבאמת אכפת להם.
           </p>
         </div>
-        <div className="services-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
-          {services.map((s, i) => <ServiceCard key={s.title} {...s} delay={i * 0.08} />)}
+        <div className="services-grid" style={{ display: 'grid', gridTemplateColumns: services.length === 4 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 24 }}>
+          {services.map((s, i) => <ServiceCard key={s.title} {...s} delay={i * 0.08} colors={SC} />)}
         </div>
       </section>
 
@@ -362,7 +419,7 @@ export default function DentalPage() {
               <div style={{ width: 48, height: 48, borderRadius: 12, background: C.sageLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🏆</div>
               <div>
                 <div style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 15, color: C.charcoal }}>המרפאה המובילה</div>
-                <div style={{ fontFamily: F.body, fontSize: 13, color: C.muted }}>{BIZ.city} · 2024</div>
+                <div style={{ fontFamily: F.body, fontSize: 13, color: C.muted }}>{BIZ.city || 'ישראל'} · 2024</div>
               </div>
             </div>
           </motion.div>
@@ -371,12 +428,18 @@ export default function DentalPage() {
             <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 24 }}>
               רפואת שיניים שמרגישה כמו <span style={{ color: C.forest }}>מקלט</span>
             </h2>
-            <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 20 }}>
-              הקמנו את {BIZ.name} כי האמנו שביקור אצל רופא שיניים לא חייב להרגיש קליני או מלחיץ. המרפאה שלנו תוכננה מהיסוד להיות רגועה, יפה ומרגיעה — מבלי להתפשר על הדיוק.
-            </p>
-            <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 40 }}>
-              כל פרט — מהעיצוב הפנימי ועד לחלונות הגדולים — הוא מכוון. הצוות שלנו משלב חום ומקצועיות בכל תור ותור.
-            </p>
+            {COPY.about ? (
+              <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 40 }}>{COPY.about}</p>
+            ) : (
+              <>
+                <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 20 }}>
+                  הקמנו את {BIZ.name || 'המרפאה שלנו'} כי האמנו שביקור אצל רופא שיניים לא חייב להרגיש קליני או מלחיץ. המרפאה שלנו תוכננה מהיסוד להיות רגועה, יפה ומרגיעה — מבלי להתפשר על הדיוק.
+                </p>
+                <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 40 }}>
+                  כל פרט — מהעיצוב הפנימי ועד לחלונות הגדולים — הוא מכוון. הצוות שלנו משלב חום ומקצועיות בכל תור ותור.
+                </p>
+              </>
+            )}
             <button style={{ background: C.forest, color: '#fff', fontFamily: F.label, fontWeight: 700, fontSize: 14, padding: '14px 32px', borderRadius: 99, border: 'none', cursor: 'pointer', transition: 'all 0.2s ease' }}
               onMouseEnter={e => { e.currentTarget.style.background = C.forestDim; }}
               onMouseLeave={e => { e.currentTarget.style.background = C.forest; }}>
@@ -411,17 +474,19 @@ export default function DentalPage() {
       </section>
 
       {/* ── TESTIMONIALS ── */}
-      <section id="testimonials" className="testimonials-wrap" style={{ background: C.bgAlt, padding: '120px 80px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <SectionLabel>המלצות</SectionLabel>
-          <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 64 }}>
-            מה המטופלים שלנו אומרים
-          </h2>
-          <div className="testimonials-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
-            {testimonials.map((t, i) => <Testimonial key={t.name} {...t} delay={i * 0.1} />)}
+      {testimonials.length > 0 && (
+        <section id="testimonials" className="testimonials-wrap" style={{ background: C.bgAlt, padding: '120px 80px' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+            <SectionLabel>המלצות</SectionLabel>
+            <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 64 }}>
+              מה המטופלים שלנו אומרים
+            </h2>
+            <div className="testimonials-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+              {testimonials.map((t, i) => <Testimonial key={t.name} {...t} delay={i * 0.1} colors={{ white: C.white, sageLight: C.sageLight, forest: C.forest, charcoal: C.charcoal, muted: C.muted }} />)}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── CTA ── */}
       <section className="cta-section" style={{ position: 'relative', height: 560, overflow: 'hidden' }}>
@@ -436,7 +501,7 @@ export default function DentalPage() {
             <p style={{ fontFamily: F.body, fontSize: 17, color: 'rgba(255,255,255,0.80)', marginBottom: 40, maxWidth: 440 }}>
               הייעוץ הראשון חינם. ללא לחץ, ללא התחייבות — רק שיחה ידידותית על מטרות החיוך שלך.
             </p>
-            <CalBooking calLink={BIZ.calLink} brandColor={C.forest}>
+            <CalBooking calLink={BIZ.calLink || 'ilay-lankin/15min'} brandColor={C.forest}>
               <button style={{
                 background: '#fff', color: C.forest, fontFamily: F.label, fontWeight: 700, fontSize: 16,
                 padding: '18px 48px', borderRadius: 99, border: 'none', cursor: 'pointer',
@@ -460,16 +525,16 @@ export default function DentalPage() {
                 <div style={{ width: 32, height: 32, borderRadius: 99, background: C.forest, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ color: '#fff', fontSize: 16 }}>✦</span>
                 </div>
-                <span style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 18, color: '#fff' }}>{BIZ.name}</span>
+                <span style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 18, color: '#fff' }}>{BIZ.name || 'שם המרפאה'}</span>
               </div>
               <p style={{ fontFamily: F.body, fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.8, maxWidth: 260 }}>
-                טיפול שיניים פרמיום בלב {BIZ.city}. הנוחות והביטחון שלך הם העדיפות שלנו.
+                טיפול שיניים פרמיום{BIZ.city ? ` בלב ${BIZ.city}` : ''}. הנוחות והביטחון שלך הם העדיפות שלנו.
               </p>
             </div>
             {[
-              { title: 'שירותים', links: ['אסתטיקת שיניים', 'שתלים', 'יישור שיניים', 'טיפול מונע'] },
-              { title: 'המרפאה', links: ['אודות', 'הצוות שלנו', 'גלריה', 'בלוג'] },
-              { title: 'צור קשר', links: [BIZ.phone, BIZ.email, BIZ.address, BIZ.hours] },
+              { title: 'שירותים', links: services.slice(0, 4).map(s => s.title) },
+              { title: 'המרפאה',  links: ['אודות', 'הצוות שלנו', 'גלריה', 'בלוג'] },
+              { title: 'צור קשר', links: [BIZ.phone, BIZ.email, BIZ.address, BIZ.hours].filter(Boolean) as string[] },
             ].map(({ title, links }) => (
               <div key={title}>
                 <div style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 14, color: '#fff', marginBottom: 20, letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>{title}</div>
@@ -480,7 +545,7 @@ export default function DentalPage() {
             ))}
           </div>
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>© 2026 {BIZ.name}. כל הזכויות שמורות.</span>
+            <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>© 2026 {BIZ.name || 'המרפאה שלנו'}. כל הזכויות שמורות.</span>
             <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>נבנה באהבה ✦</span>
           </div>
         </div>
@@ -488,30 +553,30 @@ export default function DentalPage() {
 
       {/* ── ACCESSIBILITY FOOTER ── */}
       <AccessibilityFooter
-        bizName={BIZ.name}
-        email={BIZ.email}
-        phone={BIZ.phone}
-        hours={BIZ.hours}
+        bizName={BIZ.name || ''}
+        email={BIZ.email || ''}
+        phone={BIZ.phone || ''}
+        hours={BIZ.hours || ''}
         accentColor={C.forest}
       />
 
       {/* ── CHATBOT ── */}
       <Chatbot config={{
-        name:          BIZ.name,
-        type:          'מרפאת שיניים',
-        location:      BIZ.city,
-        phone:         BIZ.phone,
-        hours:         BIZ.hours,
-        services:      services.map(s => s.title),
-        offer:         'ייעוץ ראשון חינם',
-        brandColor:    C.forest,
-        greeting:      `שלום! 👋 אני העוזר של ${BIZ.name}. במה אוכל לעזור?`,
-        clientEmail:   BIZ.alertEmail,
-        clientWhatsapp: BIZ.alertWhatsapp,
+        name:           BIZ.name || 'המרפאה',
+        type:           'מרפאת שיניים',
+        location:       BIZ.city || 'ישראל',
+        phone:          BIZ.phone || '',
+        hours:          BIZ.hours || '',
+        services:       services.map(s => s.title),
+        offer:          'ייעוץ ראשון חינם',
+        brandColor:     C.forest,
+        greeting:       `שלום! 👋 אני העוזר של ${BIZ.name || 'המרפאה'}. במה אוכל לעזור?`,
+        clientEmail:    BIZ.alertEmail || BIZ.email || '',
+        clientWhatsapp: BIZ.alertWhatsapp || '',
       }} />
 
       {/* ── FLOATING BOOK BUTTON ── */}
-      <CalFloatingButton calLink={BIZ.calLink} brandColor={C.forest} label="קבע תור" buttonStyle={{ borderRadius: 99 }} />
+      <CalFloatingButton calLink={BIZ.calLink || 'ilay-lankin/15min'} brandColor={C.forest} label="קבע תור" buttonStyle={{ borderRadius: 99 }} />
 
     </div>
   );
