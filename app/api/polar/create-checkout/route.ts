@@ -49,7 +49,8 @@ export async function POST(req: NextRequest) {
     : 'https://webuilder-liart.vercel.app'
 
   const checkoutBody: Record<string, unknown> = {
-    product_id:   productId,
+    // Polar v1 expects `products` array (the older `product_id` returns 405)
+    products:     [productId],
     success_url:  `${siteBase}/clients?payment=success&slug=${encodeURIComponent(slug)}`,
     // Embed slug in metadata → webhook reads it to send the intake link
     metadata: { slug, product },
