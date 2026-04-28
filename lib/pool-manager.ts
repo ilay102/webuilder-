@@ -17,6 +17,7 @@
 
 import fs   from 'fs';
 import path from 'path';
+import { withFileLock } from './file-lock';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -80,30 +81,32 @@ function writePool(pool: PoolState): void {
  * freeImages(slug) before re-throwing.
  */
 export function allocateImage(type: ImageType, slug: string): PoolImage {
-  const pool = readPool();
+  return withFileLock(POOL_PATH, () => {
+    const pool = readPool();
 
-  const candidates = pool.images
-    .filter(img => img.type === type && img.status === 'available')
-    .sort((a, b) => a.addedAt.localeCompare(b.addedAt)); // FIFO
+    const candidates = pool.images
+      .filter(img => img.type === type && img.status === 'available')
+      .sort((a, b) => a.addedAt.localeCompare(b.addedAt)); // FIFO
 
-  if (candidates.length === 0) {
-    const s = poolStats();
-    throw new Error(
-      `No available ${type} images in pool.\n` +
-      `  heroes   → available: ${s.hero.available}, in-use: ${s.hero.inUse}, locked: ${s.hero.locked}\n` +
-      `  patients → available: ${s.patient.available}, in-use: ${s.patient.inUse}, locked: ${s.patient.locked}\n` +
-      `  Add images to /public/pool/dental/${type === 'hero' ? 'heroes' : 'patients'}/ and re-run pool-init.ts`,
-    );
-  }
+    if (candidates.length === 0) {
+      const s = poolStatsUnlocked(pool);
+      throw new Error(
+        `No available ${type} images in pool.\n` +
+        `  heroes   → available: ${s.hero.available}, in-use: ${s.hero.inUse}, locked: ${s.hero.locked}\n` +
+        `  patients → available: ${s.patient.available}, in-use: ${s.patient.inUse}, locked: ${s.patient.locked}\n` +
+        `  Add images to /public/pool/dental/${type === 'hero' ? 'heroes' : 'patients'}/ and re-run pool-init.ts`,
+      );
+    }
 
-  // Mutate in-place (find the record in the original array, not the sorted copy)
-  const record = pool.images.find(i => i.id === candidates[0].id)!;
-  record.status     = 'in-use';
-  record.assignedTo = slug;
-  record.assignedAt = new Date().toISOString();
-  writePool(pool);
+    // Mutate in-place (find the record in the original array, not the sorted copy)
+    const record = pool.images.find(i => i.id === candidates[0].id)!;
+    record.status     = 'in-use';
+    record.assignedTo = slug;
+    record.assignedAt = new Date().toISOString();
+    writePool(pool);
 
-  return { ...record }; // return a snapshot, not a mutable reference
+    return { ...record }; // return a snapshot, not a mutable reference
+  });
 }
 
 /**
@@ -113,20 +116,22 @@ export function allocateImage(type: ImageType, slug: string): PoolImage {
  * Does NOT touch locked images. Safe to call when nothing is assigned.
  */
 export function freeImages(slug: string): PoolImage[] {
-  const pool  = readPool();
-  const freed: PoolImage[] = [];
+  return withFileLock(POOL_PATH, () => {
+    const pool  = readPool();
+    const freed: PoolImage[] = [];
 
-  for (const img of pool.images) {
-    if (img.assignedTo === slug && img.status === 'in-use') {
-      img.status     = 'available';
-      img.assignedTo = null;
-      img.assignedAt = null;
-      freed.push({ ...img });
+    for (const img of pool.images) {
+      if (img.assignedTo === slug && img.status === 'in-use') {
+        img.status     = 'available';
+        img.assignedTo = null;
+        img.assignedAt = null;
+        freed.push({ ...img });
+      }
     }
-  }
 
-  if (freed.length > 0) writePool(pool);
-  return freed;
+    if (freed.length > 0) writePool(pool);
+    return freed;
+  });
 }
 
 /**
@@ -141,19 +146,21 @@ export function freeImages(slug: string): PoolImage[] {
 export function freeImageByPath(slug: string, imagePath: string): boolean {
   if (!imagePath || !imagePath.startsWith('/pool/')) return false;
 
-  const pool = readPool();
-  const img  = pool.images.find(
-    i => i.assignedTo === slug &&
-         i.path       === imagePath &&
-         i.status     === 'in-use',
-  );
-  if (!img) return false;
+  return withFileLock(POOL_PATH, () => {
+    const pool = readPool();
+    const img  = pool.images.find(
+      i => i.assignedTo === slug &&
+           i.path       === imagePath &&
+           i.status     === 'in-use',
+    );
+    if (!img) return false;
 
-  img.status     = 'available';
-  img.assignedTo = null;
-  img.assignedAt = null;
-  writePool(pool);
-  return true;
+    img.status     = 'available';
+    img.assignedTo = null;
+    img.assignedAt = null;
+    writePool(pool);
+    return true;
+  });
 }
 
 /**
@@ -163,19 +170,21 @@ export function freeImageByPath(slug: string, imagePath: string): boolean {
  * Locked images are never returned to the available pool.
  */
 export function lockImages(slug: string): PoolImage[] {
-  const pool   = readPool();
-  const locked: PoolImage[] = [];
+  return withFileLock(POOL_PATH, () => {
+    const pool   = readPool();
+    const locked: PoolImage[] = [];
 
-  for (const img of pool.images) {
-    if (img.assignedTo === slug && img.status === 'in-use') {
-      img.status   = 'locked';
-      img.lockedAt = new Date().toISOString();
-      locked.push({ ...img });
+    for (const img of pool.images) {
+      if (img.assignedTo === slug && img.status === 'in-use') {
+        img.status   = 'locked';
+        img.lockedAt = new Date().toISOString();
+        locked.push({ ...img });
+      }
     }
-  }
 
-  if (locked.length > 0) writePool(pool);
-  return locked;
+    if (locked.length > 0) writePool(pool);
+    return locked;
+  });
 }
 
 /**
@@ -189,34 +198,39 @@ export function addImage(
   publicPath: string,
   notes:      string = '',
 ): PoolImage {
-  const pool = readPool();
-  const id   = publicPath.replace('/pool/dental/', '');
+  return withFileLock(POOL_PATH, () => {
+    const pool = readPool();
+    const id   = publicPath.replace('/pool/dental/', '');
 
-  if (pool.images.find(i => i.id === id)) {
-    throw new Error(`[pool-manager] Image already registered in pool: ${id}`);
-  }
+    if (pool.images.find(i => i.id === id)) {
+      throw new Error(`[pool-manager] Image already registered in pool: ${id}`);
+    }
 
-  const img: PoolImage = {
-    id,
-    type,
-    path:       publicPath,
-    status:     'available',
-    assignedTo: null,
-    assignedAt: null,
-    lockedAt:   null,
-    addedAt:    new Date().toISOString(),
-    notes,
-  };
-  pool.images.push(img);
-  writePool(pool);
-  return img;
+    const img: PoolImage = {
+      id,
+      type,
+      path:       publicPath,
+      status:     'available',
+      assignedTo: null,
+      assignedAt: null,
+      lockedAt:   null,
+      addedAt:    new Date().toISOString(),
+      notes,
+    };
+    pool.images.push(img);
+    writePool(pool);
+    return img;
+  });
 }
 
 /**
  * Pool health snapshot — used for Mission Control dashboard and low-stock alerts.
  */
 export function poolStats() {
-  const pool = readPool();
+  return poolStatsUnlocked(readPool());
+}
+
+function poolStatsUnlocked(pool: PoolState) {
   const zero = () => ({ available: 0, inUse: 0, locked: 0, total: 0 });
   const out  = { hero: zero(), patient: zero() };
 

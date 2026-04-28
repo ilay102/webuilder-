@@ -36,6 +36,7 @@ import { pickVariant }                                from '../lib/variance';
 import { getPack }                                   from '../lib/design-packs';
 import { allocateImage, freeImages, type PoolImage } from '../lib/pool-manager';
 import { allocateTextPack, freeTextPack }            from '../lib/text-pool-manager';
+import { composeSiteContent }                         from '../lib/demo-builder';
 
 const BASE_URL        = 'https://webuilder-liart.vercel.app';
 const VERCEL_TOKEN    = process.env.VERCEL_TOKEN ?? '';
@@ -257,41 +258,28 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     `hero=${hero.id}  patient=${patient.id}\n`,
   );
 
-  // ── Assemble content.json from KNOWN sources only — NO template inheritance ──
-  // Sources: (1) intake fields  (2) design pack  (3) text pack  (4) image pool
-  baseContent.biz = {
-    ...baseContent.biz,
-    name:          c.businessName,
-    tagline:       textPack.copy.tagline,
-    city:          c.city,
-    address:       c.city,
-    phone:         c.phone,
-    email:         c.clientEmail,
-    hours:         c.hours,
-    calLink:       c.calLink,
-    alertEmail:    c.clientEmail,
-    alertWhatsapp: c.clientWhatsapp,
-    domain:        c.domain ?? null,
-    template:      c.template,
-  };
-
-  // Full overwrite — kills cross-demo contamination of names/quotes/stats/services
-  baseContent.services     = textPack.services;
-  baseContent.testimonials = textPack.testimonials;
-  baseContent.stats        = textPack.stats;
-
-  // Fresh pool images — never inherit template photos
-  baseContent.photos = {
-    hero:    hero.path,
-    about:   hero.path,
-    results: patient.path,
-    cta:     hero.path,
-    gallery: [],
-  };
-
-  // Bake in design pack id + text pack copy
-  baseContent.design = { packId: pack.id, textPackId: textPack.id };
-  baseContent.copy   = textPack.copy;
+  // Assemble content from ONLY: intake + design pack + text pack + pool images.
+  // NO template inheritance — guarantees zero cross-demo contamination.
+  const siteContent = composeSiteContent({
+    biz: {
+      name:           c.businessName,
+      city:           c.city,
+      address:        c.city,
+      phone:          c.phone,
+      hours:          c.hours,
+      clientEmail:    c.clientEmail,
+      clientWhatsapp: c.clientWhatsapp,
+      calLink:        c.calLink,
+      domain:         c.domain,
+      template:       c.template,
+    },
+    hero,
+    patient,
+    textPack,
+    designPackId: pack.id,
+  });
+  // Local mutable copy used downstream (and written to disk for legacy folder mode)
+  Object.assign(baseContent, siteContent);
 
   fs.writeFileSync(
     path.join(outDir, 'content.json'),

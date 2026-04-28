@@ -76,7 +76,15 @@
       "Bash(npm run:*)",
       "Bash(curl -s http://localhost:3002/dental)",
       "mcp__3f06ac87-cddc-4214-8b83-a0bb037a77cc__execute_sql",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(curl -s http://204.168.207.116:3000/api/clients/test-clinic-1)",
+      "Bash(curl -s http://204.168.207.116:3000/api/clients/test-clinic-2)",
+      "Bash(npx ts-node *)",
+      "Bash(rm C:/Users/ilay1/Documents/reels/webuilder/scripts/free-pool.ts /tmp/race.mjs /tmp/race.js /tmp/free.ts /tmp/free.mjs /tmp/cleanup.mjs)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:51646/intake/test-clinic-1)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" -X POST http://localhost:51646/api/intake -H \"Content-Type: application/json\" -d '{\"slug\":\"test-clinic-1\",\"biz\":{\"name\":\"hijack\"}}')",
+      "Bash(curl -s -X POST http://localhost:51646/api/intake/test-clinic-1 -H \"Content-Type: application/json\" -d '{\"slug\":\"test-clinic-2\",\"biz\":{\"name\":\"safe-test\"}}')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" -X POST http://localhost:51646/api/intake/no-such-slug -H \"Content-Type: application/json\" -d '{\"biz\":{\"name\":\"x\"}}')"
     ]
   }
 }

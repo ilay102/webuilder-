@@ -287,10 +287,12 @@ export function IntakeForm({ slug, initial }: IntakeFormProps) {
         .filter(s => s.active && s.title.trim())
         .map(({ icon, title, desc }) => ({ icon, title, desc }));
 
-      const res = await fetch('/api/intake', {
+      // POST to the slug-scoped endpoint — the URL is the authority for which
+      // client record gets updated. Server-side ignores any slug in the body.
+      const res = await fetch(`/api/intake/${encodeURIComponent(slug)}`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ slug, biz, services }),
+        body:    JSON.stringify({ biz, services }),
       });
       if (!res.ok) throw new Error((await res.text()) || `Error ${res.status}`);
       setStep('done');
@@ -338,10 +340,10 @@ export function IntakeForm({ slug, initial }: IntakeFormProps) {
             >
               <div style={{ width: 64, height: 64, borderRadius: 99, background: C.forest, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px', fontSize: 28 }}>✦</div>
               <h1 style={{ fontFamily: F.serif, fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 800, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 18 }}>
-                Let's build your website 🎉
+                Tell us about your business
               </h1>
               <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 12 }}>
-                We just need a few quick details to personalize your site — takes about 2 minutes.
+                A few quick details and your site goes live — takes about 2 minutes.
               </p>
               <p style={{ fontFamily: F.body, fontSize: 14, color: C.light, marginBottom: 40 }}>
                 Photos can be sent after via WhatsApp

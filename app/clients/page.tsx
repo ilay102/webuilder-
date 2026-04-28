@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Shell from '@/app/shell'
-import { fetchClients, saveClient, createClient, churnClient, createLSCheckout } from '@/lib/api'
+import { fetchClients, saveClient, createClient, churnClient, createPolarCheckout, createDemo } from '@/lib/api'
 import type { Client } from '@/lib/types'
 import clsx from 'clsx'
 
@@ -20,6 +20,9 @@ export default function ClientsPage() {
   const [saving, setSaving]         = useState(false)
   const [payingSlug, setPayingSlug] = useState<string | null>(null)
   const [toast, setToast]           = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null)
+  const [demoModal, setDemoModal]   = useState(false)
+  const [demoForm, setDemoForm]     = useState<{ businessName: string; template: 'dental' | 'accountant' | 'lawyer' }>({ businessName: '', template: 'dental' })
+  const [creatingDemo, setCreatingDemo] = useState(false)
 
   const showToast = useCallback((kind: 'ok' | 'err', msg: string) => {
     setToast({ kind, msg })
@@ -74,9 +77,29 @@ export default function ClientsPage() {
     setClients(prev => prev.map(c => c.slug === slug ? { ...c, status: 'churned' as const } : c))
   }
 
+  const handleCreateDemo = async () => {
+    if (!demoForm.businessName.trim()) return
+    setCreatingDemo(true)
+    // Slug = template + 6 random base36 chars → unique, URL-safe, no collisions
+    const slug = `${demoForm.template}-${Math.random().toString(36).slice(2, 8)}`
+    const res = await createDemo({
+      slug,
+      businessName: demoForm.businessName.trim(),
+      template:     demoForm.template,
+    })
+    setCreatingDemo(false)
+    if (!res.ok) { showToast('err', res.error || 'Failed to create demo'); return }
+    showToast('ok', `Demo live at /${res.slug}`)
+    setDemoModal(false)
+    setDemoForm({ businessName: '', template: 'dental' })
+    load()
+    // Auto-open the live demo in a new tab so Ilay can verify instantly
+    if (res.url) window.open(res.url, '_blank', 'noopener,noreferrer')
+  }
+
   const handleCollect = async (c: Client) => {
     setPayingSlug(c.slug)
-    const res = await createLSCheckout(c.slug, { email: c.email || '', name: c.name || '' })
+    const res = await createPolarCheckout(c.slug, { email: c.email || '', name: c.name || '', product: 'site' })
     setPayingSlug(null)
     if (!res.ok || !res.url) {
       showToast('err', res.error || 'Failed to create checkout')
@@ -116,6 +139,12 @@ export default function ClientsPage() {
               placeholder="Search…"
               className="w-44 bg-bg3 border border-border rounded-lg px-3 py-1.5 text-[12px] text-white placeholder:text-faint outline-none focus:border-accent"
             />
+            <button
+              onClick={() => setDemoModal(true)}
+              className="bg-success hover:bg-success/80 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              ✨ New Demo
+            </button>
             <button
               onClick={openAdd}
               className="bg-accent hover:bg-accent/80 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors"
@@ -211,6 +240,47 @@ export default function ClientsPage() {
           )}
         </div>
       </div>
+
+      {/* Create Demo Modal */}
+      {demoModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-bg2 border border-bd2 rounded-xl w-[420px] max-w-full shadow-2xl">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
+              <span className="text-base">✨</span>
+              <h2 className="text-sm font-bold text-white flex-1">Create Demo</h2>
+              <button onClick={() => setDemoModal(false)} className="text-faint hover:text-white text-lg leading-none">×</button>
+            </div>
+            <div className="p-5 flex flex-col gap-3">
+              <p className="text-[11px] text-muted leading-relaxed">
+                Allocates a fresh hero + patient photo + text pack from the pool, registers the client on the VPS, and goes live instantly.
+                Biz fields stay placeholder until intake — share <span className="text-accent">/intake/&lt;slug&gt;</span> with the lead.
+              </p>
+              <Field
+                label="Business Name (display label)"
+                value={demoForm.businessName}
+                onChange={v => setDemoForm(f => ({ ...f, businessName: v }))}
+                placeholder="e.g. Cohen Dental (placeholder until intake)"
+              />
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Template</label>
+                <select value={demoForm.template} onChange={e => setDemoForm(f => ({ ...f, template: e.target.value as any }))}
+                  className="bg-bg3 border border-border rounded-lg px-3 py-2 text-[12px] text-white outline-none focus:border-accent">
+                  <option value="dental">Dental</option>
+                  <option value="accountant">Accountant</option>
+                  <option value="lawyer">Lawyer</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end px-5 py-4 border-t border-border">
+              <button onClick={() => setDemoModal(false)} className="text-[12px] px-4 py-2 rounded-lg border border-border hover:border-bd2 text-muted hover:text-white transition-colors">Cancel</button>
+              <button onClick={handleCreateDemo} disabled={creatingDemo || !demoForm.businessName.trim()}
+                className="text-[12px] px-4 py-2 rounded-lg bg-success hover:bg-success/80 text-white font-bold transition-colors disabled:opacity-50">
+                {creatingDemo ? 'Allocating…' : 'Create & Go Live'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {modal && editing && (

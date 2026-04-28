@@ -20,6 +20,7 @@
 import fs   from 'fs';
 import path from 'path';
 import { TEXT_PACKS, getTextPack, type TextPack } from './text-packs';
+import { withFileLock } from './file-lock';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -80,42 +81,42 @@ function writeState(state: TextPoolState): void {
  * Caller is responsible for rolling back via freeTextPack(slug) before re-throw.
  */
 export function allocateTextPack(slug: string): AllocatedTextPack {
-  const state = readState();
+  return withFileLock(STATE_PATH, () => {
+    const state = readState();
 
-  const candidates = state.packs
-    .filter(p => p.status === 'available')
-    .sort((a, b) => a.addedAt.localeCompare(b.addedAt)); // FIFO
+    const candidates = state.packs
+      .filter(p => p.status === 'available')
+      .sort((a, b) => a.addedAt.localeCompare(b.addedAt)); // FIFO
 
-  if (candidates.length === 0) {
-    const s = textPoolStats();
-    throw new Error(
-      `No available text packs in pool.\n` +
-      `  available: ${s.available}, in-use: ${s.inUse}, locked: ${s.locked}, total: ${s.total}\n` +
-      `  Add new packs to lib/text-packs.ts and run npm run text-pool:init`,
-    );
-  }
+    if (candidates.length === 0) {
+      const s = statsUnlocked(state);
+      throw new Error(
+        `No available text packs in pool.\n` +
+        `  available: ${s.available}, in-use: ${s.inUse}, locked: ${s.locked}, total: ${s.total}\n` +
+        `  Add new packs to lib/text-packs.ts and run npm run text-pool:init`,
+      );
+    }
 
-  const record = state.packs.find(p => p.id === candidates[0].id)!;
-  record.status     = 'in-use';
-  record.assignedTo = slug;
-  record.assignedAt = new Date().toISOString();
-  writeState(state);
-
-  const pack = getTextPack(record.id);
-  if (!pack) {
-    // State references a pack id that no longer exists in text-packs.ts.
-    // Roll back the allocation so the slug isn't held to a broken pack.
-    record.status     = 'available';
-    record.assignedTo = null;
-    record.assignedAt = null;
+    const record = state.packs.find(p => p.id === candidates[0].id)!;
+    record.status     = 'in-use';
+    record.assignedTo = slug;
+    record.assignedAt = new Date().toISOString();
     writeState(state);
-    throw new Error(
-      `[text-pool-manager] State references unknown pack id "${record.id}".\n` +
-      `  Either restore the pack in lib/text-packs.ts or remove it from text-pool-state.json.`,
-    );
-  }
 
-  return { record: { ...record }, pack };
+    const pack = getTextPack(record.id);
+    if (!pack) {
+      record.status     = 'available';
+      record.assignedTo = null;
+      record.assignedAt = null;
+      writeState(state);
+      throw new Error(
+        `[text-pool-manager] State references unknown pack id "${record.id}".\n` +
+        `  Either restore the pack in lib/text-packs.ts or remove it from text-pool-state.json.`,
+      );
+    }
+
+    return { record: { ...record }, pack };
+  });
 }
 
 /**
@@ -125,20 +126,22 @@ export function allocateTextPack(slug: string): AllocatedTextPack {
  * Does NOT touch locked packs. Safe to call when nothing is assigned.
  */
 export function freeTextPack(slug: string): TextPackRecord[] {
-  const state = readState();
-  const freed: TextPackRecord[] = [];
+  return withFileLock(STATE_PATH, () => {
+    const state = readState();
+    const freed: TextPackRecord[] = [];
 
-  for (const p of state.packs) {
-    if (p.assignedTo === slug && p.status === 'in-use') {
-      p.status     = 'available';
-      p.assignedTo = null;
-      p.assignedAt = null;
-      freed.push({ ...p });
+    for (const p of state.packs) {
+      if (p.assignedTo === slug && p.status === 'in-use') {
+        p.status     = 'available';
+        p.assignedTo = null;
+        p.assignedAt = null;
+        freed.push({ ...p });
+      }
     }
-  }
 
-  if (freed.length > 0) writeState(state);
-  return freed;
+    if (freed.length > 0) writeState(state);
+    return freed;
+  });
 }
 
 /**
@@ -147,19 +150,21 @@ export function freeTextPack(slug: string): TextPackRecord[] {
  * Called when a client pays — they keep their pack forever, never recycled.
  */
 export function lockTextPack(slug: string): TextPackRecord[] {
-  const state  = readState();
-  const locked: TextPackRecord[] = [];
+  return withFileLock(STATE_PATH, () => {
+    const state  = readState();
+    const locked: TextPackRecord[] = [];
 
-  for (const p of state.packs) {
-    if (p.assignedTo === slug && p.status === 'in-use') {
-      p.status   = 'locked';
-      p.lockedAt = new Date().toISOString();
-      locked.push({ ...p });
+    for (const p of state.packs) {
+      if (p.assignedTo === slug && p.status === 'in-use') {
+        p.status   = 'locked';
+        p.lockedAt = new Date().toISOString();
+        locked.push({ ...p });
+      }
     }
-  }
 
-  if (locked.length > 0) writeState(state);
-  return locked;
+    if (locked.length > 0) writeState(state);
+    return locked;
+  });
 }
 
 /**
@@ -169,32 +174,37 @@ export function lockTextPack(slug: string): TextPackRecord[] {
  * registered (init script catches and skips).
  */
 export function registerTextPack(id: string): TextPackRecord {
-  const state = readState();
-  if (state.packs.find(p => p.id === id)) {
-    throw new Error(`[text-pool-manager] Pack already registered: ${id}`);
-  }
-  if (!getTextPack(id)) {
-    throw new Error(`[text-pool-manager] Pack id "${id}" does not exist in lib/text-packs.ts`);
-  }
+  return withFileLock(STATE_PATH, () => {
+    const state = readState();
+    if (state.packs.find(p => p.id === id)) {
+      throw new Error(`[text-pool-manager] Pack already registered: ${id}`);
+    }
+    if (!getTextPack(id)) {
+      throw new Error(`[text-pool-manager] Pack id "${id}" does not exist in lib/text-packs.ts`);
+    }
 
-  const record: TextPackRecord = {
-    id,
-    status:     'available',
-    assignedTo: null,
-    assignedAt: null,
-    lockedAt:   null,
-    addedAt:    new Date().toISOString(),
-  };
-  state.packs.push(record);
-  writeState(state);
-  return record;
+    const record: TextPackRecord = {
+      id,
+      status:     'available',
+      assignedTo: null,
+      assignedAt: null,
+      lockedAt:   null,
+      addedAt:    new Date().toISOString(),
+    };
+    state.packs.push(record);
+    writeState(state);
+    return record;
+  });
 }
 
 /**
  * Pool health snapshot — for Mission Control + low-stock alerts.
  */
 export function textPoolStats() {
-  const state = readState();
+  return statsUnlocked(readState());
+}
+
+function statsUnlocked(state: TextPoolState) {
   const out = { available: 0, inUse: 0, locked: 0, total: 0 };
 
   for (const p of state.packs) {

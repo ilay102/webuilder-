@@ -71,17 +71,48 @@ export async function lockClient(slug: string): Promise<void> {
   await fetch(`${BASE}/api/clients/${slug}/lock`, { method: 'POST' }).catch(() => {})
 }
 
-// ── Lemon Squeezy ─────────────────────────────────────────────────────────────
+// ── Demo factory ──────────────────────────────────────────────────────────────
 
-export async function createLSCheckout(
-  slug: string,
-  opts: { email?: string; name?: string } = {},
+export interface CreateDemoInput {
+  template?:    'dental' | 'accountant' | 'lawyer';
+  slug:         string;
+  businessName: string;
+  city?:        string;
+  phone?:       string;
+  email?:       string;
+  whatsapp?:    string;
+  domain?:      string | null;
+  hours?:       string;
+}
+
+export async function createDemo(
+  input: CreateDemoInput,
+): Promise<{ ok: boolean; url?: string; intakeUrl?: string; slug?: string; error?: string }> {
+  try {
+    const res = await fetch('/api/demo/create', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(input),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: data.error || `HTTP ${res.status}` };
+    return { ok: true, url: data.url, intakeUrl: data.intakeUrl, slug: data.slug };
+  } catch (e: any) {
+    return { ok: false, error: e.message || 'Network error' };
+  }
+}
+
+// ── Polar.sh (replaces Lemon Squeezy) ────────────────────────────────────────
+
+export async function createPolarCheckout(
+  slug:    string,
+  opts:    { email?: string; name?: string; product?: 'site' | 'maintenance' } = {},
 ): Promise<{ ok: boolean; url?: string; error?: string }> {
   try {
-    const res = await fetch('/api/ls/create-checkout', {
+    const res = await fetch('/api/polar/create-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug, ...opts }),
+      body: JSON.stringify({ slug, product: opts.product ?? 'site', ...opts }),
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) return { ok: false, error: data.error || `HTTP ${res.status}` }
@@ -90,6 +121,9 @@ export async function createLSCheckout(
     return { ok: false, error: e.message || 'Network error' }
   }
 }
+
+/** @deprecated — use createPolarCheckout */
+export const createLSCheckout = createPolarCheckout
 
 // ── Pool Review ───────────────────────────────────────────────────────────────
 
