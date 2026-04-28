@@ -59,7 +59,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const res = await fetch(`${POLAR_API}/checkouts/custom`, {
+    // Polar v1 endpoint is /v1/checkouts/ (the older /checkouts/custom
+     // was renamed; calling the old path returns 405 Method Not Allowed)
+    const res = await fetch(`${POLAR_API}/checkouts/`, {
       method: 'POST',
       headers: {
         Authorization:  `Bearer ${apiKey}`,
