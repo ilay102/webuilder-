@@ -1,13 +1,14 @@
 import type { Task, CronJob, MemoryEntry, Doc, Lead, Approval, SystemStatus, Client } from './types'
 
-// In the browser → use relative URLs ("/api/...") so the Vercel rewrite
-// proxies to the VPS server-side. This avoids mixed-content blocking
-// (HTTPS page → HTTP fetch) that silently broke the deployed MC.
-// On the server (SSR / dev tools) → fall through to the absolute VPS URL.
+// Browser on HTTPS (Vercel) → relative URLs so Next.js rewrite proxies to VPS
+//   server-side — avoids mixed-content blocking (HTTPS page → HTTP fetch).
+// Browser on HTTP (local dev) → hit VPS directly, same as before; no proxy hop.
+// Server (SSR) → always use absolute VPS URL.
+const VPS_URL = process.env.NEXT_PUBLIC_API_URL || 'http://204.168.207.116:3000'
 const BASE =
   typeof window !== 'undefined'
-    ? ''
-    : (process.env.NEXT_PUBLIC_API_URL || 'http://204.168.207.116:3000')
+    ? (location.protocol === 'https:' ? '' : VPS_URL)
+    : VPS_URL
 
 async function get<T>(path: string, fallback: T): Promise<T> {
   try {
