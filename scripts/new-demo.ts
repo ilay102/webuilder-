@@ -87,6 +87,7 @@ function parseCliArgs(): DemoConfig | null {
       whatsapp: { type: 'string' },
       domain:   { type: 'string' },
       queue:    { type: 'string' },
+      'skip-git': { type: 'boolean' },
     },
     strict: false,
   });
@@ -300,26 +301,31 @@ async function buildDemo(c: DemoConfig): Promise<string> {
   // The site content is now stored on VPS (siteContent field) — no Vercel rebuild
   // needed for new clients. We only commit pool-state.json + text-pool-state.json
   // + domains.json so the image/text allocations survive future git pulls.
-  try {
-    execSync('git pull --rebase --autostash', { cwd: process.cwd(), stdio: 'pipe' });
-  } catch (rebaseErr: any) {
-    freeImages(c.route);
-    freeTextPack(c.route);
-    throw new Error(`git pull --rebase failed (pools released): ${rebaseErr.message}`);
-  }
+  // ── --skip-git: VPS API mode, where the running process owns pool-state.json
+  //    and we don't want a request to block on git network I/O.
+  const skipGit = process.argv.includes('--skip-git') || process.env.WEBUILDER_SKIP_GIT === '1';
+  if (!skipGit) {
+    try {
+      execSync('git pull --rebase --autostash', { cwd: process.cwd(), stdio: 'pipe' });
+    } catch (rebaseErr: any) {
+      freeImages(c.route);
+      freeTextPack(c.route);
+      throw new Error(`git pull --rebase failed (pools released): ${rebaseErr.message}`);
+    }
 
-  try {
-    execSync(
-      `git add pool-state.json text-pool-state.json domains.json && ` +
-      `(git diff --staged --quiet || git commit -m "pool: allocate ${c.route}")`,
-      { cwd: process.cwd(), stdio: 'pipe' },
-    );
-    execSync('git push', { cwd: process.cwd(), stdio: 'pipe' });
-  } catch (gitErr: any) {
-    // Pool commit failed — rollback allocations so they can be reused
-    freeImages(c.route);
-    freeTextPack(c.route);
-    throw new Error(`Git push failed (pools released): ${gitErr.message}`);
+    try {
+      execSync(
+        `git add pool-state.json text-pool-state.json domains.json && ` +
+        `(git diff --staged --quiet || git commit -m "pool: allocate ${c.route}")`,
+        { cwd: process.cwd(), stdio: 'pipe' },
+      );
+      execSync('git push', { cwd: process.cwd(), stdio: 'pipe' });
+    } catch (gitErr: any) {
+      // Pool commit failed — rollback allocations so they can be reused
+      freeImages(c.route);
+      freeTextPack(c.route);
+      throw new Error(`Git push failed (pools released): ${gitErr.message}`);
+    }
   }
 
   const siteUrl = c.domain

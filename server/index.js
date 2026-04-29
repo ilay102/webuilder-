@@ -575,6 +575,75 @@ app.delete('/api/clients/:slug', (req, res) => {
   res.json({ ok: true, freedImages, freedTextPack })
 })
 
+// POST /api/demo/create — Mission Control "✨ New Demo" button.
+// Spawns scripts/new-demo.ts (with --skip-git so we don't block on network)
+// and returns its JSON output. Pool state on this VPS is the source of truth.
+app.post('/api/demo/create', (req, res) => {
+  const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])$/
+  const b = req.body || {}
+  const slug = String(b.slug ?? '').trim().toLowerCase()
+  if (!SLUG_RE.test(slug)) {
+    return res.status(400).json({ error: 'Invalid slug — use 3–48 chars, lowercase letters/digits/hyphens' })
+  }
+  if (!b.businessName || !String(b.businessName).trim()) {
+    return res.status(400).json({ error: 'businessName is required' })
+  }
+  const template = b.template || 'dental'
+  if (!['dental', 'accountant', 'lawyer'].includes(template)) {
+    return res.status(400).json({ error: `Unknown template: ${template}` })
+  }
+
+  const args = [
+    'tsx', path.join(REPO_ROOT, 'scripts', 'new-demo.ts'),
+    '--skip-git',
+    '--template', template,
+    '--route',    slug,
+    '--name',     String(b.businessName).trim(),
+    '--city',     String(b.city  ?? ''),
+    '--phone',    String(b.phone ?? ''),
+    '--hours',    String(b.hours ?? 'Sun–Thu 9:00–18:00'),
+    '--cal',      String(b.calLink ?? 'ilay-lankin/15min'),
+    '--email',    String(b.email    ?? ''),
+    '--whatsapp', String(b.whatsapp ?? ''),
+  ]
+  if (b.domain) args.push('--domain', String(b.domain))
+
+  const { spawn } = require('child_process')
+  const child = spawn('npx', args, {
+    cwd: REPO_ROOT,
+    env: { ...process.env, WEBUILDER_SKIP_GIT: '1' },
+    shell: process.platform === 'win32',
+  })
+  let stdout = '', stderr = ''
+  child.stdout.on('data', d => { stdout += d.toString() })
+  child.stderr.on('data', d => { stderr += d.toString() })
+
+  // 60s ceiling — pool allocation + VPS PATCH should be a few seconds tops
+  const timeout = setTimeout(() => { try { child.kill('SIGKILL') } catch {} }, 60000)
+
+  child.on('close', code => {
+    clearTimeout(timeout)
+    if (stderr) console.log(`[demo/create:${slug}] stderr:`, stderr.slice(0, 500))
+    // The CLI prints exactly one JSON line on stdout
+    const lastLine = stdout.trim().split('\n').filter(Boolean).pop() || ''
+    let parsed = null
+    try { parsed = JSON.parse(lastLine) } catch {}
+    if (code === 0 && parsed?.success) {
+      console.log(`[demo/create] ✓ ${slug} → ${parsed.url}`)
+      return res.json({
+        success:   true,
+        slug:      parsed.route,
+        url:       parsed.url,
+        intakeUrl: `/intake/${parsed.route}`,
+      })
+    }
+    return res.status(500).json({
+      error:    parsed?.error || `new-demo exited ${code}`,
+      stderr:   stderr.slice(0, 1000),
+    })
+  })
+})
+
 // POST /api/clients/:slug/lock — permanently lock pool images + text pack (client paid)
 app.post('/api/clients/:slug/lock', (req, res) => {
   const slug           = req.params.slug

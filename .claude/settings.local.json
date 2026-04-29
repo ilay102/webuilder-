@@ -120,7 +120,14 @@
       "Bash(curl -s -X POST https://webuilder-liart.vercel.app/api/polar/webhook -H 'Content-Type: application/json' -H 'webhook-id: t' -H 'webhook-timestamp: 1' -H 'webhook-signature: v1,abc' -d '{}' -w '\\\\n  [HTTP %{http_code}]\\\\n')",
       "Bash(curl -s -X POST https://webuilder-liart.vercel.app/api/intake/test-clinic-1 -H 'Content-Type: application/json' -d '{\"biz\":{\"name\":\"X\"}}' -w '\\\\n  [HTTP %{http_code}]\\\\n')",
       "Bash(curl -s -X POST https://webuilder-liart.vercel.app/api/intake/BAD-SLUG-CAPS -H 'Content-Type: application/json' -d '{}' -w '\\\\n  [HTTP %{http_code}]\\\\n')",
-      "Bash(curl -s -X POST https://webuilder-liart.vercel.app/api/polar/create-checkout -H 'Content-Type: application/json' -d '{\"slug\":\"test-clinic-1\",\"product\":\"site\"}' -w '\\\\n[HTTP %{http_code}]\\\\n')"
+      "Bash(curl -s -X POST https://webuilder-liart.vercel.app/api/polar/create-checkout -H 'Content-Type: application/json' -d '{\"slug\":\"test-clinic-1\",\"product\":\"site\"}' -w '\\\\n[HTTP %{http_code}]\\\\n')",
+      "Bash(curl -s -X POST https://webuilder-liart.vercel.app/api/intake/test-clinic-1 -H 'Content-Type: application/json' -d '{\"biz\":{\"name\":\"Probe\"}}')",
+      "Bash(curl -s -X POST https://webuilder-liart.vercel.app/api/polar/create-checkout -H 'Content-Type: application/json' -d '{\"slug\":\"test-clinic-1\",\"product\":\"maintenance\"}' -w '\\\\n  [HTTP %{http_code}]\\\\n')",
+      "Bash(curl -s -X POST https://webuilder-liart.vercel.app/api/intake/test-clinic-1 -H 'Content-Type: application/json' -d '{\"biz\":{\"name\":\"Test Clinic\"}}' -w '\\\\n  [HTTP %{http_code}]\\\\n')",
+      "Bash(curl -s -X POST https://webuilder-liart.vercel.app/api/intake/never-existed-xyz -H 'Content-Type: application/json' -d '{}' -w '\\\\n  [HTTP %{http_code}]\\\\n')",
+      "Bash(curl -s -X POST https://webuilder-liart.vercel.app/api/demo/create -H 'Content-Type: application/json' -d '{\"slug\":\"BAD!!\",\"template\":\"dental\"}' -w '\\\\n  [HTTP %{http_code}]\\\\n')",
+      "Bash(curl -s -X POST https://webuilder-liart.vercel.app/api/ls/create-checkout -d '{}' -w '\\\\n  [HTTP %{http_code}]\\\\n')",
+      "Bash(curl -s -X POST \"https://webuilder-liart.vercel.app/api/demo/create\" -H \"Content-Type: application/json\" -d '{\"slug\":\"e2e-debug-1\",\"template\":\"dental\",\"businessName\":\"Debug\",\"phone\":\"01\"}' -w \"\\\\nHTTP %{http_code}\\\\n\")"
     ]
   }
 }

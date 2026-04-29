@@ -12,7 +12,8 @@ const nextConfig = {
     const VPS = process.env.NEXT_PUBLIC_API_URL || 'http://204.168.207.116:3000'
     return [
       {
-        source:      '/api/:path((?!polar/|polar$|demo/|demo$|intake/|intake$|ls/|ls$).*)',
+        // /api/demo is intentionally NOT excluded — pool state lives on VPS.
+        source:      '/api/:path((?!polar/|polar$|intake/|intake$|ls/|ls$).*)',
         destination: `${VPS}/api/:path`,
       },
     ]
