@@ -127,7 +127,11 @@
       "Bash(curl -s -X POST https://webuilder-liart.vercel.app/api/intake/never-existed-xyz -H 'Content-Type: application/json' -d '{}' -w '\\\\n  [HTTP %{http_code}]\\\\n')",
       "Bash(curl -s -X POST https://webuilder-liart.vercel.app/api/demo/create -H 'Content-Type: application/json' -d '{\"slug\":\"BAD!!\",\"template\":\"dental\"}' -w '\\\\n  [HTTP %{http_code}]\\\\n')",
       "Bash(curl -s -X POST https://webuilder-liart.vercel.app/api/ls/create-checkout -d '{}' -w '\\\\n  [HTTP %{http_code}]\\\\n')",
-      "Bash(curl -s -X POST \"https://webuilder-liart.vercel.app/api/demo/create\" -H \"Content-Type: application/json\" -d '{\"slug\":\"e2e-debug-1\",\"template\":\"dental\",\"businessName\":\"Debug\",\"phone\":\"01\"}' -w \"\\\\nHTTP %{http_code}\\\\n\")"
+      "Bash(curl -s -X POST \"https://webuilder-liart.vercel.app/api/demo/create\" -H \"Content-Type: application/json\" -d '{\"slug\":\"e2e-debug-1\",\"template\":\"dental\",\"businessName\":\"Debug\",\"phone\":\"01\"}' -w \"\\\\nHTTP %{http_code}\\\\n\")",
+      "Bash(curl -s -X POST http://204.168.207.116:3000/api/whatsapp/send -H \"Content-Type: application/json\" -d '{\"number\":\"972534638880\",\"message\":\"test\"}' -w \"\\\\nHTTP %{http_code}\\\\n\" --max-time 10)",
+      "Bash(curl -s -m 5 \"http://204.168.207.116:3001/\")",
+      "Bash(curl -s -m 5 \"http://204.168.207.116:3001/health\")",
+      "Bash(curl -s -X POST -m 5 \"http://204.168.207.116:3001/send\" -H \"Content-Type: application/json\" -d '{\"to\":\"972534638880\",\"message\":\"hi\"}' -w \"\\\\nHTTP %{http_code}\\\\n\")"
     ]
   }
 }
