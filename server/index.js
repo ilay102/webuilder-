@@ -289,6 +289,45 @@ app.get('/api/leads', (req, res) => res.json(cache.leads || []))
 // ── Approvals ─────────────────────────────────────────────────────────────────
 app.get('/api/approvals', (req, res) => res.json(cache.approvals || []))
 
+// POST /api/approvals — inject a new approval into the queue.
+// Used by JJ, by tests, and by the upcoming auto-cold-message pipeline.
+// Body: { id?, title, description?, type?, channel?, target?, content,
+//         priority?, created_at? }
+app.post('/api/approvals', (req, res) => {
+  const filePath = path.join(WORKSPACE, 'approvals.json')
+  try {
+    const b = req.body || {}
+    if (!b.title && !b.content) {
+      return res.status(400).json({ error: 'title or content required' })
+    }
+
+    const approval = {
+      id:          b.id          || `apr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      title:       b.title       || (b.content || '').slice(0, 60),
+      description: b.description || '',
+      type:        b.type        || 'whatsapp',
+      channel:     b.channel     || 'whatsapp',
+      target:      b.target      || '',
+      content:     b.content     || '',
+      priority:    normalizePriority(b.priority),
+      created_at:  b.created_at  || new Date().toISOString(),
+    }
+
+    const approvals = readJSON('approvals.json', [])
+    // Prevent dup IDs (idempotent re-injection)
+    const idx = approvals.findIndex(a => a.id === approval.id)
+    if (idx >= 0) approvals[idx] = approval
+    else          approvals.push(approval)
+
+    fs.writeFileSync(filePath, JSON.stringify(approvals, null, 2))
+    cache.approvals = approvals.map(normalizeApproval)
+    console.log(`[approvals] Injected ${approval.id} → ${approval.target || '(no target)'}`)
+    res.json({ ok: true, approval })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 app.post('/api/approvals/:id/approve', (req, res) => {
   const { id } = req.params
   const filePath = path.join(WORKSPACE, 'approvals.json')
