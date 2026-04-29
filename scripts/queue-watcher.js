@@ -17,7 +17,9 @@ fs.watchFile(QUEUE_PATH, { interval: 3000 }, function() {
     isBuilding = true;
     sentIds.add(pending.id);
     console.log('Building for: ' + pending.businessName);
-    exec('npx ts-node --transpile-only /root/webuilder/scripts/new-demo.ts --queue ' + QUEUE_PATH, { cwd: '/root/webuilder', timeout: 120000 }, function(err, stdout, stderr) {
+    // --skip-git: VPS owns pool-state.json at runtime; never block on git network I/O.
+    // WEBUILDER_SKIP_GIT=1 is a belt-and-braces fallback in case the flag isn't parsed.
+    exec('WEBUILDER_SKIP_GIT=1 npx ts-node --transpile-only /root/webuilder/scripts/new-demo.ts --queue ' + QUEUE_PATH + ' --skip-git', { cwd: '/root/webuilder', timeout: 120000, env: { ...process.env, WEBUILDER_SKIP_GIT: '1' } }, function(err, stdout, stderr) {
       try {
         const result = JSON.parse(stdout.trim());
         if (result.success && result.url) {

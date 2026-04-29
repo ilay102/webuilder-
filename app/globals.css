@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── UserWay accessibility widget — pin to bottom-left so it never overlaps
+      the RTL business name in the top-right of client templates ────────── */
+.uwy.userway,
+.uwy.userway_p1,
+.uwy.userway_p2,
+.uwy.userway_p3,
+.uwy.userway_p4,
+.uwy.userway_p5,
+.uwy.userway_p6,
+.uwy.userway_p7,
+.uwy.userway_p8 {
+  top: auto !important;
+  bottom: 16px !important;
+  left: 16px !important;
+  right: auto !important;
+}
+.userway_buttons_wrapper { left: 16px !important; right: auto !important; }
+
 :root {
   --bg:      #0a0c10;
   --bg2:     #0f1117;
