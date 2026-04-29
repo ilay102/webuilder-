@@ -1,13 +1,13 @@
 {
-  "updatedAt": "2026-04-27T15:49:11.311Z",
+  "updatedAt": "2026-04-29T19:22:57.445Z",
   "images": [
     {
       "id": "heroes/Gemini_Generated_Image_amvponamvponamvp.png",
       "type": "hero",
       "path": "/pool/dental/heroes/Gemini_Generated_Image_amvponamvponamvp.png",
-      "status": "available",
-      "assignedTo": null,
-      "assignedAt": null,
+      "status": "in-use",
+      "assignedTo": "marpaat-shinayim-demo",
+      "assignedAt": "2026-04-29T19:22:57.444Z",
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.810Z",
       "notes": ""
@@ -60,9 +60,9 @@
       "id": "patients/Gemini_Generated_Image_4bei9g4bei9g4bei.png",
       "type": "patient",
       "path": "/pool/dental/patients/Gemini_Generated_Image_4bei9g4bei9g4bei.png",
-      "status": "available",
-      "assignedTo": null,
-      "assignedAt": null,
+      "status": "in-use",
+      "assignedTo": "marpaat-shinayim-demo",
+      "assignedAt": "2026-04-29T19:22:57.445Z",
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.815Z",
       "notes": ""
