@@ -21,7 +21,17 @@ fs.watchFile(QUEUE_PATH, { interval: 3000 }, function() {
     // WEBUILDER_SKIP_GIT=1 is a belt-and-braces fallback in case the flag isn't parsed.
     exec('WEBUILDER_SKIP_GIT=1 npx ts-node --transpile-only /root/webuilder/scripts/new-demo.ts --queue ' + QUEUE_PATH + ' --skip-git', { cwd: '/root/webuilder', timeout: 120000, env: { ...process.env, WEBUILDER_SKIP_GIT: '1' } }, function(err, stdout, stderr) {
       try {
-        const result = JSON.parse(stdout.trim());
+        // dotenv (and friends) print banners to stdout before our JSON.
+        // Extract the LAST line that parses as JSON instead of assuming
+        // stdout.trim() is pure JSON.
+        const lines = stdout.split('\n').map(l => l.trim()).filter(Boolean);
+        let result = null;
+        for (let i = lines.length - 1; i >= 0; i--) {
+          if (lines[i].startsWith('{')) {
+            try { result = JSON.parse(lines[i]); break; } catch {}
+          }
+        }
+        if (!result) throw new Error('no JSON line in stdout');
         if (result.success && result.url) {
           console.log('Build done: ' + result.url);
           const phone = result.leadPhone || pending.leadPhone || pending.phone;
