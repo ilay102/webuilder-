@@ -27,12 +27,6 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid slug' }, { status: 400 });
   }
 
-  const vpsUrl = process.env.VPS_INTAKE_URL;
-  const secret = process.env.INTAKE_SECRET;
-  if (!vpsUrl) {
-    return NextResponse.json({ error: 'VPS_INTAKE_URL not configured' }, { status: 500 });
-  }
-
   let body: any;
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
@@ -43,7 +37,7 @@ export async function POST(
     console.warn(`[intake/${slug}] body.slug="${body.slug}" rejected; URL slug enforced`);
   }
 
-  // ── Verify this slug exists on the VPS BEFORE forwarding ────────────
+  // ── Verify this slug exists on the VPS ──────────────────────────────
   // Stops a curl POST to a never-provisioned slug from polluting the VPS.
   const exists = await fetch(`${VPS_API}/api/clients/${slug}`, { cache: 'no-store' });
   if (!exists.ok) {
@@ -53,32 +47,18 @@ export async function POST(
     );
   }
 
-  // ── 1. Forward to VPS intake server ─────────────────────────────────
-  let upstreamData: any = {};
-  let upstreamStatus = 200;
+  // ── PATCH siteContent directly on Mission Control (no legacy forward) ──
+  // Skips the deprecated intake-server.js (port 3004) which still does
+  // git push + folder rewrites. siteContent lives on the VPS now.
   try {
-    const upstream = await fetch(vpsUrl, {
-      method:  'POST',
-      headers: {
-        'Content-Type':    'application/json',
-        'x-intake-secret': secret ?? '',
-      },
-      body: JSON.stringify(safeBody),
-    });
-    upstreamData   = await upstream.json().catch(() => ({}));
-    upstreamStatus = upstream.status;
-  } catch (err: any) {
-    return NextResponse.json({ error: `VPS unreachable: ${err.message}` }, { status: 502 });
+    await updateSiteContent(slug, safeBody);
+  } catch (e: any) {
+    console.error(`[intake/${slug}] siteContent update failed:`, e);
+    return NextResponse.json({ error: e.message }, { status: 502 });
   }
 
-  // ── 2. Merge intake into siteContent on VPS (slug from URL only) ────
-  if (upstreamStatus >= 200 && upstreamStatus < 300) {
-    updateSiteContent(slug, safeBody).catch((e) =>
-      console.error(`[intake/${slug}] siteContent update failed:`, e),
-    );
-  }
-
-  return NextResponse.json(upstreamData, { status: upstreamStatus });
+  const url = `https://webuilder-liart.vercel.app/${slug}`;
+  return NextResponse.json({ ok: true, slug, url });
 }
 
 async function updateSiteContent(slug: string, formData: any): Promise<void> {
@@ -117,11 +97,15 @@ async function updateSiteContent(slug: string, formData: any): Promise<void> {
     services: updatedServices,
   };
 
-  await fetch(`${VPS_API}/api/clients/${slug}`, {
+  const patchRes = await fetch(`${VPS_API}/api/clients/${slug}`, {
     method:  'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ siteContent: updatedContent }),
   });
+  if (!patchRes.ok) {
+    const txt = await patchRes.text().catch(() => '');
+    throw new Error(`VPS PATCH failed (${patchRes.status}): ${txt.slice(0, 200)}`);
+  }
 
   console.log(`[intake/${slug}] siteContent updated`);
 }
