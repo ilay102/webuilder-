@@ -1,7 +1,29 @@
-const fs = require('fs');
+const fs   = require('fs');
+const http = require('http');
 const { exec } = require('child_process');
 
 const QUEUE_PATH = '/root/.openclaw/workspace/demo_queue.json';
+
+// Send WhatsApp directly via Baileys (port 3003) — bypasses the
+// flaky openclaw WS daemon that was throwing "gateway closed (1006)".
+function sendBaileys(phone, message) {
+  return new Promise((resolve) => {
+    const cleanPhone = String(phone).replace(/\D/g, '');
+    const body = JSON.stringify({ phone: cleanPhone, message });
+    const req = http.request({
+      hostname: '127.0.0.1', port: 3003, path: '/send', method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+    }, (res) => {
+      let data = ''; res.on('data', c => data += c);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); }
+        catch { resolve({ ok: false, error: 'parse error' }); }
+      });
+    });
+    req.on('error', (e) => resolve({ ok: false, error: e.message }));
+    req.write(body); req.end();
+  });
+}
 let isBuilding = false;
 const sentIds = new Set();
 
@@ -36,8 +58,8 @@ fs.watchFile(QUEUE_PATH, { interval: 3000 }, function() {
           console.log('Build done: ' + result.url);
           const phone = result.leadPhone || pending.leadPhone || pending.phone;
           const msg = 'הנה הלינק לסקיצה: ' + result.url;
-          exec('openclaw message send --target +' + phone + ' --message "' + msg + '" --json', function(e2, o2) {
-            console.log('Sent: ' + (e2 ? e2.message : o2.substring(0, 80)));
+          sendBaileys(phone, msg).then(r => {
+            console.log('Sent: ' + (r.ok ? 'OK via Baileys' : 'FAIL ' + (r.error || JSON.stringify(r))));
           });
         } else {
           console.error('Build failed: ' + (result.error || stderr.substring(0, 300)));
