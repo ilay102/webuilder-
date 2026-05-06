@@ -20,7 +20,11 @@ import { getPack, googleFontsUrl } from '@/lib/design-packs';
 
 /* ── Types ────────────────────────────────────────────────────────────────── */
 
+export type Tier = 'basic' | 'standard' | 'premium';
+
 export interface SiteContent {
+  /** Client tier — controls which features render. Defaults to 'basic' if missing. */
+  tier?: Tier;
   biz: {
     name:           string;
     tagline?:       string;
@@ -34,6 +38,7 @@ export interface SiteContent {
     alertWhatsapp?: string;
     domain?:        string | null;
     template?:      string;
+    logo?:          string | null;
   };
   services:     Array<{ icon: string; title: string; desc: string }>;
   photos:       { hero: string; about: string; results: string; cta: string; gallery?: string[] };
@@ -174,6 +179,14 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
   const testimonials = content.testimonials;
   const stats        = content.stats;
 
+  // ── Tier gating ──────────────────────────────────────────────────────────
+  // basic    → static site only (no booking, no chatbot)
+  // standard → + Cal.com booking
+  // premium  → + AI chatbot
+  const TIER: Tier = content.tier ?? 'basic';
+  const HAS_BOOKING = TIER === 'standard' || TIER === 'premium';
+  const HAS_CHATBOT = TIER === 'premium';
+
   // Shared colors object for sub-components
   const SC = {
     bg: C.bg, white: C.white, forest: C.forest, sageLight: C.sageLight,
@@ -214,6 +227,32 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
         textTransform: 'uppercase' as const, color: C.forest,
         background: C.sageLight, padding: '4px 12px', borderRadius: 99, display: 'inline-block',
       }}>{children}</span>
+    );
+  }
+
+  // ── Smart CTA: booking widget if tier supports it, tel: link otherwise ──
+  function CTAButton({
+    children,
+    style,
+  }: {
+    children: React.ReactNode;
+    style?: React.CSSProperties;
+  }) {
+    if (HAS_BOOKING) {
+      return (
+        <CalBooking calLink={BIZ.calLink || 'ilay-lankin/15min'} brandColor={C.forest}>
+          <button style={style}>{children}</button>
+        </CalBooking>
+      );
+    }
+    // Basic tier: a tel: link styled identically — no booking widget
+    return (
+      <a
+        href={BIZ.phone ? `tel:${BIZ.phone.replace(/[^0-9+]/g, '')}` : '#'}
+        style={{ ...style, textDecoration: 'none', display: 'inline-block' }}
+      >
+        {children}
+      </a>
     );
   }
 
@@ -341,9 +380,17 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
       }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 99, background: C.forest, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: '#fff', fontSize: 16 }}>✦</span>
-            </div>
+            {BIZ.logo ? (
+              <img
+                src={BIZ.logo}
+                alt={`${BIZ.name || 'לוגו'} logo`}
+                style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', display: 'block' }}
+              />
+            ) : (
+              <div style={{ width: 32, height: 32, borderRadius: 99, background: C.forest, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ color: '#fff', fontSize: 16 }}>✦</span>
+              </div>
+            )}
             <span style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 18, color: C.charcoal, letterSpacing: '-0.02em' }}>
               {BIZ.name || 'שם המרפאה'}
             </span>
@@ -357,14 +404,12 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
                 {label}
               </a>
             ))}
-            <button className="nav-book" style={{
+            <CTAButton style={{
               background: C.forest, color: '#fff', fontFamily: F.label, fontWeight: 600, fontSize: 14,
               padding: '10px 24px', borderRadius: 99, border: 'none', cursor: 'pointer', transition: 'background 0.2s ease',
-            }}
-              onMouseEnter={e => (e.currentTarget.style.background = C.forestDim)}
-              onMouseLeave={e => (e.currentTarget.style.background = C.forest)}>
-              קבע תור
-            </button>
+            }}>
+              <span className="nav-book">{HAS_BOOKING ? 'קבע תור' : 'התקשרו'}</span>
+            </CTAButton>
           </div>
         </div>
       </nav>
@@ -413,17 +458,13 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
               className="hero-btns"
               style={{ display: 'flex', gap: 16, flexWrap: 'wrap' as const }}
             >
-              <CalBooking calLink={BIZ.calLink || 'ilay-lankin/15min'} brandColor={C.forest}>
-                <button style={{
-                  background: C.forest, color: '#fff', fontFamily: F.label, fontWeight: 700, fontSize: 15,
-                  padding: '16px 36px', borderRadius: 99, border: 'none', cursor: 'pointer',
-                  boxShadow: '0 8px 24px rgba(45,107,85,0.30)', transition: 'all 0.2s ease',
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.background = C.forestDim; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = C.forest; e.currentTarget.style.transform = 'translateY(0)'; }}>
-                  {COPY.ctaMain}
-                </button>
-              </CalBooking>
+              <CTAButton style={{
+                background: C.forest, color: '#fff', fontFamily: F.label, fontWeight: 700, fontSize: 15,
+                padding: '16px 36px', borderRadius: 99, border: 'none', cursor: 'pointer',
+                boxShadow: '0 8px 24px rgba(45,107,85,0.30)', transition: 'all 0.2s ease',
+              }}>
+                {HAS_BOOKING ? COPY.ctaMain : `📞 ${BIZ.phone || COPY.ctaMain}`}
+              </CTAButton>
               <button style={{
                 background: 'transparent', color: C.charcoal, fontFamily: F.label, fontWeight: 600, fontSize: 15,
                 padding: '16px 36px', borderRadius: 99, border: `1.5px solid rgba(42,42,42,0.20)`, cursor: 'pointer', transition: 'all 0.2s ease',
@@ -559,17 +600,13 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
             <p style={{ fontFamily: F.body, fontSize: 17, color: 'rgba(255,255,255,0.80)', marginBottom: 40, maxWidth: 440 }}>
               הייעוץ הראשון חינם. ללא לחץ, ללא התחייבות — רק שיחה ידידותית על מטרות החיוך שלך.
             </p>
-            <CalBooking calLink={BIZ.calLink || 'ilay-lankin/15min'} brandColor={C.forest}>
-              <button style={{
-                background: '#fff', color: C.forest, fontFamily: F.label, fontWeight: 700, fontSize: 16,
-                padding: '18px 48px', borderRadius: 99, border: 'none', cursor: 'pointer',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.20)', transition: 'all 0.2s ease',
-              }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 16px 48px rgba(0,0,0,0.25)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.20)'; }}>
-                קבע ייעוץ חינם
-              </button>
-            </CalBooking>
+            <CTAButton style={{
+              background: '#fff', color: C.forest, fontFamily: F.label, fontWeight: 700, fontSize: 16,
+              padding: '18px 48px', borderRadius: 99, border: 'none', cursor: 'pointer',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.20)', transition: 'all 0.2s ease',
+            }}>
+              {HAS_BOOKING ? 'קבע ייעוץ חינם' : `📞 ${BIZ.phone || 'התקשרו עכשיו'}`}
+            </CTAButton>
           </motion.div>
         </div>
       </section>
@@ -643,38 +680,37 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
         >
           📞 התקשרו
         </a>
-        <CalBooking calLink={BIZ.calLink || 'ilay-lankin/15min'} brandColor={C.forest}>
+        <CTAButton style={{
+          flex: '1 1 auto',
+          padding: '13px 6px',
+          background: C.forest,
+          color: '#fff',
+          fontFamily: F.label, fontWeight: 700, fontSize: 14,
+          border: 'none', borderRadius: 99, cursor: 'pointer',
+          textAlign: 'center' as const,
+          boxShadow: '0 6px 20px rgba(45,107,85,0.30)',
+        }}>
+          {HAS_BOOKING ? 'קבע תור' : 'התקשרו'}
+        </CTAButton>
+        {/* Chat icon — premium tier only */}
+        {HAS_CHATBOT && (
           <button
+            aria-label="פתח צ'אט"
+            onClick={() => window.dispatchEvent(new Event('open-chatbot'))}
             style={{
-              flex: '1 1 auto',
-              padding: '13px 6px',
+              flex: '0 0 auto',
+              width: 44, height: 44,
               background: C.forest,
               color: '#fff',
-              fontFamily: F.label, fontWeight: 700, fontSize: 14,
-              border: 'none', borderRadius: 99, cursor: 'pointer',
-              boxShadow: '0 6px 20px rgba(45,107,85,0.30)',
+              border: 'none', borderRadius: '50%', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 6px 16px rgba(45,107,85,0.30)',
+              fontSize: 18, padding: 0,
             }}
           >
-            קבע תור
+            💬
           </button>
-        </CalBooking>
-        {/* Chat icon — opens the existing chatbot panel via custom event */}
-        <button
-          aria-label="פתח צ'אט"
-          onClick={() => window.dispatchEvent(new Event('open-chatbot'))}
-          style={{
-            flex: '0 0 auto',
-            width: 44, height: 44,
-            background: C.forest,
-            color: '#fff',
-            border: 'none', borderRadius: '50%', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 6px 16px rgba(45,107,85,0.30)',
-            fontSize: 18, padding: 0,
-          }}
-        >
-          💬
-        </button>
+        )}
       </div>
 
       {/* ── ACCESSIBILITY FOOTER ── */}
@@ -686,23 +722,27 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
         accentColor={C.forest}
       />
 
-      {/* ── CHATBOT ── */}
-      <Chatbot config={{
-        name:           BIZ.name || 'המרפאה',
-        type:           'מרפאת שיניים',
-        location:       BIZ.city || 'ישראל',
-        phone:          BIZ.phone || '',
-        hours:          BIZ.hours || '',
-        services:       services.map(s => s.title),
-        offer:          'ייעוץ ראשון חינם',
-        brandColor:     C.forest,
-        greeting:       `שלום! 👋 אני העוזר של ${BIZ.name || 'המרפאה'}. במה אוכל לעזור?`,
-        clientEmail:    BIZ.alertEmail || BIZ.email || '',
-        clientWhatsapp: BIZ.alertWhatsapp || '',
-      }} />
+      {/* ── CHATBOT (premium tier only) ── */}
+      {HAS_CHATBOT && (
+        <Chatbot config={{
+          name:           BIZ.name || 'המרפאה',
+          type:           'מרפאת שיניים',
+          location:       BIZ.city || 'ישראל',
+          phone:          BIZ.phone || '',
+          hours:          BIZ.hours || '',
+          services:       services.map(s => s.title),
+          offer:          'ייעוץ ראשון חינם',
+          brandColor:     C.forest,
+          greeting:       `שלום! 👋 אני העוזר של ${BIZ.name || 'המרפאה'}. במה אוכל לעזור?`,
+          clientEmail:    BIZ.alertEmail || BIZ.email || '',
+          clientWhatsapp: BIZ.alertWhatsapp || '',
+        }} />
+      )}
 
-      {/* ── FLOATING BOOK BUTTON ── */}
-      <CalFloatingButton calLink={BIZ.calLink || 'ilay-lankin/15min'} brandColor={C.forest} label="קבע תור" buttonStyle={{ borderRadius: 99 }} />
+      {/* ── FLOATING BOOK BUTTON (booking-tier only) ── */}
+      {HAS_BOOKING && (
+        <CalFloatingButton calLink={BIZ.calLink || 'ilay-lankin/15min'} brandColor={C.forest} label="קבע תור" buttonStyle={{ borderRadius: 99 }} />
+      )}
 
     </div>
   );

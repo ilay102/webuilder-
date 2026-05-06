@@ -2,29 +2,65 @@
  * POST /api/polar/create-checkout
  *
  * Creates a Polar.sh checkout session and returns the hosted checkout URL.
- * The client slug is stored in metadata so the webhook can identify which
- * client paid and send them the intake link.
+ * The client slug + tier are stored in metadata so the webhook can identify
+ * which client paid, which tier they bought, and send them the right delivery.
  *
  * Body: {
  *   slug:      string   — client slug
- *   product?:  'site' | 'maintenance'  — defaults to 'site' (700₪ one-time)
+ *   product?:  'site' | 'basic' | 'standard' | 'premium' | 'maintenance'
+ *               'site' is treated as 'basic' for back-compat.
  *   email?:    string   — pre-fill buyer email
  *   name?:     string   — pre-fill buyer name
  * }
  *
- * Env vars:
- *   POLAR_API_KEY              — polar_oat_...
- *   POLAR_PRODUCT_SITE_ID      — b7d6b913-2f7e-4625-bf67-104203449ec5
- *   POLAR_PRODUCT_MONTHLY_ID   — 36ff799a-5b98-49af-a1c4-9af2bd7c7185
+ * Env vars (all optional — fallback to baked-in product IDs):
+ *   POLAR_API_KEY                 — polar_oat_...
+ *   POLAR_PRODUCT_BASIC_ID        — basic site (700)
+ *   POLAR_PRODUCT_STANDARD_ID     — standard site (1200) — falls back to BASIC
+ *   POLAR_PRODUCT_PREMIUM_ID      — premium site (1900) — falls back to BASIC
+ *   POLAR_PRODUCT_MONTHLY_ID      — monthly maintenance subscription
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 
 const POLAR_API = 'https://api.polar.sh/v1'
 
+type Tier = 'basic' | 'standard' | 'premium';
+
+function resolveProductId(product: string): { productId: string; tier: Tier | 'maintenance' } {
+  // Back-compat: 'site' was the old way of saying basic
+  const normalized = product === 'site' ? 'basic' : product;
+
+  const FALLBACK_BASIC = 'b7d6b913-2f7e-4625-bf67-104203449ec5';
+
+  if (normalized === 'maintenance') {
+    return {
+      productId: process.env.POLAR_PRODUCT_MONTHLY_ID || '36ff799a-5b98-49af-a1c4-9af2bd7c7185',
+      tier: 'maintenance',
+    };
+  }
+  if (normalized === 'standard') {
+    return {
+      productId: process.env.POLAR_PRODUCT_STANDARD_ID || process.env.POLAR_PRODUCT_BASIC_ID || FALLBACK_BASIC,
+      tier: 'standard',
+    };
+  }
+  if (normalized === 'premium') {
+    return {
+      productId: process.env.POLAR_PRODUCT_PREMIUM_ID || process.env.POLAR_PRODUCT_BASIC_ID || FALLBACK_BASIC,
+      tier: 'premium',
+    };
+  }
+  // basic (default)
+  return {
+    productId: process.env.POLAR_PRODUCT_BASIC_ID || process.env.POLAR_PRODUCT_SITE_ID || FALLBACK_BASIC,
+    tier: 'basic',
+  };
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
-  const { slug, product = 'site', email, name } = body
+  const { slug, product = 'basic', email, name } = body
 
   if (!slug) {
     return NextResponse.json({ error: 'slug is required' }, { status: 400 })
@@ -38,11 +74,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Pick the right product ID based on what's being sold
-  const productId =
-    product === 'maintenance'
-      ? (process.env.POLAR_PRODUCT_MONTHLY_ID || '36ff799a-5b98-49af-a1c4-9af2bd7c7185')
-      : (process.env.POLAR_PRODUCT_SITE_ID    || 'b7d6b913-2f7e-4625-bf67-104203449ec5')
+  const { productId, tier } = resolveProductId(String(product));
 
   const siteBase = process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
@@ -53,8 +85,8 @@ export async function POST(req: NextRequest) {
     products:     [productId],
     // Redirect the buyer directly to their intake form — client-facing, NOT mission control.
     success_url:  `${siteBase}/intake/${encodeURIComponent(slug)}?paid=1`,
-    // Embed slug in metadata → webhook reads it to send the intake link
-    metadata: { slug, product },
+    // Embed slug + tier in metadata → webhook reads it to update client record + send intake
+    metadata: { slug, product, tier },
     // Pre-fill buyer info if available
     ...(email ? { customer_email: email } : {}),
     ...(name  ? { customer_name:  name  } : {}),

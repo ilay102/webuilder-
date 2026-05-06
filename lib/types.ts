@@ -82,6 +82,17 @@ export interface Approval {
   metadata?: Record<string, string>
 }
 
+export interface ClientSubscription {
+  id?:               string | null
+  status?:           'active' | 'canceled' | 'past_due' | 'trialing' | 'unpaid' | string
+  currentPeriodEnd?: string | null
+  canceledAt?:       string | null
+  productId?:        string | null
+  customerId?:       string | null
+  lastEvent?:        string
+  lastEventAt?:      string
+}
+
 export interface Client {
   slug:         string
   name:         string
@@ -93,6 +104,9 @@ export interface Client {
   siteUrl?:     string
   status:       'active' | 'churned'
   plan:         'trial' | 'paid'
+  tier?:        'basic' | 'standard' | 'premium'
+  subscription?: ClientSubscription | null
+  paidAt?:      string
   notes?:       string
   intakeAt?:    string
   lastPhotoAt?: string

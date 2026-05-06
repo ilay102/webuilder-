@@ -18,6 +18,7 @@
 
 import { createHmac, timingSafeEqual } from 'crypto'
 import { NextRequest, NextResponse }    from 'next/server'
+import { portalUrl }                    from '@/lib/portal-token'
 
 const VPS_BASE    = process.env.NEXT_PUBLIC_API_URL || 'http://204.168.207.116:3000'
 // JJ (the WhatsApp closer bot) runs on its own port on the same VPS — see simple-jj/server.js
@@ -82,6 +83,48 @@ async function markClientPaid(slug: string, meta: Record<string, unknown> = {}) 
   })
 }
 
+/** Persist tier inside siteContent so DentalTemplate gates features correctly. */
+async function setClientTier(slug: string, tier: 'basic' | 'standard' | 'premium') {
+  try {
+    const res = await fetch(`${VPS_BASE}/api/clients/${slug}`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const client = await res.json();
+    const siteContent = { ...(client.siteContent || {}), tier };
+    await fetch(`${VPS_BASE}/api/clients/${slug}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier, siteContent }),
+    });
+  } catch (e: any) {
+    console.warn(`[polar/webhook] setClientTier failed for ${slug}: ${e.message}`);
+  }
+}
+
+/** Update subscription status on the client record. Called for subscription.* events. */
+async function updateSubscription(slug: string, sub: any, eventType: string) {
+  if (!slug) return;
+  const subscription = {
+    id:                sub?.id || null,
+    status:            sub?.status || (eventType.endsWith('canceled') || eventType.endsWith('cancelled') ? 'canceled' : 'active'),
+    currentPeriodEnd:  sub?.current_period_end || sub?.currentPeriodEnd || null,
+    canceledAt:        sub?.canceled_at || sub?.canceledAt || null,
+    productId:         sub?.product_id || sub?.productId || null,
+    customerId:        sub?.customer_id || sub?.customerId || null,
+    lastEvent:         eventType,
+    lastEventAt:       new Date().toISOString(),
+  };
+  try {
+    await fetch(`${VPS_BASE}/api/clients/${slug}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription }),
+    });
+    console.log(`[polar/webhook] subscription updated for ${slug} (${eventType})`);
+  } catch (e: any) {
+    console.warn(`[polar/webhook] subscription update failed for ${slug}: ${e.message}`);
+  }
+}
+
 // ── WhatsApp intake link sender ───────────────────────────────────────────────
 // Sends a WhatsApp message to the client with their intake form link.
 // Uses the JJ/Baileys server running on the VPS.
@@ -112,6 +155,7 @@ async function sendIntakeWhatsapp(slug: string, whatsapp: string) {
   // Normalise to 972xxxxxxxxx format
   const number = whatsapp.replace(/\D/g, '').replace(/^0/, '972')
   const intakeUrl = `${SITE_BASE}/intake/${slug}`
+  const portalLink = portalUrl(SITE_BASE, slug)
   const message = [
     `✅ *תשלום התקבל — תודה רבה!*`,
     ``,
@@ -119,6 +163,11 @@ async function sendIntakeWhatsapp(slug: string, whatsapp: string) {
     ``,
     `👇 לחץ כאן להשלמת הפרטים:`,
     intakeUrl,
+    ``,
+    `🛠️ *פורטל לעריכה עצמית* (טקסטים, צבעים, לוגו, תמונות, ביקורות, ניהול מנוי):`,
+    portalLink,
+    ``,
+    `שמור את הקישור — הוא אישי ומאפשר עריכה בכל זמן.`,
   ].join('\n')
 
   // Send via JJ's /send-message proxy (port 3002). The previous /api/whatsapp/send
@@ -167,6 +216,15 @@ export async function POST(req: NextRequest) {
 
   console.log(`[polar/webhook] Event: ${eventType} | slug: ${slug || '(none)'}`)
 
+  // ── Subscription events (monthly maintenance) ────────────────────────────
+  // Polar fires: subscription.created, subscription.updated, subscription.canceled,
+  // subscription.active, subscription.revoked, subscription.uncanceled.
+  if (eventType.startsWith('subscription.')) {
+    const subSlug = slug || data?.metadata?.slug || ''
+    if (subSlug) await updateSubscription(subSlug, data, eventType)
+    return NextResponse.json({ ok: true, handled: eventType })
+  }
+
   // ── Only handle confirmed payment events ─────────────────────────────────
   const isPaidEvent = eventType === 'order.created' || eventType === 'checkout.order_created'
   if (!isPaidEvent) {
@@ -189,13 +247,20 @@ export async function POST(req: NextRequest) {
     // 1. Lock pool assets
     const lockResult = await lockClient(slug)
 
-    // 2. Mark paid on VPS
+    // 2. Mark paid on VPS + persist tier so DentalTemplate gates features.
+    //    metadata.tier is set by /api/polar/create-checkout. Falls back to 'basic'.
+    const rawTier = (metadata?.tier || metadata?.product || 'basic').toString().toLowerCase()
+    const tier: 'basic' | 'standard' | 'premium' =
+      rawTier === 'premium'  ? 'premium'  :
+      rawTier === 'standard' ? 'standard' : 'basic'
     await markClientPaid(slug, {
       polarOrderId: data?.id,
       polarEvent:   eventType,
       polarAmount:  data?.amount,
       polarProduct: metadata?.product,
+      tier,
     })
+    await setClientTier(slug, tier)
 
     // 3. Fetch client record to get their WhatsApp number
     const clientRes = await fetch(`${VPS_BASE}/api/clients/${slug}`)

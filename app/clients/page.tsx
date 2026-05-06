@@ -179,7 +179,7 @@ export default function ClientsPage() {
             <table className="w-full text-[12px]">
               <thead className="sticky top-0 z-10 bg-bg3 border-b border-border">
                 <tr>
-                  {['Client', 'Contact', 'Template', 'Status', 'Plan', 'Site', 'Last Photo', 'Added', 'Actions'].map(h => (
+                  {['Client', 'Contact', 'Tier', 'Status', 'Plan', 'Subscription', 'Site', 'Last Photo', 'Added', 'Actions'].map(h => (
                     <th key={h} className="text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-faint whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -195,12 +195,17 @@ export default function ClientsPage() {
                       <div className="text-text">{c.phone || '—'}</div>
                       <div className="text-faint text-[10px]">{c.email || '—'}</div>
                     </td>
-                    <td className="px-4 py-3 text-muted">{c.template || 'dental'}</td>
+                    <td className="px-4 py-3">
+                      <TierBadge tier={c.tier} />
+                    </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={c.status} />
                     </td>
                     <td className="px-4 py-3">
                       <PlanBadge plan={c.plan} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <SubscriptionBadge sub={c.subscription} />
                     </td>
                     <td className="px-4 py-3">
                       {c.siteUrl
@@ -378,5 +383,49 @@ function PlanBadge({ plan }: { plan: string }) {
       plan === 'paid'  ? 'bg-accent/10 text-accent border-accent/30' :
       plan === 'trial' ? 'bg-warn/10 text-warn border-warn/20' : ''
     )}>{plan}</span>
+  )
+}
+
+function TierBadge({ tier }: { tier?: string }) {
+  if (!tier) return <span className="text-faint">—</span>
+  const labels: Record<string, string>  = { basic: 'Basic', standard: 'Standard', premium: 'Premium' }
+  const styles: Record<string, string>  = {
+    basic:    'bg-faint/10 text-faint border-faint/30',
+    standard: 'bg-warn/10 text-warn border-warn/30',
+    premium:  'bg-accent/15 text-accent border-accent/40',
+  }
+  return (
+    <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full border', styles[tier] || styles.basic)}>
+      {labels[tier] || tier}
+    </span>
+  )
+}
+
+function SubscriptionBadge({ sub }: { sub: any }) {
+  if (!sub || !sub.status) return <span className="text-faint">—</span>
+  const cls: Record<string, string> = {
+    active:     'bg-success/10 text-success border-success/30',
+    trialing:   'bg-warn/10 text-warn border-warn/30',
+    past_due:   'bg-danger/10 text-danger border-danger/30',
+    canceled:   'bg-faint/10 text-faint border-faint/20',
+    cancelled:  'bg-faint/10 text-faint border-faint/20',
+    unpaid:     'bg-danger/10 text-danger border-danger/30',
+  }
+  const label =
+    sub.status === 'active'    ? 'Active' :
+    sub.status === 'trialing'  ? 'Trial' :
+    sub.status === 'past_due'  ? 'Past due' :
+    sub.status === 'canceled' || sub.status === 'cancelled' ? 'Canceled' :
+    sub.status === 'unpaid'    ? 'Unpaid' :
+    sub.status
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full border w-fit', cls[sub.status] || 'bg-faint/10 text-faint border-faint/20')}>
+        {label}
+      </span>
+      {sub.currentPeriodEnd && (
+        <span className="text-[10px] text-faint">until {new Date(sub.currentPeriodEnd).toLocaleDateString('he-IL')}</span>
+      )}
+    </div>
   )
 }
