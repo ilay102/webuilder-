@@ -305,9 +305,9 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
           .cal-floating-button-container,
           [data-cal-floating] { display: none !important; }
 
-          /* Stack on mobile: sticky bar (~70) → a11y button → chatbot */
-          .a11y-fab     { bottom: 92px !important; left: 16px !important; width: 46px !important; height: 46px !important; }
-          .chatbot-fab  { bottom: 152px !important; left: 16px !important; }
+          /* Stack on mobile: sticky bar (~70) → a11y button (small, low) → chatbot */
+          .a11y-fab     { bottom: 80px !important; left: 12px !important; width: 36px !important; height: 36px !important; }
+          .chatbot-fab  { bottom: 130px !important; left: 16px !important; }
         }
         @media (min-width: 769px) {
           .mobile-cta-bar { display: none !important; }
