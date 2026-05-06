@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Shift Scheduler",
+    "slug": "shift-scheduler",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "shiftscheduler",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a237e"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a237e"
+      },
+      "package": "com.shiftscheduler.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "d3e2a703-03ac-4051-b5fd-52cda1e78be0"
+      }
+    }
+  }
+}
