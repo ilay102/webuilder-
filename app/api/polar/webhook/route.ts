@@ -84,7 +84,7 @@ async function markClientPaid(slug: string, meta: Record<string, unknown> = {}) 
 }
 
 /** Persist tier inside siteContent so DentalTemplate gates features correctly. */
-async function setClientTier(slug: string, tier: 'basic' | 'standard' | 'premium') {
+async function setClientTier(slug: string, tier: 'basic' | 'premium') {
   try {
     const res = await fetch(`${VPS_BASE}/api/clients/${slug}`, { cache: 'no-store' });
     if (!res.ok) return;
@@ -249,10 +249,10 @@ export async function POST(req: NextRequest) {
 
     // 2. Mark paid on VPS + persist tier so DentalTemplate gates features.
     //    metadata.tier is set by /api/polar/create-checkout. Falls back to 'basic'.
+    // 2-tier launch: standard folds into premium so a stale tag can't undercharge
     const rawTier = (metadata?.tier || metadata?.product || 'basic').toString().toLowerCase()
-    const tier: 'basic' | 'standard' | 'premium' =
-      rawTier === 'premium'  ? 'premium'  :
-      rawTier === 'standard' ? 'standard' : 'basic'
+    const tier: 'basic' | 'premium' =
+      (rawTier === 'premium' || rawTier === 'standard') ? 'premium' : 'basic'
     await markClientPaid(slug, {
       polarOrderId: data?.id,
       polarEvent:   eventType,

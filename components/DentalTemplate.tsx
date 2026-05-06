@@ -20,6 +20,7 @@ import { getPack, googleFontsUrl } from '@/lib/design-packs';
 
 /* ── Types ────────────────────────────────────────────────────────────────── */
 
+/** 2-tier launch: 'standard' kept in type union for back-compat with old client records, treated as premium at runtime. */
 export type Tier = 'basic' | 'standard' | 'premium';
 
 export interface SiteContent {
@@ -179,13 +180,13 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
   const testimonials = content.testimonials;
   const stats        = content.stats;
 
-  // ── Tier gating ──────────────────────────────────────────────────────────
+  // ── Tier gating (2-tier launch) ──────────────────────────────────────────
   // basic    → static site only (no booking, no chatbot)
-  // standard → + Cal.com booking
-  // premium  → + AI chatbot
+  // premium  → + Cal.com booking + AI chatbot
+  // (legacy 'standard' records — treat as premium so old clients keep their features)
   const TIER: Tier = content.tier ?? 'basic';
   const HAS_BOOKING = TIER === 'standard' || TIER === 'premium';
-  const HAS_CHATBOT = TIER === 'premium';
+  const HAS_CHATBOT = TIER === 'standard' || TIER === 'premium';
 
   // Shared colors object for sub-components
   const SC = {

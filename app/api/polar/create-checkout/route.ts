@@ -28,8 +28,12 @@ const POLAR_API = 'https://api.polar.sh/v1'
 type Tier = 'basic' | 'standard' | 'premium';
 
 function resolveProductId(product: string): { productId: string; tier: Tier | 'maintenance' } {
-  // Back-compat: 'site' was the old way of saying basic
-  const normalized = product === 'site' ? 'basic' : product;
+  // 2-tier launch: basic (700) and premium (1600). 'site' kept for back-compat.
+  // 'standard' is intentionally folded into premium so a missing env var can't
+  // accidentally charge a basic price for a premium-tagged checkout.
+  const normalized = (product === 'site' || product === '') ? 'basic'
+                   : (product === 'standard') ? 'premium'
+                   : product;
 
   const FALLBACK_BASIC = 'b7d6b913-2f7e-4625-bf67-104203449ec5';
 
@@ -39,15 +43,9 @@ function resolveProductId(product: string): { productId: string; tier: Tier | 'm
       tier: 'maintenance',
     };
   }
-  if (normalized === 'standard') {
-    return {
-      productId: process.env.POLAR_PRODUCT_STANDARD_ID || process.env.POLAR_PRODUCT_BASIC_ID || FALLBACK_BASIC,
-      tier: 'standard',
-    };
-  }
   if (normalized === 'premium') {
     return {
-      productId: process.env.POLAR_PRODUCT_PREMIUM_ID || process.env.POLAR_PRODUCT_BASIC_ID || FALLBACK_BASIC,
+      productId: process.env.POLAR_PRODUCT_PREMIUM_ID || FALLBACK_BASIC,
       tier: 'premium',
     };
   }

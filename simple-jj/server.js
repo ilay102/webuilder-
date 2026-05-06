@@ -288,10 +288,13 @@ async function runDispatchers(phone, tags) {
     let result;
     if      (tag === 'BUILD')            result = await dispatchBuild(phone);
     else if (tag.startsWith('CHECKOUT')) {
-      // Accept: [CHECKOUT], [CHECKOUT:site], [CHECKOUT:basic], [CHECKOUT:standard], [CHECKOUT:premium], [CHECKOUT:maintenance]
+      // 2-tier launch. Accept: [CHECKOUT], [CHECKOUT:site|basic|premium|maintenance].
+      // 'standard' folds into premium (Polar product 1,600).
       const raw = tag.includes(':') ? tag.split(':')[1].toLowerCase() : 'basic';
-      const VALID = ['basic', 'standard', 'premium', 'maintenance'];
-      const product = raw === 'site' ? 'basic' : (VALID.includes(raw) ? raw : 'basic');
+      const product = (raw === 'site' || raw === '')      ? 'basic'
+                    : (raw === 'standard')                ? 'premium'
+                    : ['basic','premium','maintenance'].includes(raw) ? raw
+                    : 'basic';
       result = await dispatchCheckout(phone, product);
     }
     else if (tag === 'MEETING')          result = dispatchMeeting(phone);

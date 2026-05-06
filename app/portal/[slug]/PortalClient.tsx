@@ -14,7 +14,7 @@
 
 import { useState, useTransition } from 'react';
 
-type Tier = 'basic' | 'standard' | 'premium';
+type Tier = 'basic' | 'standard' | 'premium'; // 'standard' kept for back-compat with old records
 
 interface SiteContent {
   tier?: Tier;
@@ -44,8 +44,8 @@ const PACKS: Array<{ id: string; label: string; primary: string; secondary: stri
 
 const TIER_LABEL: Record<Tier, string> = {
   basic:    'בסיס (700 ₪ + 70 ₪/חודש)',
-  standard: 'סטנדרט (1,200 ₪ + 120 ₪/חודש)',
-  premium:  'פרימיום (1,900 ₪ + 200 ₪/חודש)',
+  standard: 'פרימיום (1,600 ₪ + 140 ₪/חודש)', // legacy records
+  premium:  'פרימיום (1,600 ₪ + 140 ₪/חודש)',
 };
 
 interface Props {

@@ -8,7 +8,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title:       'מה כלול בכל מסלול · ilay studio',
-  description: 'תיאור מדויק של מה כלול בכל מסלול (בסיס, סטנדרט, פרימיום) ומה לא — לפני שאתם משלמים.',
+  description: 'תיאור מדויק של מה כלול בכל מסלול (בסיס, פרימיום) ומה לא — לפני שאתם משלמים.',
 };
 
 const TIERS = [
@@ -32,35 +32,21 @@ const TIERS = [
     ],
   },
   {
-    id:    'standard',
-    name:  'הסטנדרט',
-    setup: '1,200',
-    monthly: '120',
-    headline: 'אתר + יומן הזמנות אוטומטי',
+    id:    'premium',
+    name:  'הפרימיום',
+    setup: '1,600',
+    monthly: '140',
+    headline: 'מערכת מלאה — אתר + יומן + בוט AI',
     includes: [
       'הכל ממסלול הבסיס',
       'יומן הזמנות אונליין (Cal.com מובנה)',
       'תזכורות אוטומטיות בדוא"ל ללקוחות',
       'יומן ניתן לסנכרון לגוגל / iCloud',
-    ],
-    excludes: [
-      'ללא בוט AI',
-    ],
-    highlight: true,
-  },
-  {
-    id:    'premium',
-    name:  'הפרימיום',
-    setup: '1,900',
-    monthly: '200',
-    headline: 'מערכת מלאה עם בוט AI',
-    includes: [
-      'הכל ממסלול הסטנדרט',
       'בוט AI שעונה ללקוחות 24/7',
       'הבוט יודע לזהות לקוחות פוטנציאליים ולהפנות אותך',
-      'ביקורות אמת מ-Google Maps (אוטומטי, אם יש לעסק פרופיל)',
     ],
     excludes: [],
+    highlight: true,
   },
 ];
 

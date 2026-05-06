@@ -388,10 +388,11 @@ function PlanBadge({ plan }: { plan: string }) {
 
 function TierBadge({ tier }: { tier?: string }) {
   if (!tier) return <span className="text-faint">—</span>
-  const labels: Record<string, string>  = { basic: 'Basic', standard: 'Standard', premium: 'Premium' }
+  // 2-tier launch — 'standard' is legacy data, displayed as Premium
+  const labels: Record<string, string>  = { basic: 'Basic', standard: 'Premium', premium: 'Premium' }
   const styles: Record<string, string>  = {
     basic:    'bg-faint/10 text-faint border-faint/30',
-    standard: 'bg-warn/10 text-warn border-warn/30',
+    standard: 'bg-accent/15 text-accent border-accent/40',
     premium:  'bg-accent/15 text-accent border-accent/40',
   }
   return (
