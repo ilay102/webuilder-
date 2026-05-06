@@ -240,26 +240,74 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
         @media (max-width: 768px) {
+          /* NAV: hide desktop links, the floating bottom bar replaces them */
           .nav-links { display: none !important; }
           .nav-book  { display: none !important; }
-          .hero-grad { background: linear-gradient(to bottom, ${C.bg}18 0%, ${C.bg}d0 40%, ${C.bg}f7 100%) !important; }
-          .hero-inner { padding: 0 24px !important; align-items: flex-end !important; padding-bottom: 80px !important; }
-          .hero-content { max-width: 100% !important; }
-          .stats-grid { grid-template-columns: repeat(2,1fr) !important; padding: 40px 24px !important; gap: 24px !important; }
-          .services-wrap { padding: 60px 24px !important; }
-          .services-grid { grid-template-columns: 1fr !important; }
-          .about-section { padding: 60px 24px !important; }
-          .about-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
-          .results-section { grid-template-columns: 1fr !important; padding: 60px 24px !important; gap: 40px !important; }
-          .results-mini { grid-template-columns: 1fr 1fr !important; }
-          .testimonials-wrap { padding: 60px 24px !important; }
-          .testimonials-grid { grid-template-columns: 1fr !important; }
-          .cta-section { height: auto !important; padding: 80px 0 !important; }
-          .hero-btns { flex-direction: column !important; align-items: flex-start !important; }
-          .hero-btns button { width: 100% !important; text-align: center !important; }
-          .footer-outer { padding: 48px 24px 32px !important; }
-          .footer-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+          nav        { padding: 0 20px !important; }
+
+          /* HERO: shorter, RTL-aligned, breathing room above the bottom CTA */
+          .hero-section { height: 88vh !important; min-height: 560px !important; }
+          .hero-grad { background: linear-gradient(to bottom, ${C.bg}10 0%, ${C.bg}c0 45%, ${C.bg}f5 100%) !important; }
+          .hero-inner { padding: 0 22px !important; align-items: flex-end !important; padding-bottom: 110px !important; justify-content: flex-end !important; }
+          .hero-content { max-width: 100% !important; direction: rtl !important; text-align: right !important; }
+          .hero-h1   { font-size: 38px !important; line-height: 1.12 !important; margin-top: 18px !important; margin-bottom: 18px !important; }
+          .hero-sub  { font-size: 16px !important; margin-bottom: 28px !important; max-width: 100% !important; }
+
+          /* CTA buttons stack full-width on mobile */
+          .hero-btns { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+          .hero-btns button { width: 100% !important; text-align: center !important; padding: 15px 24px !important; font-size: 15px !important; }
+
+          /* STATS: 2-up, smaller numbers */
+          .stats-grid { grid-template-columns: repeat(2,1fr) !important; padding: 36px 22px !important; gap: 22px !important; }
+          .stat-value { font-size: 30px !important; }
+
+          /* SERVICES */
+          .services-wrap { padding: 64px 22px !important; }
+          .services-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .services-header { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; margin-bottom: 36px !important; }
+          .services-header h2 { font-size: 30px !important; }
+          .services-header p  { font-size: 15px !important; }
+
+          /* ABOUT */
+          .about-section { padding: 64px 22px !important; }
+          .about-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .about-img  { height: 280px !important; border-radius: 18px !important; }
+          .about-h2   { font-size: 28px !important; }
+
+          /* RESULTS */
+          .results-section { grid-template-columns: 1fr !important; padding: 64px 22px !important; gap: 32px !important; }
+          .results-mini { grid-template-columns: 1fr 1fr !important; gap: 14px !important; }
+          .results-img  { height: 320px !important; }
+          .results-h2   { font-size: 28px !important; }
+
+          /* TESTIMONIALS */
+          .testimonials-wrap { padding: 64px 22px !important; }
+          .testimonials-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .testimonials-h2   { font-size: 28px !important; margin-bottom: 36px !important; }
+
+          /* CTA strip */
+          .cta-section { height: auto !important; padding: 72px 0 !important; }
+          .cta-section h2 { font-size: 30px !important; line-height: 1.15 !important; }
+          .cta-section p  { font-size: 15px !important; }
+
+          /* FOOTER + leave 96px clear for mobile sticky bar */
+          .footer-outer { padding: 44px 22px 110px !important; }
+          .footer-grid  { grid-template-columns: 1fr !important; gap: 28px !important; }
+          .footer-bottom { flex-direction: column !important; gap: 8px !important; text-align: center !important; }
+
+          /* Hide decorations that don't make sense on small screens */
           .hide-mobile { display: none !important; }
+
+          /* Sticky bottom CTA bar — only visible on mobile */
+          .mobile-cta-bar { display: flex !important; }
+
+          /* Push Cal floating button + chatbot up so they don't overlap the bar */
+          .cal-floating-button-container,
+          [data-cal-floating],
+          .chatbot-fab { bottom: 96px !important; }
+        }
+        @media (min-width: 769px) {
+          .mobile-cta-bar { display: none !important; }
         }
       `}} />
 
@@ -314,7 +362,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{ position: 'relative', height: '100vh', overflow: 'hidden', marginTop: isDemo ? 40 : 0 }}>
+      <section className="hero-section" style={{ position: 'relative', height: '100vh', overflow: 'hidden', marginTop: isDemo ? 40 : 0 }}>
         <img
           src={photos.hero}
           alt="Dental clinic"
@@ -337,6 +385,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
               <Tag>{COPY.sectionLabel}</Tag>
             </motion.div>
             <motion.h1
+              className="hero-h1"
               initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.15 }}
               style={{ fontFamily: F.serif, fontSize: 'clamp(40px, 5.5vw, 72px)', fontWeight: 700, lineHeight: 1.08, color: C.charcoal, marginTop: 24, marginBottom: 24, letterSpacing: '-0.03em' }}
             >
@@ -345,6 +394,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
                 : <>החיוך שלך,<br /><span style={{ color: C.forest }}>הסיפור שלנו</span></>}
             </motion.h1>
             <motion.p
+              className="hero-sub"
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.3 }}
               style={{ fontSize: 18, color: C.muted, lineHeight: 1.75, marginBottom: 40, maxWidth: 420 }}
             >
@@ -386,7 +436,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
           <div className="stats-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32, padding: '48px 80px' }}>
             {stats.map(({ value, label }, i) => (
               <motion.div key={label} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }} style={{ textAlign: 'center' as const }}>
-                <div style={{ fontFamily: F.serif, fontSize: 40, fontWeight: 800, color: '#fff', letterSpacing: '-0.03em' }}>{value}</div>
+                <div className="stat-value" style={{ fontFamily: F.serif, fontSize: 40, fontWeight: 800, color: '#fff', letterSpacing: '-0.03em' }}>{value}</div>
                 <div style={{ fontFamily: F.body, fontSize: 14, color: 'rgba(255,255,255,0.65)', marginTop: 4 }}>{label}</div>
               </motion.div>
             ))}
@@ -397,7 +447,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
       {/* ── SERVICES ── */}
       <section id="services" className="services-wrap" style={{ padding: '120px 80px', maxWidth: 1200, margin: '0 auto' }}>
         <SectionLabel>מה אנחנו מציעים</SectionLabel>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 64, gap: 32 }}>
+        <div className="services-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 64, gap: 32 }}>
           <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 480 }}>
             טיפול מלא,<br /><span style={{ color: C.forest }}>מקום אחד בטוח</span>
           </h2>
@@ -414,7 +464,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
       <section id="about" className="about-section" style={{ background: C.bgAlt, padding: '120px 80px' }}>
         <div className="about-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
           <motion.div initial={{ opacity: 0, x: -32 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} style={{ position: 'relative' }}>
-            <img src={photos.about} alt="Dentist consulting with patient" style={{ width: '100%', height: 480, objectFit: 'cover', borderRadius: 24, display: 'block' }} />
+            <img className="about-img" src={photos.about} alt="Dentist consulting with patient" style={{ width: '100%', height: 480, objectFit: 'cover', borderRadius: 24, display: 'block' }} />
             <div className="hide-mobile" style={{ position: 'absolute', bottom: 28, right: -28, background: C.white, borderRadius: 16, padding: '20px 24px', boxShadow: '0 16px 48px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 48, height: 48, borderRadius: 12, background: C.sageLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🏆</div>
               <div>
@@ -469,7 +519,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
           </div>
         </motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.1 }} style={{ borderRadius: 24, overflow: 'hidden', boxShadow: '0 32px 80px rgba(45,107,85,0.15)' }}>
-          <img src={photos.results} alt="Happy patient smile" style={{ width: '100%', height: 520, objectFit: 'cover', display: 'block' }} />
+          <img className="results-img" src={photos.results} alt="Happy patient smile" style={{ width: '100%', height: 520, objectFit: 'cover', display: 'block' }} />
         </motion.div>
       </section>
 
@@ -544,12 +594,61 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
               </div>
             ))}
           </div>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="footer-bottom" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>© 2026 {BIZ.name || 'המרפאה שלנו'}. כל הזכויות שמורות.</span>
             <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>נבנה באהבה ✦</span>
           </div>
         </div>
       </footer>
+
+      {/* ── STICKY MOBILE CTA BAR ── */}
+      <div
+        className="mobile-cta-bar"
+        style={{
+          display: 'none',
+          position: 'fixed',
+          left: 0, right: 0, bottom: 0,
+          zIndex: 150,
+          padding: '10px 14px calc(10px + env(safe-area-inset-bottom))',
+          background: 'rgba(255,255,255,0.96)',
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+          borderTop: `1px solid ${C.sageLight}`,
+          boxShadow: '0 -4px 20px rgba(0,0,0,0.06)',
+          gap: 10,
+          direction: 'rtl' as const,
+        }}
+      >
+        <a
+          href={BIZ.phone ? `tel:${BIZ.phone}` : '#'}
+          style={{
+            flex: '0 0 46%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '14px 8px',
+            background: C.sageLight,
+            color: C.forest,
+            fontFamily: F.label, fontWeight: 700, fontSize: 15,
+            borderRadius: 99, textDecoration: 'none',
+          }}
+        >
+          📞 התקשרו
+        </a>
+        <CalBooking calLink={BIZ.calLink || 'ilay-lankin/15min'} brandColor={C.forest}>
+          <button
+            style={{
+              flex: '1 1 auto',
+              padding: '14px 8px',
+              background: C.forest,
+              color: '#fff',
+              fontFamily: F.label, fontWeight: 700, fontSize: 15,
+              border: 'none', borderRadius: 99, cursor: 'pointer',
+              boxShadow: '0 6px 20px rgba(45,107,85,0.30)',
+            }}
+          >
+            קבע תור
+          </button>
+        </CalBooking>
+      </div>
 
       {/* ── ACCESSIBILITY FOOTER ── */}
       <AccessibilityFooter
