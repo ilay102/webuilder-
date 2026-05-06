@@ -88,7 +88,7 @@ export function CalFloatingButton({
   buttonStyle?: React.CSSProperties;
 }) {
   return (
-    <div style={{ position: 'fixed', bottom: 32, right: 32, zIndex: 999 }}>
+    <div className="cal-floating-button-container" style={{ position: 'fixed', bottom: 32, right: 32, zIndex: 999 }}>
       <CalBooking calLink={calLink} brandColor={brandColor}>
         <button style={{
           background: brandColor,

@@ -238,7 +238,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
           --f-label: ${F.label};
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
+        html, body { scroll-behavior: smooth; overflow-x: hidden !important; max-width: 100vw; }
         @media (max-width: 768px) {
           /* NAV: hide desktop links, the floating bottom bar replaces them */
           .nav-links { display: none !important; }
@@ -301,10 +301,13 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
           /* Sticky bottom CTA bar — only visible on mobile */
           .mobile-cta-bar { display: flex !important; }
 
-          /* Push Cal floating button + chatbot up so they don't overlap the bar */
+          /* HIDE the floating Cal button on mobile — sticky bar replaces it */
           .cal-floating-button-container,
-          [data-cal-floating],
-          .chatbot-fab { bottom: 96px !important; }
+          [data-cal-floating] { display: none !important; }
+
+          /* Push chatbot up so it doesn't overlap the sticky bar */
+          .chatbot-fab,
+          [class*="chatbot"] [class*="fab"] { bottom: 92px !important; }
         }
         @media (min-width: 769px) {
           .mobile-cta-bar { display: none !important; }
