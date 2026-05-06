@@ -51,7 +51,8 @@ export async function POST(req: NextRequest) {
   const checkoutBody: Record<string, unknown> = {
     // Polar v1 expects `products` array (the older `product_id` returns 405)
     products:     [productId],
-    success_url:  `${siteBase}/clients?payment=success&slug=${encodeURIComponent(slug)}`,
+    // Redirect the buyer directly to their intake form — client-facing, NOT mission control.
+    success_url:  `${siteBase}/intake/${encodeURIComponent(slug)}?paid=1`,
     // Embed slug in metadata → webhook reads it to send the intake link
     metadata: { slug, product },
     // Pre-fill buyer info if available
