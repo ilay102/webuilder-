@@ -40,7 +40,39 @@ export function AccessibilityFooter({
 
   return (
     <>
-      {/* ── Strip ─────────────────────────────────────────────────────── */}
+      {/* ── Floating accessibility button (always visible, per תקנות נגישות 2013) ── */}
+      <button
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+        aria-label="פתח הצהרת נגישות"
+        title="הצהרת נגישות"
+        className="a11y-fab"
+        style={{
+          position: 'fixed',
+          bottom: 28,
+          left: 28,
+          zIndex: 997,
+          width: 52,
+          height: 52,
+          borderRadius: '50%',
+          background: '#1A4FB8',          /* high-contrast WCAG AA blue, recognised a11y standard */
+          color: '#fff',
+          border: '3px solid #fff',
+          boxShadow: '0 6px 20px rgba(0,0,0,0.30)',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 26,
+          lineHeight: 1,
+          padding: 0,
+          fontFamily: "'Manrope', system-ui, sans-serif",
+        }}
+      >
+        <span aria-hidden="true">♿</span>
+      </button>
+
+      {/* ── Footer info strip (still rendered for users who reach the bottom) ── */}
       <div
         style={{
           background: '#1A1A1A',

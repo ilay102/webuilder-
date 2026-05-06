@@ -140,7 +140,7 @@ export function Chatbot({ config }: { config: ClinicConfig }) {
   const C = config.brandColor;
 
   return (
-    <div style={{ position: 'fixed', bottom: 28, left: 28, zIndex: 998, fontFamily: "'Manrope', system-ui, sans-serif" }}>
+    <div className="chatbot-fab" style={{ position: 'fixed', bottom: 96, left: 28, zIndex: 998, fontFamily: "'Manrope', system-ui, sans-serif" }}>
       <AnimatePresence>
         {open && (
           <motion.div
