@@ -62,6 +62,13 @@ export function Chatbot({ config }: { config: ClinicConfig }) {
 
   useEffect(() => { setTimeout(() => setPulse(false), 6000); }, []);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, open, showLead]);
+
+  // External open trigger — used by the mobile sticky CTA bar
+  useEffect(() => {
+    const handler = () => { setOpen(true); setPulse(false); };
+    window.addEventListener('open-chatbot', handler);
+    return () => window.removeEventListener('open-chatbot', handler);
+  }, []);
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 300); }, [open]);
 
   async function send(text?: string) {
@@ -370,6 +377,7 @@ export function Chatbot({ config }: { config: ClinicConfig }) {
 
       {/* ── Bubble ─────────────────────────────────────────────────── */}
       <motion.button
+        className="chatbot-bubble-btn"
         onClick={() => { setOpen(o => !o); setPulse(false); }}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.95 }}

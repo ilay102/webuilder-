@@ -305,9 +305,14 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
           .cal-floating-button-container,
           [data-cal-floating] { display: none !important; }
 
-          /* Stack on mobile: sticky bar (~70) → a11y button (small, low) → chatbot */
-          .a11y-fab     { bottom: 80px !important; left: 12px !important; width: 36px !important; height: 36px !important; }
-          .chatbot-fab  { bottom: 130px !important; left: 16px !important; }
+          /* Mobile: hide the floating chatbot bubble — there's a chat icon inside the sticky bar now */
+          /* Keep the wrapper so the panel still anchors correctly when opened via custom event */
+          .chatbot-bubble-btn { display: none !important; }
+          .chatbot-fab        { bottom: 80px !important; left: 16px !important; pointer-events: none; }
+          .chatbot-fab > *:not(.chatbot-bubble-btn) { pointer-events: auto; }
+
+          /* a11y button: bottom-left, just above the sticky bar */
+          .a11y-fab { bottom: 80px !important; left: 16px !important; width: 38px !important; height: 38px !important; }
         }
         @media (min-width: 769px) {
           .mobile-cta-bar { display: none !important; }
@@ -612,25 +617,27 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
           position: 'fixed',
           left: 0, right: 0, bottom: 0,
           zIndex: 150,
-          padding: '10px 14px calc(10px + env(safe-area-inset-bottom))',
+          padding: '10px 12px calc(10px + env(safe-area-inset-bottom))',
           background: 'rgba(255,255,255,0.96)',
           backdropFilter: 'blur(14px)',
           WebkitBackdropFilter: 'blur(14px)',
           borderTop: `1px solid ${C.sageLight}`,
           boxShadow: '0 -4px 20px rgba(0,0,0,0.06)',
-          gap: 10,
+          gap: 8,
           direction: 'rtl' as const,
+          alignItems: 'center',
         }}
       >
         <a
           href={BIZ.phone ? `tel:${BIZ.phone}` : '#'}
+          aria-label="התקשרו"
           style={{
-            flex: '0 0 46%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '14px 8px',
+            flex: '0 0 38%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            padding: '13px 6px',
             background: C.sageLight,
             color: C.forest,
-            fontFamily: F.label, fontWeight: 700, fontSize: 15,
+            fontFamily: F.label, fontWeight: 700, fontSize: 14,
             borderRadius: 99, textDecoration: 'none',
           }}
         >
@@ -640,10 +647,10 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
           <button
             style={{
               flex: '1 1 auto',
-              padding: '14px 8px',
+              padding: '13px 6px',
               background: C.forest,
               color: '#fff',
-              fontFamily: F.label, fontWeight: 700, fontSize: 15,
+              fontFamily: F.label, fontWeight: 700, fontSize: 14,
               border: 'none', borderRadius: 99, cursor: 'pointer',
               boxShadow: '0 6px 20px rgba(45,107,85,0.30)',
             }}
@@ -651,6 +658,23 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
             קבע תור
           </button>
         </CalBooking>
+        {/* Chat icon — opens the existing chatbot panel via custom event */}
+        <button
+          aria-label="פתח צ'אט"
+          onClick={() => window.dispatchEvent(new Event('open-chatbot'))}
+          style={{
+            flex: '0 0 auto',
+            width: 44, height: 44,
+            background: C.forest,
+            color: '#fff',
+            border: 'none', borderRadius: '50%', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 6px 16px rgba(45,107,85,0.30)',
+            fontSize: 18, padding: 0,
+          }}
+        >
+          💬
+        </button>
       </div>
 
       {/* ── ACCESSIBILITY FOOTER ── */}

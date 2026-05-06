@@ -68,12 +68,10 @@ export function AccessibilityFooter({
         }}
       >
         <span aria-hidden="true" style={{
-          fontSize: 18,
-          fontWeight: 800,
+          fontSize: 22,
           lineHeight: 1,
-          letterSpacing: 0,
         }}>
-          א
+          ♿
         </span>
       </button>
 
