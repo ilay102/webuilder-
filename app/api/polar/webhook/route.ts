@@ -20,6 +20,8 @@ import { createHmac, timingSafeEqual } from 'crypto'
 import { NextRequest, NextResponse }    from 'next/server'
 
 const VPS_BASE    = process.env.NEXT_PUBLIC_API_URL || 'http://204.168.207.116:3000'
+// JJ (the WhatsApp closer bot) runs on its own port on the same VPS — see simple-jj/server.js
+const JJ_BASE     = process.env.JJ_BASE || 'http://204.168.207.116:3002'
 const SITE_BASE   = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
   : 'https://webuilder-liart.vercel.app'
@@ -84,6 +86,23 @@ async function markClientPaid(slug: string, meta: Record<string, unknown> = {}) 
 // Sends a WhatsApp message to the client with their intake form link.
 // Uses the JJ/Baileys server running on the VPS.
 
+// Drop a [PAID] system event into JJ's conversation history so the next
+// model turn knows the payment was already processed and does NOT try to
+// re-send the intake link. JJ's [PAID] PROTOCOL in soul.md handles this tag.
+async function notifyJJPaid(slug: string, whatsapp: string) {
+  if (!whatsapp) return
+  const phone = whatsapp.replace(/\D/g, '').replace(/^0/, '972')
+  try {
+    await fetch(`${JJ_BASE}/system-event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, event: `[PAID] ${slug}` }),
+    })
+  } catch (e: any) {
+    console.warn(`[polar/webhook] JJ notify failed: ${e.message}`)
+  }
+}
+
 async function sendIntakeWhatsapp(slug: string, whatsapp: string) {
   if (!whatsapp) {
     console.warn(`[polar/webhook] No whatsapp number for ${slug} — skipping intake WA`)
@@ -102,11 +121,14 @@ async function sendIntakeWhatsapp(slug: string, whatsapp: string) {
     intakeUrl,
   ].join('\n')
 
+  // Send via JJ's /send-message proxy (port 3002). The previous /api/whatsapp/send
+  // on port 3000 doesn't exist — JJ already owns the Baileys connection and exposes
+  // a thin proxy for inbound senders like this webhook.
   try {
-    const res = await fetch(`${VPS_BASE}/api/whatsapp/send`, {
+    const res = await fetch(`${JJ_BASE}/send-message`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ number, message }),
+      body: JSON.stringify({ phone: number, message }),
     })
     if (!res.ok) {
       console.warn(`[polar/webhook] WA send returned ${res.status}`)
@@ -180,10 +202,13 @@ export async function POST(req: NextRequest) {
     const client    = clientRes.ok ? await clientRes.json() : null
     const whatsapp  = client?.whatsapp || client?.siteContent?.biz?.alertWhatsapp || ''
 
-    // 4. Send intake link via WhatsApp
+    // 4. Send intake link via WhatsApp (server is the source of truth for this — NOT JJ)
     await sendIntakeWhatsapp(slug, whatsapp)
 
-    console.log(`[polar/webhook] ✅ Locked + paid + WA sent: ${slug}`)
+    // 5. Notify JJ so the model marks funnelStage=paid and stops trying to send the intake itself
+    await notifyJJPaid(slug, whatsapp)
+
+    console.log(`[polar/webhook] ✅ Locked + paid + WA sent + JJ notified: ${slug}`)
     return NextResponse.json({ ok: true, slug, lockResult })
 
   } catch (err: any) {
