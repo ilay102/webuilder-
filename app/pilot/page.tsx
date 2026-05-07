@@ -143,8 +143,8 @@ export default async function PilotPage() {
               <div className="text-[12px] text-faint mb-3">What they'd actually pay. If many cluster on the same number — that's your real market price.</div>
               <div className="text-4xl font-black text-white tracking-tight mb-4">{s.price_feedbacks}</div>
               <div className="space-y-2.5">
-                <Stat label="Average setup they'd pay"    value={s.avg_setup_offered   ? `${s.avg_setup_offered}₪`     : '—'} ref="(you ask 700)" />
-                <Stat label="Average monthly they'd pay"  value={s.avg_monthly_offered ? `${s.avg_monthly_offered}₪/mo` : '—'} ref="(you ask 70)"  />
+                <Stat label="Average setup they'd pay"    value={s.avg_setup_offered   ? `${s.avg_setup_offered}₪`     : '—'} note="(you ask 700)" />
+                <Stat label="Average monthly they'd pay"  value={s.avg_monthly_offered ? `${s.avg_monthly_offered}₪/mo` : '—'} note="(you ask 70)"  />
               </div>
             </div>
           </div>
@@ -270,13 +270,13 @@ function TierBar({ label, count, total, pct, color }: {
   );
 }
 
-function Stat({ label, value, ref }: { label: string; value: string; ref?: string }) {
+function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div className="flex items-baseline justify-between text-[12px] py-1.5 border-b border-border/30 last:border-0">
       <span className="text-muted">{label}</span>
       <span className="text-white font-bold">
         {value}
-        {ref && <span className="text-faint font-normal ml-2 text-[11px]">{ref}</span>}
+        {note && <span className="text-faint font-normal ml-2 text-[11px]">{note}</span>}
       </span>
     </div>
   );
