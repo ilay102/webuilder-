@@ -65,9 +65,12 @@ export default async function PilotPage() {
   }
 
   const s = data.summary;
-  const conversionPct = s.total_events > 0
-    ? Math.round((s.waitlist_total / (s.waitlist_total + s.price_feedbacks)) * 100) || 0
+  const totalDecisions = s.waitlist_total + s.price_feedbacks;
+  const conversionPct = totalDecisions > 0
+    ? Math.round((s.waitlist_total / totalDecisions) * 100)
     : 0;
+  const basicPct   = s.waitlist_total ? Math.round((s.waitlist_basic   / s.waitlist_total) * 100) : 0;
+  const premiumPct = s.waitlist_total ? Math.round((s.waitlist_premium / s.waitlist_total) * 100) : 0;
 
   return (
     <Shell>
@@ -75,29 +78,92 @@ export default async function PilotPage() {
         <div className="max-w-5xl mx-auto p-8">
           <Header />
 
-          {/* KPI cards */}
-          <div className="mt-6 grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-            <Kpi label="Total events"           value={s.total_events} />
-            <Kpi label="Waitlist · yes @ price" value={s.waitlist_total} highlight />
-            <Kpi label="↳ Basic (700)"          value={s.waitlist_basic}    sub={pct(s.waitlist_basic, s.waitlist_total)} />
-            <Kpi label="↳ Premium (1,600)"      value={s.waitlist_premium}  sub={pct(s.waitlist_premium, s.waitlist_total)} />
-            <Kpi label="Price feedbacks"        value={s.price_feedbacks} />
+          {/* HERO — the one number that matters */}
+          <div className="mt-8 rounded-xl border border-accent/40 bg-gradient-to-br from-accent/10 to-transparent p-7">
+            <div className="flex items-end justify-between flex-wrap gap-6">
+              <div>
+                <div className="text-[10px] font-bold tracking-widest uppercase text-muted mb-2">Conversion at full price</div>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-6xl font-black text-accent leading-none tracking-tight">
+                    {totalDecisions > 0 ? `${conversionPct}%` : '—'}
+                  </span>
+                  {totalDecisions > 0 && (
+                    <span className="text-sm text-muted font-medium">
+                      {s.waitlist_total} of {totalDecisions} decided to commit
+                    </span>
+                  )}
+                </div>
+                <div className="text-[12px] text-faint mt-2 max-w-md">
+                  {totalDecisions === 0 ? (
+                    <>Waiting for first decision events from JJ.</>
+                  ) : conversionPct >= 60 ? (
+                    <span className="text-success">↑ Strong signal. Pricing works at this market.</span>
+                  ) : conversionPct >= 30 ? (
+                    <span className="text-warn">→ Mixed signal. More data needed (target: 20+ events).</span>
+                  ) : (
+                    <span className="text-danger">↓ Weak signal. Price likely too high for this market.</span>
+                  )}
+                </div>
+              </div>
+              <div className="text-[11px] text-faint border-l border-border/50 pl-5">
+                <div className="mb-3">
+                  <div className="text-faint mb-0.5">Total events</div>
+                  <div className="text-2xl font-bold text-white">{s.total_events}</div>
+                </div>
+                <div>
+                  <div className="text-faint mb-0.5">Decisions made</div>
+                  <div className="text-2xl font-bold text-white">{totalDecisions}</div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-3 grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-            <Kpi label="Avg setup offered"   value={s.avg_setup_offered   ? `${s.avg_setup_offered}₪`   : '—'} />
-            <Kpi label="Avg monthly offered" value={s.avg_monthly_offered ? `${s.avg_monthly_offered}₪` : '—'} />
-            <Kpi label="Conversion rate"     value={s.total_events ? `${conversionPct}%` : '—'} accent />
+          {/* TWO COLUMNS: Said yes  /  Said no but countered */}
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {/* WAITLIST */}
+            <div className="rounded-xl border border-success/30 bg-bg2 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-2 h-2 rounded-full bg-success" />
+                <span className="text-[11px] font-bold tracking-widest uppercase text-success">Waitlist · yes at full price</span>
+              </div>
+              <div className="text-4xl font-black text-white tracking-tight mb-4">{s.waitlist_total}</div>
+              <div className="space-y-2.5">
+                <TierBar label="Basic (700₪)"     count={s.waitlist_basic}   total={s.waitlist_total} pct={basicPct}   color="bg-success/60" />
+                <TierBar label="Premium (1,600₪)" count={s.waitlist_premium} total={s.waitlist_total} pct={premiumPct} color="bg-success" />
+              </div>
+            </div>
+
+            {/* PRICE FEEDBACK */}
+            <div className="rounded-xl border border-warn/30 bg-bg2 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-2 h-2 rounded-full bg-warn" />
+                <span className="text-[11px] font-bold tracking-widest uppercase text-warn">Price feedback · counter-offers</span>
+              </div>
+              <div className="text-4xl font-black text-white tracking-tight mb-4">{s.price_feedbacks}</div>
+              <div className="space-y-2.5">
+                <Stat label="Avg setup offered"    value={s.avg_setup_offered   ? `${s.avg_setup_offered}₪`     : '—'} ref="vs 700₪"  />
+                <Stat label="Avg monthly offered"  value={s.avg_monthly_offered ? `${s.avg_monthly_offered}₪/mo` : '—'} ref="vs 70₪"   />
+              </div>
+            </div>
           </div>
 
           {/* Reading guide */}
           <div className="mt-6 rounded-lg bg-bg2 border border-border p-5">
-            <div className="text-[11px] font-bold tracking-widest text-muted uppercase mb-2">How to read this</div>
-            <ul className="space-y-1.5 text-[13px] text-muted">
-              <li>If <span className="text-success font-bold">waitlist ≥ 60%</span> of leads who saw a demo → pricing works. Time to flip to live.</li>
-              <li>If most price feedbacks cluster around the same number → that's your real market price.</li>
-              <li>If <span className="text-warn font-bold">0 waitlist + many feedbacks at much lower prices</span> → 700 is too high for this market.</li>
-            </ul>
+            <div className="text-[11px] font-bold tracking-widest text-muted uppercase mb-3">📖 How to read this</div>
+            <div className="space-y-2 text-[13px]">
+              <div className="flex items-start gap-2.5">
+                <span className="text-success font-bold mt-px">≥60%</span>
+                <span className="text-muted">→ pricing works. Flip to live mode.</span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="text-warn font-bold mt-px">30-60%</span>
+                <span className="text-muted">→ keep collecting (need 20+ events to be sure).</span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="text-danger font-bold mt-px">&lt;30%</span>
+                <span className="text-muted">→ price too high. Look at avg counter-offers, that's your real market price.</span>
+              </div>
+            </div>
           </div>
 
           {/* Events log */}
@@ -186,28 +252,30 @@ function Header() {
   );
 }
 
-function Kpi({
-  label, value, sub, highlight, accent,
-}: {
-  label: string; value: number | string; sub?: string; highlight?: boolean; accent?: boolean;
+function TierBar({ label, count, total, pct, color }: {
+  label: string; count: number; total: number; pct: number; color: string;
 }) {
   return (
-    <div
-      className={clsx(
-        'rounded-lg border p-4 transition-all',
-        highlight ? 'bg-accent/5 border-accent/40' :
-        accent    ? 'bg-bg2 border-accent2/30'    :
-                    'bg-bg2 border-border',
-      )}
-    >
-      <div className="text-[10px] font-bold tracking-widest uppercase text-faint">{label}</div>
-      <div className={clsx(
-        'text-2xl font-bold mt-1.5',
-        highlight ? 'text-accent' :
-        accent    ? 'text-accent2' :
-                    'text-white',
-      )}>{value}</div>
-      {sub && <div className="text-[11px] text-faint mt-0.5">{sub}</div>}
+    <div>
+      <div className="flex items-baseline justify-between text-[12px] mb-1">
+        <span className="text-muted">{label}</span>
+        <span className="text-white font-bold">{count}{total > 0 && <span className="text-faint font-normal ml-1">· {pct}%</span>}</span>
+      </div>
+      <div className="h-1.5 bg-bg3 rounded-full overflow-hidden">
+        <div className={clsx('h-full transition-all', color)} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, ref }: { label: string; value: string; ref?: string }) {
+  return (
+    <div className="flex items-baseline justify-between text-[12px] py-1.5 border-b border-border/30 last:border-0">
+      <span className="text-muted">{label}</span>
+      <span className="text-white font-bold">
+        {value}
+        {ref && <span className="text-faint font-normal ml-2 text-[11px]">{ref}</span>}
+      </span>
     </div>
   );
 }
@@ -227,7 +295,3 @@ function KindBadge({ kind }: { kind: 'waitlist' | 'price_feedback' }) {
   );
 }
 
-function pct(num: number, total: number): string {
-  if (!total) return '';
-  return `${Math.round((num / total) * 100)}% of waitlist`;
-}
