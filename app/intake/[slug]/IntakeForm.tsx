@@ -594,7 +594,7 @@ export function IntakeForm({ slug, initial }: IntakeFormProps) {
                 marginTop: 24, padding: 16, background: '#fff', borderRadius: 10, border: '1px solid #E5E5E5',
                 direction: 'rtl' as const,
               }}>
-                <div style={{ fontFamily: F.label, fontWeight: 700, fontSize: 14, marginBottom: 6 }}>
+                <div style={{ fontFamily: F.body, fontWeight: 700, fontSize: 14, marginBottom: 6 }}>
                   כתובת האתר שלכם (Domain)
                 </div>
                 <div style={{ fontFamily: F.body, fontSize: 12, color: '#777', marginBottom: 12, lineHeight: 1.6 }}>

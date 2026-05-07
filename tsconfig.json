@@ -37,7 +37,8 @@
   ],
   "exclude": [
     "node_modules",
-    "scripts/queue-watcher.ts"
+    "scripts/queue-watcher.ts",
+    "shift-scheduler/**"
   ],
   "ts-node": {
     "compilerOptions": {
