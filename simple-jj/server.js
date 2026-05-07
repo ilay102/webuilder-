@@ -19,6 +19,7 @@ const HISTORY_DIR   = '/root/simple-jj/history';
 const LEADS_PATH    = '/root/.openclaw/workspace/leads.json';
 const QUEUE_PATH    = '/root/.openclaw/workspace/demo_queue.json';
 const MEETINGS_PATH = '/root/.openclaw/workspace/meetings.json';
+const PILOT_PATH    = '/root/.openclaw/workspace/pilot-results.json';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDs9ym7isUAvvV-edKM00Aq4MX9FrAOW3w';
 const GEMINI_MODEL  = 'gemini-2.5-flash';
 
@@ -272,8 +273,72 @@ function dispatchIntakeDone(phone) {
   return { ok: true };
 }
 
+// ─── Pilot dispatchers (PILOT MODE — no money flowing yet) ────────
+function loadPilot() {
+  try { return JSON.parse(fs.readFileSync(PILOT_PATH, 'utf-8')); }
+  catch { return []; }
+}
+function savePilot(data) {
+  fs.writeFileSync(PILOT_PATH, JSON.stringify(data, null, 2));
+}
+
+function dispatchWaitlist(phone, tier) {
+  const lead = findLead(phone) || {};
+  const data = loadPilot();
+  const cp = String(phone).replace(/\D/g, '');
+
+  // Idempotent — skip if this phone already on the waitlist
+  if (data.some(e => e.phone === cp && e.kind === 'waitlist')) {
+    console.log('[WAITLIST] +' + cp + ' already on waitlist, skipping');
+    return { ok: true };
+  }
+
+  data.push({
+    kind:      'waitlist',
+    phone:     cp,
+    tier,
+    company:   lead.company || null,
+    ownerName: lead.owner_name || null,
+    city:      lead.city || null,
+    ts:        new Date().toISOString(),
+  });
+  savePilot(data);
+  setFunnelStage(phone, 'checkout-sent', { waitlistTier: tier, waitlistAt: new Date().toISOString() });
+  console.log('[WAITLIST] +' + cp + ' tier=' + tier + ' company=' + (lead.company || '?'));
+  return { ok: true };
+}
+
+function dispatchPriceFeedback(phone, priceStr) {
+  const lead = findLead(phone) || {};
+  const data = loadPilot();
+  const cp = String(phone).replace(/\D/g, '');
+
+  // Parse "500+50" → setup=500 monthly=50
+  let setup = null, monthly = null;
+  const m = String(priceStr || '').match(/^(\d+)(?:\+(\d+))?/);
+  if (m) {
+    setup   = Number(m[1]);
+    monthly = m[2] ? Number(m[2]) : null;
+  }
+
+  data.push({
+    kind:      'price_feedback',
+    phone:     cp,
+    setup,
+    monthly,
+    raw:       priceStr,
+    company:   lead.company || null,
+    ownerName: lead.owner_name || null,
+    city:      lead.city || null,
+    ts:        new Date().toISOString(),
+  });
+  savePilot(data);
+  console.log('[PRICE_FEEDBACK] +' + cp + ' setup=' + setup + ' monthly=' + monthly);
+  return { ok: true };
+}
+
 // ─── Tag parser ───────────────────────────────────────────────────
-const TAG_RE = /^\s*\[(BUILD|CHECKOUT(?::[a-zA-Z_]+)?|MEETING|PAID|ESCALATE|INTAKE_DONE)\]\s*$/gm;
+const TAG_RE = /^\s*\[(BUILD|CHECKOUT(?::[a-zA-Z_]+)?|WAITLIST(?::[a-zA-Z_]+)?|PRICE_FEEDBACK(?::[0-9+]+)?|MEETING|PAID|ESCALATE|INTAKE_DONE)\]\s*$/gm;
 
 function parseTags(reply) {
   const tags = [];
@@ -296,6 +361,17 @@ async function runDispatchers(phone, tags) {
                     : ['basic','premium','maintenance'].includes(raw) ? raw
                     : 'basic';
       result = await dispatchCheckout(phone, product);
+    }
+    else if (tag.startsWith('WAITLIST')) {
+      // PILOT MODE — captures high-intent leads who would have paid.
+      const raw = tag.includes(':') ? tag.split(':')[1].toLowerCase() : 'basic';
+      const tier = (raw === 'premium') ? 'premium' : 'basic';
+      result = dispatchWaitlist(phone, tier);
+    }
+    else if (tag.startsWith('PRICE_FEEDBACK')) {
+      // PILOT MODE — captures the price the lead would say yes at.
+      const raw = tag.includes(':') ? tag.split(':')[1] : '';
+      result = dispatchPriceFeedback(phone, raw);
     }
     else if (tag === 'MEETING')          result = dispatchMeeting(phone);
     else if (tag === 'PAID')             result = dispatchPaid(phone);
@@ -452,6 +528,32 @@ app.post('/notify-sent', (req, res) => {
   setFunnelStage(cp, 'demo-sent');
   console.log('[NOTIFY] +' + cp + ' demo link logged + funnelStage=demo-sent');
   res.json({ ok: true });
+});
+
+// ─── Pilot results endpoint — read by Mission Control /pilot panel ────
+app.get('/pilot', (_, res) => {
+  const data = loadPilot();
+  // Roll up summary
+  const waitlist  = data.filter(d => d.kind === 'waitlist');
+  const feedback  = data.filter(d => d.kind === 'price_feedback');
+  const tierCount = { basic: 0, premium: 0 };
+  for (const w of waitlist) {
+    if (tierCount[w.tier] !== undefined) tierCount[w.tier]++;
+  }
+  res.json({
+    summary: {
+      total_events:      data.length,
+      waitlist_total:    waitlist.length,
+      waitlist_basic:    tierCount.basic,
+      waitlist_premium:  tierCount.premium,
+      price_feedbacks:   feedback.length,
+      avg_setup_offered: feedback.length ? Math.round(feedback.reduce((s, f) => s + (f.setup || 0), 0) / feedback.length) : 0,
+      avg_monthly_offered: feedback.filter(f => f.monthly).length
+        ? Math.round(feedback.filter(f => f.monthly).reduce((s, f) => s + f.monthly, 0) / feedback.filter(f => f.monthly).length)
+        : 0,
+    },
+    events: data.slice().reverse(),
+  });
 });
 
 // ─── Management endpoints ─────────────────────────────────────────
