@@ -1,17 +1,10 @@
 /**
- * /pilot — Pilot results dashboard.
+ * /pilot — Pilot results dashboard inside Mission Control.
  *
  * Reads from JJ's `/pilot` endpoint on the VPS (port 3002) which serves
- * pilot-results.json — a log of [WAITLIST:*] and [PRICE_FEEDBACK:*] events
- * fired by JJ during pilot mode (no money flowing yet).
- *
- * Use this to see real demand data:
- *   - How many leads said "yes at full price" (waitlist count)
- *   - How many countered, and at what price
- *   - Tier distribution (basic vs premium)
- *
- * Once you have ~20-30 entries, you'll know if 700/1600 is the right price.
+ * pilot-results.json — a log of [WAITLIST:*] and [PRICE_FEEDBACK:*] events.
  */
+import Shell from '@/app/shell';
 
 const JJ_BASE = process.env.JJ_BASE || 'http://204.168.207.116:3002';
 
@@ -143,12 +136,15 @@ const TD: React.CSSProperties = { padding: '10px 8px' };
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <main style={{
-      minHeight: '100vh', background: '#fafaf7', color: '#1a1a1a',
-      fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif', padding: '40px 20px',
-    }}>
-      <div style={{ maxWidth: 980, margin: '0 auto' }}>{children}</div>
-    </main>
+    <Shell>
+      <div style={{
+        height: '100%', overflowY: 'auto',
+        background: '#fafaf7', color: '#1a1a1a',
+        fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif', padding: '32px 28px',
+      }}>
+        <div style={{ maxWidth: 980, margin: '0 auto' }}>{children}</div>
+      </div>
+    </Shell>
   );
 }
 
