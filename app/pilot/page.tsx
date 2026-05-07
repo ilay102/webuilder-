@@ -82,36 +82,36 @@ export default async function PilotPage() {
           <div className="mt-8 rounded-xl border border-accent/40 bg-gradient-to-br from-accent/10 to-transparent p-7">
             <div className="flex items-end justify-between flex-wrap gap-6">
               <div>
-                <div className="text-[10px] font-bold tracking-widest uppercase text-muted mb-2">Conversion at full price</div>
+                <div className="text-[10px] font-bold tracking-widest uppercase text-muted mb-2">% who said yes at full price</div>
                 <div className="flex items-baseline gap-3">
                   <span className="text-6xl font-black text-accent leading-none tracking-tight">
                     {totalDecisions > 0 ? `${conversionPct}%` : '—'}
                   </span>
                   {totalDecisions > 0 && (
                     <span className="text-sm text-muted font-medium">
-                      {s.waitlist_total} of {totalDecisions} decided to commit
+                      {s.waitlist_total} of {totalDecisions} clients said yes
                     </span>
                   )}
                 </div>
-                <div className="text-[12px] text-faint mt-2 max-w-md">
+                <div className="text-[13px] mt-3 max-w-md">
                   {totalDecisions === 0 ? (
-                    <>Waiting for first decision events from JJ.</>
+                    <span className="text-faint">No data yet — let JJ run on real leads. The first event lands here within seconds of a client saying yes/no.</span>
                   ) : conversionPct >= 60 ? (
-                    <span className="text-success">↑ Strong signal. Pricing works at this market.</span>
+                    <span className="text-success font-medium">↑ Strong signal. Most clients pay your asking price. <span className="text-muted">Time to flip to live billing.</span></span>
                   ) : conversionPct >= 30 ? (
-                    <span className="text-warn">→ Mixed signal. More data needed (target: 20+ events).</span>
+                    <span className="text-warn font-medium">→ Mixed signal. <span className="text-muted">Keep running until you have 20+ decisions, then re-check.</span></span>
                   ) : (
-                    <span className="text-danger">↓ Weak signal. Price likely too high for this market.</span>
+                    <span className="text-danger font-medium">↓ Weak signal. <span className="text-muted">Most clients won't pay this price. See average counter-offer →</span></span>
                   )}
                 </div>
               </div>
               <div className="text-[11px] text-faint border-l border-border/50 pl-5">
                 <div className="mb-3">
-                  <div className="text-faint mb-0.5">Total events</div>
+                  <div className="text-faint mb-0.5">Conversations finished</div>
                   <div className="text-2xl font-bold text-white">{s.total_events}</div>
                 </div>
                 <div>
-                  <div className="text-faint mb-0.5">Decisions made</div>
+                  <div className="text-faint mb-0.5">Pricing decisions made</div>
                   <div className="text-2xl font-bold text-white">{totalDecisions}</div>
                 </div>
               </div>
@@ -122,46 +122,48 @@ export default async function PilotPage() {
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             {/* WAITLIST */}
             <div className="rounded-xl border border-success/30 bg-bg2 p-5">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-1">
                 <span className="w-2 h-2 rounded-full bg-success" />
-                <span className="text-[11px] font-bold tracking-widest uppercase text-success">Waitlist · yes at full price</span>
+                <span className="text-[11px] font-bold tracking-widest uppercase text-success">Said YES at your price</span>
               </div>
+              <div className="text-[12px] text-faint mb-3">Locked into your waitlist. Will be your first paying clients when you go live.</div>
               <div className="text-4xl font-black text-white tracking-tight mb-4">{s.waitlist_total}</div>
               <div className="space-y-2.5">
-                <TierBar label="Basic (700₪)"     count={s.waitlist_basic}   total={s.waitlist_total} pct={basicPct}   color="bg-success/60" />
-                <TierBar label="Premium (1,600₪)" count={s.waitlist_premium} total={s.waitlist_total} pct={premiumPct} color="bg-success" />
+                <TierBar label="Basic (700₪ + 70/mo)"      count={s.waitlist_basic}   total={s.waitlist_total} pct={basicPct}   color="bg-success/60" />
+                <TierBar label="Premium (1,600₪ + 140/mo)" count={s.waitlist_premium} total={s.waitlist_total} pct={premiumPct} color="bg-success" />
               </div>
             </div>
 
             {/* PRICE FEEDBACK */}
             <div className="rounded-xl border border-warn/30 bg-bg2 p-5">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-1">
                 <span className="w-2 h-2 rounded-full bg-warn" />
-                <span className="text-[11px] font-bold tracking-widest uppercase text-warn">Price feedback · counter-offers</span>
+                <span className="text-[11px] font-bold tracking-widest uppercase text-warn">Said NO — countered with their price</span>
               </div>
+              <div className="text-[12px] text-faint mb-3">What they'd actually pay. If many cluster on the same number — that's your real market price.</div>
               <div className="text-4xl font-black text-white tracking-tight mb-4">{s.price_feedbacks}</div>
               <div className="space-y-2.5">
-                <Stat label="Avg setup offered"    value={s.avg_setup_offered   ? `${s.avg_setup_offered}₪`     : '—'} ref="vs 700₪"  />
-                <Stat label="Avg monthly offered"  value={s.avg_monthly_offered ? `${s.avg_monthly_offered}₪/mo` : '—'} ref="vs 70₪"   />
+                <Stat label="Average setup they'd pay"    value={s.avg_setup_offered   ? `${s.avg_setup_offered}₪`     : '—'} ref="(you ask 700)" />
+                <Stat label="Average monthly they'd pay"  value={s.avg_monthly_offered ? `${s.avg_monthly_offered}₪/mo` : '—'} ref="(you ask 70)"  />
               </div>
             </div>
           </div>
 
           {/* Reading guide */}
           <div className="mt-6 rounded-lg bg-bg2 border border-border p-5">
-            <div className="text-[11px] font-bold tracking-widest text-muted uppercase mb-3">📖 How to read this</div>
+            <div className="text-[11px] font-bold tracking-widest text-muted uppercase mb-3">📖 What the % means</div>
             <div className="space-y-2 text-[13px]">
-              <div className="flex items-start gap-2.5">
-                <span className="text-success font-bold mt-px">≥60%</span>
-                <span className="text-muted">→ pricing works. Flip to live mode.</span>
+              <div className="flex items-start gap-3">
+                <span className="text-success font-bold mt-px shrink-0 w-16">60%+</span>
+                <span className="text-muted">Most clients pay full price. <span className="text-white">Pricing is right — go live.</span></span>
               </div>
-              <div className="flex items-start gap-2.5">
-                <span className="text-warn font-bold mt-px">30-60%</span>
-                <span className="text-muted">→ keep collecting (need 20+ events to be sure).</span>
+              <div className="flex items-start gap-3">
+                <span className="text-warn font-bold mt-px shrink-0 w-16">30-60%</span>
+                <span className="text-muted">Mixed. Need 20+ decisions before you trust the number.</span>
               </div>
-              <div className="flex items-start gap-2.5">
-                <span className="text-danger font-bold mt-px">&lt;30%</span>
-                <span className="text-muted">→ price too high. Look at avg counter-offers, that's your real market price.</span>
+              <div className="flex items-start gap-3">
+                <span className="text-danger font-bold mt-px shrink-0 w-16">&lt;30%</span>
+                <span className="text-muted">Price too high. <span className="text-white">Look at average counter-offers — that's the real market price.</span></span>
               </div>
             </div>
           </div>
@@ -169,14 +171,14 @@ export default async function PilotPage() {
           {/* Events log */}
           <div className="mt-6">
             <div className="flex items-baseline justify-between mb-3">
-              <h2 className="text-base font-bold text-white">Events</h2>
+              <h2 className="text-base font-bold text-white">Every decision, in order</h2>
               <span className="text-[11px] text-faint">newest first · {data.events.length} total</span>
             </div>
 
             {data.events.length === 0 ? (
               <div className="rounded-lg bg-bg2 border border-border p-8 text-center">
                 <div className="text-3xl mb-2">🦗</div>
-                <p className="text-sm text-faint">No events yet — let JJ run on real leads, events appear here as they happen.</p>
+                <p className="text-sm text-faint">Nothing yet. Approve cold messages in /approvals — once a client decides, it shows up here in real time.</p>
               </div>
             ) : (
               <div className="rounded-lg bg-bg2 border border-border overflow-hidden">
@@ -184,10 +186,10 @@ export default async function PilotPage() {
                   <thead className="bg-bg3 text-[10px] uppercase tracking-widest text-faint">
                     <tr>
                       <th className="px-4 py-2.5 text-left font-bold">When</th>
-                      <th className="px-4 py-2.5 text-left font-bold">Kind</th>
+                      <th className="px-4 py-2.5 text-left font-bold">Outcome</th>
                       <th className="px-4 py-2.5 text-left font-bold">Phone</th>
-                      <th className="px-4 py-2.5 text-left font-bold">Company</th>
-                      <th className="px-4 py-2.5 text-left font-bold">Tier / Price</th>
+                      <th className="px-4 py-2.5 text-left font-bold">Business</th>
+                      <th className="px-4 py-2.5 text-left font-bold">Their answer</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -207,11 +209,11 @@ export default async function PilotPage() {
                         <td className="px-4 py-2.5">
                           {e.kind === 'waitlist' ? (
                             <span className="text-success font-bold">
-                              {e.tier === 'premium' ? 'Premium · 1,600₪' : 'Basic · 700₪'}
+                              YES → {e.tier === 'premium' ? 'Premium 1,600₪' : 'Basic 700₪'}
                             </span>
                           ) : (
                             <span className="text-warn font-bold">
-                              {e.setup}₪{e.monthly ? ` + ${e.monthly}/mo` : ''}
+                              Would pay {e.setup}₪{e.monthly ? ` + ${e.monthly}/mo` : ''}
                             </span>
                           )}
                         </td>
@@ -224,7 +226,7 @@ export default async function PilotPage() {
           </div>
 
           <div className="mt-8 text-[10px] text-faint text-center">
-            🧪 Pilot Mode · production [CHECKOUT:*] tags inactive · server: 204.168.207.116:3002
+            🧪 Beta — collecting demand, not money. JJ runs at 204.168.207.116:3002.
           </div>
         </div>
       </div>
@@ -237,16 +239,16 @@ export default async function PilotPage() {
 function Header() {
   return (
     <div>
-      <div className="flex items-center gap-3 mb-1">
+      <div className="flex items-center gap-3 mb-2">
         <span className="text-2xl">🧪</span>
-        <h1 className="text-xl font-bold text-white tracking-tight">Pilot Results</h1>
+        <h1 className="text-xl font-bold text-white tracking-tight">Demand Test</h1>
         <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full bg-warn/10 text-warn border border-warn/30">
-          beta · no payments
+          beta — no money moves
         </span>
       </div>
-      <p className="text-[13px] text-faint">
-        Live data from JJ. <span className="text-success">Waitlist</span> = lead said yes at full price.
-        <span className="text-warn ml-1">Price feedback</span> = lead's counter-offer.
+      <p className="text-[13px] text-muted leading-relaxed max-w-2xl">
+        Every lead that JJ closes during pilot lands here.
+        Two outcomes — they either <span className="text-success font-bold">say yes at full price</span> (gold), or they <span className="text-warn font-bold">counter with a lower price</span> (still useful — tells you what they'd pay).
       </p>
     </div>
   );
@@ -284,13 +286,13 @@ function KindBadge({ kind }: { kind: 'waitlist' | 'price_feedback' }) {
   if (kind === 'waitlist') {
     return (
       <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/30">
-        waitlist
+        ✓ said yes
       </span>
     );
   }
   return (
     <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full bg-warn/10 text-warn border border-warn/30">
-      feedback
+      ↓ countered
     </span>
   );
 }
