@@ -13,6 +13,7 @@ const NAV = [
   { href: '/clients',   icon: '🏢', label: 'Clients' },
   { href: '/leads',     icon: '🎯', label: 'Leads' },
   { href: '/approvals', icon: '✅', label: 'Approvals' },
+  { href: '/pilot',     icon: '🧪', label: 'Pilot' },
   { href: '/admin/pool-review', icon: '🖼️', label: 'Pool Review' },
 ]
 
