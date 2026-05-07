@@ -5,22 +5,23 @@
  * pilot-results.json — a log of [WAITLIST:*] and [PRICE_FEEDBACK:*] events.
  */
 import Shell from '@/app/shell';
+import clsx  from 'clsx';
 
 const JJ_BASE = process.env.JJ_BASE || 'http://204.168.207.116:3002';
 
 export const dynamic = 'force-dynamic';
 
 interface Event {
-  kind:      'waitlist' | 'price_feedback';
-  phone:     string;
-  tier?:     'basic' | 'premium';
-  setup?:    number | null;
-  monthly?:  number | null;
-  raw?:      string;
-  company?:  string | null;
+  kind:       'waitlist' | 'price_feedback';
+  phone:      string;
+  tier?:      'basic' | 'premium';
+  setup?:     number | null;
+  monthly?:   number | null;
+  raw?:       string;
+  company?:   string | null;
   ownerName?: string | null;
-  city?:     string | null;
-  ts:        string;
+  city?:      string | null;
+  ts:         string;
 }
 
 interface PilotData {
@@ -41,9 +42,7 @@ async function loadPilot(): Promise<PilotData | null> {
     const r = await fetch(`${JJ_BASE}/pilot`, { cache: 'no-store' });
     if (!r.ok) return null;
     return await r.json();
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 export default async function PilotPage() {
@@ -51,111 +50,184 @@ export default async function PilotPage() {
 
   if (!data) {
     return (
-      <Frame>
-        <p style={{ color: '#888' }}>Could not reach JJ at <code>{JJ_BASE}/pilot</code>. Check the VPS process.</p>
-      </Frame>
+      <Shell>
+        <div className="h-full overflow-y-auto bg-bg p-8">
+          <div className="max-w-4xl mx-auto">
+            <Header />
+            <div className="mt-6 p-6 rounded-lg bg-bg2 border border-border text-faint text-sm">
+              <span className="text-danger">●</span> Could not reach JJ at <code className="text-muted">{JJ_BASE}/pilot</code>.
+              Check that simple-jj is running on the VPS.
+            </div>
+          </div>
+        </div>
+      </Shell>
     );
   }
 
   const s = data.summary;
+  const conversionPct = s.total_events > 0
+    ? Math.round((s.waitlist_total / (s.waitlist_total + s.price_feedbacks)) * 100) || 0
+    : 0;
 
-  return (
-    <Frame>
-      <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 6 }}>Pilot Results</h1>
-      <p style={{ fontSize: 13, color: '#999', marginBottom: 24 }}>
-        Live data from JJ. Waitlist = lead said yes at full price. Price feedback = lead's counter-offer.
-      </p>
-
-      {/* Summary cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 28 }}>
-        <Card label="Total events"      value={s.total_events} />
-        <Card label="Waitlist (yes @ full price)" value={s.waitlist_total} highlight />
-        <Card label="↳ Basic (700)"     value={s.waitlist_basic} />
-        <Card label="↳ Premium (1,600)" value={s.waitlist_premium} />
-        <Card label="Price feedbacks"   value={s.price_feedbacks} />
-        <Card label="Avg setup offered" value={s.avg_setup_offered ? `${s.avg_setup_offered}₪` : '—'} />
-        <Card label="Avg monthly offered" value={s.avg_monthly_offered ? `${s.avg_monthly_offered}₪/mo` : '—'} />
-      </div>
-
-      {/* Decision matrix */}
-      <div style={{ background: '#fff8e6', border: '1px solid #f4d778', borderRadius: 10, padding: 16, marginBottom: 28, fontSize: 14, color: '#5c4a0e' }}>
-        <strong>How to read this:</strong>
-        <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
-          <li>If <strong>waitlist ≥ 60%</strong> of leads who saw a demo → pricing works. Time to flip to live.</li>
-          <li>If most price feedbacks cluster around the same number → that's your real market price.</li>
-          <li>If <strong>0 waitlist + many feedbacks at much lower prices</strong> → 700 is too high for this market.</li>
-        </ul>
-      </div>
-
-      {/* Events log */}
-      <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 12 }}>Events (newest first)</h2>
-      {data.events.length === 0 ? (
-        <p style={{ color: '#999', fontSize: 14 }}>No events yet. Run JJ on real leads — events show up here as they happen.</p>
-      ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr style={{ borderBottom: '2px solid #e5e5e5' }}>
-              <th style={TH}>When</th>
-              <th style={TH}>Kind</th>
-              <th style={TH}>Phone</th>
-              <th style={TH}>Company</th>
-              <th style={TH}>Tier / Price</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.events.map((e, i) => (
-              <tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                <td style={TD}>{new Date(e.ts).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                <td style={TD}>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 99,
-                    background: e.kind === 'waitlist' ? '#dcfce7' : '#fef3c7',
-                    color:      e.kind === 'waitlist' ? '#166534' : '#92400e',
-                  }}>
-                    {e.kind === 'waitlist' ? 'WAITLIST' : 'FEEDBACK'}
-                  </span>
-                </td>
-                <td style={TD}>+{e.phone}</td>
-                <td style={TD}>{e.company || <span style={{ color: '#aaa' }}>—</span>}</td>
-                <td style={{ ...TD, fontWeight: 600 }}>
-                  {e.kind === 'waitlist'
-                    ? <span style={{ color: '#166534' }}>{e.tier === 'premium' ? 'Premium · 1,600' : 'Basic · 700'}</span>
-                    : <span style={{ color: '#92400e' }}>{e.setup}₪{e.monthly ? ` + ${e.monthly}/mo` : ''}</span>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </Frame>
-  );
-}
-
-const TH: React.CSSProperties = { textAlign: 'left', padding: '10px 8px', color: '#666', fontWeight: 700 };
-const TD: React.CSSProperties = { padding: '10px 8px' };
-
-function Frame({ children }: { children: React.ReactNode }) {
   return (
     <Shell>
-      <div style={{
-        height: '100%', overflowY: 'auto',
-        background: '#fafaf7', color: '#1a1a1a',
-        fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif', padding: '32px 28px',
-      }}>
-        <div style={{ maxWidth: 980, margin: '0 auto' }}>{children}</div>
+      <div className="h-full overflow-y-auto bg-bg">
+        <div className="max-w-5xl mx-auto p-8">
+          <Header />
+
+          {/* KPI cards */}
+          <div className="mt-6 grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+            <Kpi label="Total events"           value={s.total_events} />
+            <Kpi label="Waitlist · yes @ price" value={s.waitlist_total} highlight />
+            <Kpi label="↳ Basic (700)"          value={s.waitlist_basic}    sub={pct(s.waitlist_basic, s.waitlist_total)} />
+            <Kpi label="↳ Premium (1,600)"      value={s.waitlist_premium}  sub={pct(s.waitlist_premium, s.waitlist_total)} />
+            <Kpi label="Price feedbacks"        value={s.price_feedbacks} />
+          </div>
+
+          <div className="mt-3 grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+            <Kpi label="Avg setup offered"   value={s.avg_setup_offered   ? `${s.avg_setup_offered}₪`   : '—'} />
+            <Kpi label="Avg monthly offered" value={s.avg_monthly_offered ? `${s.avg_monthly_offered}₪` : '—'} />
+            <Kpi label="Conversion rate"     value={s.total_events ? `${conversionPct}%` : '—'} accent />
+          </div>
+
+          {/* Reading guide */}
+          <div className="mt-6 rounded-lg bg-bg2 border border-border p-5">
+            <div className="text-[11px] font-bold tracking-widest text-muted uppercase mb-2">How to read this</div>
+            <ul className="space-y-1.5 text-[13px] text-muted">
+              <li>If <span className="text-success font-bold">waitlist ≥ 60%</span> of leads who saw a demo → pricing works. Time to flip to live.</li>
+              <li>If most price feedbacks cluster around the same number → that's your real market price.</li>
+              <li>If <span className="text-warn font-bold">0 waitlist + many feedbacks at much lower prices</span> → 700 is too high for this market.</li>
+            </ul>
+          </div>
+
+          {/* Events log */}
+          <div className="mt-6">
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="text-base font-bold text-white">Events</h2>
+              <span className="text-[11px] text-faint">newest first · {data.events.length} total</span>
+            </div>
+
+            {data.events.length === 0 ? (
+              <div className="rounded-lg bg-bg2 border border-border p-8 text-center">
+                <div className="text-3xl mb-2">🦗</div>
+                <p className="text-sm text-faint">No events yet — let JJ run on real leads, events appear here as they happen.</p>
+              </div>
+            ) : (
+              <div className="rounded-lg bg-bg2 border border-border overflow-hidden">
+                <table className="w-full text-[13px]">
+                  <thead className="bg-bg3 text-[10px] uppercase tracking-widest text-faint">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left font-bold">When</th>
+                      <th className="px-4 py-2.5 text-left font-bold">Kind</th>
+                      <th className="px-4 py-2.5 text-left font-bold">Phone</th>
+                      <th className="px-4 py-2.5 text-left font-bold">Company</th>
+                      <th className="px-4 py-2.5 text-left font-bold">Tier / Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.events.map((e, i) => (
+                      <tr key={i} className="border-t border-border/40 hover:bg-bg3/40">
+                        <td className="px-4 py-2.5 text-faint whitespace-nowrap">
+                          {new Date(e.ts).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <KindBadge kind={e.kind} />
+                        </td>
+                        <td className="px-4 py-2.5 text-muted font-mono text-[12px]">+{e.phone}</td>
+                        <td className="px-4 py-2.5 text-white">
+                          {e.company || <span className="text-faint">—</span>}
+                          {e.city && <span className="text-faint text-[11px] ml-2">· {e.city}</span>}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          {e.kind === 'waitlist' ? (
+                            <span className="text-success font-bold">
+                              {e.tier === 'premium' ? 'Premium · 1,600₪' : 'Basic · 700₪'}
+                            </span>
+                          ) : (
+                            <span className="text-warn font-bold">
+                              {e.setup}₪{e.monthly ? ` + ${e.monthly}/mo` : ''}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-8 text-[10px] text-faint text-center">
+            🧪 Pilot Mode · production [CHECKOUT:*] tags inactive · server: 204.168.207.116:3002
+          </div>
+        </div>
       </div>
     </Shell>
   );
 }
 
-function Card({ label, value, highlight }: { label: string; value: string | number; highlight?: boolean }) {
+/* ── components ──────────────────────────────────────────── */
+
+function Header() {
   return (
-    <div style={{
-      background: '#fff', border: highlight ? '2px solid #2d6b55' : '1px solid #e5e5e5',
-      borderRadius: 10, padding: 16,
-    }}>
-      <div style={{ fontSize: 11, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4, color: highlight ? '#2d6b55' : '#1a1a1a' }}>{value}</div>
+    <div>
+      <div className="flex items-center gap-3 mb-1">
+        <span className="text-2xl">🧪</span>
+        <h1 className="text-xl font-bold text-white tracking-tight">Pilot Results</h1>
+        <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full bg-warn/10 text-warn border border-warn/30">
+          beta · no payments
+        </span>
+      </div>
+      <p className="text-[13px] text-faint">
+        Live data from JJ. <span className="text-success">Waitlist</span> = lead said yes at full price.
+        <span className="text-warn ml-1">Price feedback</span> = lead's counter-offer.
+      </p>
     </div>
   );
+}
+
+function Kpi({
+  label, value, sub, highlight, accent,
+}: {
+  label: string; value: number | string; sub?: string; highlight?: boolean; accent?: boolean;
+}) {
+  return (
+    <div
+      className={clsx(
+        'rounded-lg border p-4 transition-all',
+        highlight ? 'bg-accent/5 border-accent/40' :
+        accent    ? 'bg-bg2 border-accent2/30'    :
+                    'bg-bg2 border-border',
+      )}
+    >
+      <div className="text-[10px] font-bold tracking-widest uppercase text-faint">{label}</div>
+      <div className={clsx(
+        'text-2xl font-bold mt-1.5',
+        highlight ? 'text-accent' :
+        accent    ? 'text-accent2' :
+                    'text-white',
+      )}>{value}</div>
+      {sub && <div className="text-[11px] text-faint mt-0.5">{sub}</div>}
+    </div>
+  );
+}
+
+function KindBadge({ kind }: { kind: 'waitlist' | 'price_feedback' }) {
+  if (kind === 'waitlist') {
+    return (
+      <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/30">
+        waitlist
+      </span>
+    );
+  }
+  return (
+    <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full bg-warn/10 text-warn border border-warn/30">
+      feedback
+    </span>
+  );
+}
+
+function pct(num: number, total: number): string {
+  if (!total) return '';
+  return `${Math.round((num / total) * 100)}% of waitlist`;
 }
