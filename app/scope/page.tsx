@@ -61,7 +61,6 @@ const NOT_INCLUDED = [
 
 const POST_LAUNCH = [
   'טקסטים, צבעים, לוגו, תמונות, ביקורות → הלקוח עורך לבד בפורטל, מיידי, ללא עלות',
-  'הוספת סקציה חדשה / שינוי מבנה האתר → תוספת חד-פעמית 200 ש״ח',
   'שינוי קטגוריית עסק (למשל ממרפאת שיניים לאופנה) → לא אפשרי, הזמנה חדשה',
   'ביטול מנוי — בכל זמן, החזר יחסי בחודש הראשון בלבד',
 ];
@@ -141,9 +140,22 @@ export default function ScopePage() {
           </ul>
         </div>
 
+        {/* Strict scope — no custom work */}
+        <div style={{ background: '#FFF8E6', borderRadius: 16, padding: 28, border: '1px solid #F4D778', marginBottom: 24 }}>
+          <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>אנחנו עובדים רק לפי המסלולים למעלה</h3>
+          <p style={{ fontSize: 14, color: '#5C4A0E', lineHeight: 1.8, margin: 0 }}>
+            אין שדרוגים מיוחדים, אין עיצובים מותאמים, אין פיצ'רים נוספים. ההתמחות הצרה היא מה שמאפשר לנו לתת מחיר נמוך וזמן אספקה מהיר.
+            אם צריך משהו מעבר — באהבה נפנה אתכם לפרילנסר או לסטודיו אחר. אין תרגום, אין אינטגרציות, אין עיצוב מאפס, אין ניהול קמפיינים.
+          </p>
+        </div>
+
         {/* Footer note */}
         <div style={{ textAlign: 'center', color: '#888', fontSize: 13, marginTop: 32, paddingTop: 24, borderTop: '1px solid #E5E5E5' }}>
           שאלות? כתבו ב-WhatsApp לעילאי. הצוות עונה תוך 24 שעות.
+          <div style={{ marginTop: 10 }}>
+            <a href="/terms" style={{ color: '#2D6B55', marginLeft: 12 }}>תנאי שימוש</a>
+            <a href="/privacy" style={{ color: '#2D6B55' }}>מדיניות פרטיות</a>
+          </div>
         </div>
       </div>
     </main>
