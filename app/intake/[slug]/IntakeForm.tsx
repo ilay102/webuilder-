@@ -228,6 +228,12 @@ export function IntakeForm({ slug, initial }: IntakeFormProps) {
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Scope-acceptance gate. Required before submitting — creates legal evidence
+  // the client agreed to the documented service scope.
+  const [scopeAccepted, setScopeAccepted] = useState(false);
+  // Domain preference — the operator (you) buys + configures within 24-48h.
+  const [domainBase, setDomainBase] = useState('');
+  const [domainTld,  setDomainTld]  = useState<'co.il' | 'com'>('co.il');
 
   const upForm = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm(f => ({ ...f, [k]: v }));
@@ -289,10 +295,17 @@ export function IntakeForm({ slug, initial }: IntakeFormProps) {
 
       // POST to the slug-scoped endpoint — the URL is the authority for which
       // client record gets updated. Server-side ignores any slug in the body.
+      const domainPreference = domainBase ? `${domainBase}.${domainTld}` : null;
       const res = await fetch(`/api/intake/${encodeURIComponent(slug)}`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ biz, services }),
+        body:    JSON.stringify({
+          biz,
+          services,
+          domainPreference,           // operator buys + configures within 24-48h
+          scopeAcceptedAt:  new Date().toISOString(),
+          scopeVersion:     '2026-05-07',
+        }),
       });
       if (!res.ok) throw new Error((await res.text()) || `Error ${res.status}`);
       setStep('done');
@@ -576,10 +589,76 @@ export function IntakeForm({ slug, initial }: IntakeFormProps) {
                 </div>
               )}
 
-              <div style={{ marginTop: 28 }}>
+              {/* Domain preference */}
+              <div style={{
+                marginTop: 24, padding: 16, background: '#fff', borderRadius: 10, border: '1px solid #E5E5E5',
+                direction: 'rtl' as const,
+              }}>
+                <div style={{ fontFamily: F.label, fontWeight: 700, fontSize: 14, marginBottom: 6 }}>
+                  כתובת האתר שלכם (Domain)
+                </div>
+                <div style={{ fontFamily: F.body, fontSize: 12, color: '#777', marginBottom: 12, lineHeight: 1.6 }}>
+                  בחרו את הכתובת שאתם רוצים. אנחנו רושמים אותה אצלנו תוך 24-48 שעות. אם תפוסה — נציע חלופה דומה.
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' as const }}>
+                  <input
+                    value={domainBase}
+                    onChange={e => setDomainBase(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                    placeholder="your-business"
+                    dir="ltr"
+                    style={{
+                      flex: '1 1 200px', padding: '10px 12px', border: '1.5px solid #E5E5E5',
+                      borderRadius: 8, fontSize: 14, fontFamily: 'monospace', minWidth: 0,
+                    }}
+                  />
+                  <select
+                    value={domainTld}
+                    onChange={e => setDomainTld(e.target.value as 'co.il' | 'com')}
+                    style={{ padding: '10px 12px', border: '1.5px solid #E5E5E5', borderRadius: 8, fontSize: 14, fontFamily: 'monospace', cursor: 'pointer' }}
+                  >
+                    <option value="co.il">.co.il</option>
+                    <option value="com">.com</option>
+                  </select>
+                </div>
+                {domainBase && (
+                  <div style={{ marginTop: 10, fontSize: 13, color: '#2D6B55', fontFamily: 'monospace', direction: 'ltr' as const, textAlign: 'left' as const }}>
+                    {domainBase}.{domainTld}
+                  </div>
+                )}
+                <div style={{ marginTop: 8, fontSize: 11, color: '#999', lineHeight: 1.5 }}>
+                  💡 .co.il נחשב לאתר ישראלי ועוזר לאמינות בקרב לקוחות מקומיים. .com זול יותר.
+                </div>
+              </div>
+
+              {/* Scope acceptance — legal gate before submission */}
+              <label style={{
+                display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 18,
+                padding: 14, background: '#FAFAF7', borderRadius: 10, border: '1px solid #E5E5E5',
+                cursor: 'pointer', direction: 'rtl' as const,
+              }}>
+                <input
+                  type="checkbox"
+                  checked={scopeAccepted}
+                  onChange={e => setScopeAccepted(e.target.checked)}
+                  style={{ marginTop: 4, width: 18, height: 18, cursor: 'pointer', flexShrink: 0 }}
+                />
+                <span style={{ fontFamily: F.body, fontSize: 13, lineHeight: 1.6, color: '#333' }}>
+                  קראתי ואני מסכים ל
+                  <a href="/scope" target="_blank" rel="noreferrer" style={{ color: '#2D6B55', fontWeight: 700 }}> פירוט השירות </a>
+                  ול
+                  <a href="/terms" target="_blank" rel="noreferrer" style={{ color: '#2D6B55', fontWeight: 700 }}> תנאי השימוש </a>
+                  ומבין שהשירות מוגבל למה שמופיע שם. בקשות נוספות הן תוספות בתשלום ומחיריהן מופיעים בעמוד פירוט השירות.
+                </span>
+              </label>
+
+              <div style={{ marginTop: 20 }}>
                 <Btn
-                  onClick={handleSubmit}
-                  disabled={submitting || form.services.filter(s => s.active).length === 0}
+                  onClick={() => {
+                    if (!domainBase || domainBase.length < 2) { setSubmitError('יש לבחור כתובת אתר (Domain) לפני שליחה'); return; }
+                    if (!scopeAccepted) { setSubmitError('יש לאשר את פירוט השירות ותנאי השימוש לפני שליחה'); return; }
+                    handleSubmit();
+                  }}
+                  disabled={submitting || form.services.filter(s => s.active).length === 0 || !scopeAccepted || !domainBase}
                   full
                 >
                   {submitting ? '⏳ Launching…' : 'Launch my website 🚀'}

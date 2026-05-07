@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const VPS_API = process.env.NEXT_PUBLIC_API_URL || 'http://204.168.207.116:3000';
+const JJ_BASE = process.env.JJ_BASE || 'http://204.168.207.116:3002';
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])$/;
 
 export async function POST(
@@ -57,8 +58,82 @@ export async function POST(
     return NextResponse.json({ error: e.message }, { status: 502 });
   }
 
+  // ── Persist scope-acceptance evidence + domain preference on top-level client record ───
+  if (safeBody.scopeAcceptedAt || safeBody.domainPreference) {
+    try {
+      await fetch(`${VPS_API}/api/clients/${slug}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(safeBody.scopeAcceptedAt   && { scopeAcceptedAt: safeBody.scopeAcceptedAt }),
+          ...(safeBody.scopeVersion      && { scopeVersion:    safeBody.scopeVersion }),
+          ...(safeBody.domainPreference  && { domainPreference: safeBody.domainPreference, domainStatus: 'requested' }),
+        }),
+      });
+    } catch (e: any) {
+      console.warn(`[intake/${slug}] persistence failed: ${e.message}`);
+    }
+  }
+
+  // ── Owner alert: domain request → WhatsApp the operator ───────────────
+  // You see the request in your phone within ~5 sec of intake submission.
+  if (safeBody.domainPreference) {
+    notifyOwnerOfDomainRequest(slug, safeBody.domainPreference, safeBody?.biz?.name || slug)
+      .catch(e => console.warn(`[intake/${slug}] owner alert failed: ${e.message}`));
+  }
+
   const url = `https://webuilder-liart.vercel.app/${slug}`;
+
+  // ── Notify JJ so it advances funnelStage and triggers the Photos Protocol ──
+  // Best-effort, never blocks the response. We need the client's WhatsApp number;
+  // it lives on the VPS client record under siteContent.biz.alertWhatsapp.
+  notifyJJIntakeDone(slug).catch(e =>
+    console.warn(`[intake/${slug}] JJ notify failed: ${e.message}`),
+  );
+
   return NextResponse.json({ ok: true, slug, url });
+}
+
+/** Operator alert when a client requests a domain — WhatsApp via JJ proxy. */
+async function notifyOwnerOfDomainRequest(slug: string, domain: string, bizName: string): Promise<void> {
+  const owner = process.env.OWNER_WHATSAPP || '972534638880';
+  const msg = [
+    `🌐 *Domain request*`,
+    ``,
+    `Client:  ${bizName}`,
+    `Slug:    ${slug}`,
+    `Domain:  ${domain}`,
+    ``,
+    `Buy at domain.co.il, point DNS to Vercel, run:`,
+    `ssh root@204.168.207.116 "/root/simple-jj/domain-live.sh ${slug} ${domain}"`,
+  ].join('\n');
+  await fetch(`${JJ_BASE}/send-message`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone: owner, message: msg }),
+  });
+  console.log(`[intake/${slug}] ✓ owner alerted: ${domain}`);
+}
+
+async function notifyJJIntakeDone(slug: string): Promise<void> {
+  const clientRes = await fetch(`${VPS_API}/api/clients/${slug}`, { cache: 'no-store' });
+  if (!clientRes.ok) return;
+  const client = await clientRes.json();
+  const whatsapp = client?.whatsapp
+    || client?.siteContent?.biz?.alertWhatsapp
+    || client?.siteContent?.biz?.phone
+    || '';
+  if (!whatsapp) {
+    console.warn(`[intake/${slug}] no whatsapp on client record — JJ notify skipped`);
+    return;
+  }
+  const phone = String(whatsapp).replace(/\D/g, '').replace(/^0/, '972');
+  await fetch(`${JJ_BASE}/system-event`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, event: `[INTAKE_DONE] ${slug}` }),
+  });
+  console.log(`[intake/${slug}] ✓ JJ notified (+${phone})`);
 }
 
 async function updateSiteContent(slug: string, formData: any): Promise<void> {
