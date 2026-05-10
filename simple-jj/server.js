@@ -20,7 +20,11 @@ const LEADS_PATH    = '/root/.openclaw/workspace/leads.json';
 const QUEUE_PATH    = '/root/.openclaw/workspace/demo_queue.json';
 const MEETINGS_PATH = '/root/.openclaw/workspace/meetings.json';
 const PILOT_PATH    = '/root/.openclaw/workspace/pilot-results.json';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDs9ym7isUAvvV-edKM00Aq4MX9FrAOW3w';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+  console.error('[FATAL] GEMINI_API_KEY env var not set. Run: pm2 set simple-jj:GEMINI_API_KEY <key> && pm2 restart simple-jj --update-env');
+  process.exit(1);
+}
 const GEMINI_MODEL  = 'gemini-2.5-flash';
 
 // Next.js / Vercel — used by CHECKOUT dispatcher to create Polar links
@@ -308,6 +312,17 @@ function dispatchWaitlist(phone, tier) {
   return { ok: true };
 }
 
+function dispatchStop(phone) {
+  // Mark closed-lost. The /respond handler also reads this result to suppress
+  // any message body if the lead was previously cold (no demo URL in history).
+  setFunnelStage(phone, 'closed-lost', { closedAt: new Date().toISOString() });
+  const histText = getHistory(phone).map(h => h.parts?.[0]?.text || '').join('\n');
+  const wasEngaged = /webuilder|vercel\.app|polar\.sh/.test(histText);
+  console.log('[STOP] +' + phone + ' closed-lost (engaged=' + wasEngaged + ')');
+  // If they were cold (never saw demo) → tell respond handler to drop the message body too.
+  return { ok: true, suppressMessage: !wasEngaged };
+}
+
 function dispatchPriceFeedback(phone, priceStr) {
   const lead = findLead(phone) || {};
   const data = loadPilot();
@@ -338,7 +353,7 @@ function dispatchPriceFeedback(phone, priceStr) {
 }
 
 // ─── Tag parser ───────────────────────────────────────────────────
-const TAG_RE = /^\s*\[(BUILD|CHECKOUT(?::[a-zA-Z_]+)?|WAITLIST(?::[a-zA-Z_]+)?|PRICE_FEEDBACK(?::[0-9+]+)?|MEETING|PAID|ESCALATE|INTAKE_DONE)\]\s*$/gm;
+const TAG_RE = /^\s*\[(BUILD|CHECKOUT(?::[a-zA-Z_]+)?|WAITLIST(?::[a-zA-Z_]+)?|PRICE_FEEDBACK(?::[0-9+]+)?|MEETING|PAID|ESCALATE|INTAKE_DONE|STOP)\]\s*$/gm;
 
 function parseTags(reply) {
   const tags = [];
@@ -377,6 +392,8 @@ async function runDispatchers(phone, tags) {
     else if (tag === 'PAID')             result = dispatchPaid(phone);
     else if (tag === 'ESCALATE')         result = await dispatchEscalate(phone);
     else if (tag === 'INTAKE_DONE')      result = dispatchIntakeDone(phone);
+    else if (tag === 'STOP')             result = dispatchStop(phone);
+    if (result?.suppressMessage) replacements.__suppress = true;
     if (result?.replacements) Object.assign(replacements, result.replacements);
   }
   return replacements;
@@ -433,6 +450,14 @@ app.post('/respond', async (req, res) => {
     console.log('[SKIP]  +' + cleanPhone + ' not in leads.json');
     return res.json({ reply: null, reason: 'not_a_lead' });
   }
+  // Closed-lost = JJ is permanently silent on this lead. Hard guard to prevent
+  // any future message (e.g. lead changes their mind weeks later) from re-engaging.
+  // To re-open, manually clear the funnelStage on the lead record.
+  const closedLead = findLead(cleanPhone);
+  if (closedLead?.funnelStage === 'closed-lost') {
+    console.log('[CLOSED] +' + cleanPhone + ' lead is closed-lost, skipping');
+    return res.json({ reply: null, reason: 'closed-lost' });
+  }
   if (isAutoReply(message)) {
     console.log('[BOT]   +' + cleanPhone + ' auto-reply, skipping');
     return res.json({ reply: null, reason: 'auto-reply' });
@@ -477,9 +502,12 @@ app.post('/respond', async (req, res) => {
     const { tags, cleaned } = parseTags(reply);
     let outgoing = cleaned;
 
+    let suppressed = false;
     if (tags.length > 0) {
       console.log('[TAGS]  +' + cleanPhone + ' ' + tags.join(', '));
       const replacements = await runDispatchers(cleanPhone, tags);
+      suppressed = !!replacements.__suppress;
+      delete replacements.__suppress;
       outgoing = applyReplacements(cleaned, replacements);
 
       if (outgoing.includes('{{CHECKOUT_URL}}')) {
@@ -490,8 +518,21 @@ app.post('/respond', async (req, res) => {
 
     // Save original (with tags) so next Gemini turn sees what JJ did
     saveHistory(cleanPhone, message, reply);
-    sendWhatsApp(cleanPhone, outgoing);
 
+    // [STOP] in cold stage → silent close. Save history but send nothing.
+    // (Engaged stages may still send a one-line goodbye — suppressMessage=false.)
+    if (suppressed) {
+      console.log('[STOP-SILENT] +' + cleanPhone + ' message suppressed (cold-stage close)');
+      return res.json({ reply: null, suppressed: true, reason: 'cold_stop' });
+    }
+
+    // Empty body after stripping tags (common with [STOP] alone) → don't send blank message
+    if (!outgoing || outgoing.trim() === '') {
+      console.log('[STOP-SILENT] +' + cleanPhone + ' empty body after tag strip');
+      return res.json({ reply: null, suppressed: true, reason: 'empty_after_tags' });
+    }
+
+    sendWhatsApp(cleanPhone, outgoing);
     console.log('[OUT]   +' + cleanPhone + ':', outgoing.substring(0, 120));
     res.json({ reply: outgoing, sent: true });
 

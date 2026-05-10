@@ -409,7 +409,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
               background: C.forest, color: '#fff', fontFamily: F.label, fontWeight: 600, fontSize: 14,
               padding: '10px 24px', borderRadius: 99, border: 'none', cursor: 'pointer', transition: 'background 0.2s ease',
             }}>
-              <span className="nav-book">{HAS_BOOKING ? 'קבע תור' : 'התקשרו'}</span>
+              <span className="nav-book">{HAS_BOOKING ? 'קבע תור' : '📞 התקשרו'}</span>
             </CTAButton>
           </div>
         </div>
@@ -464,7 +464,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
                 padding: '16px 36px', borderRadius: 99, border: 'none', cursor: 'pointer',
                 boxShadow: '0 8px 24px rgba(45,107,85,0.30)', transition: 'all 0.2s ease',
               }}>
-                {HAS_BOOKING ? COPY.ctaMain : `📞 ${BIZ.phone || COPY.ctaMain}`}
+                {HAS_BOOKING ? COPY.ctaMain : '📞 התקשרו עכשיו'}
               </CTAButton>
               <button style={{
                 background: 'transparent', color: C.charcoal, fontFamily: F.label, fontWeight: 600, fontSize: 15,
@@ -606,7 +606,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
               padding: '18px 48px', borderRadius: 99, border: 'none', cursor: 'pointer',
               boxShadow: '0 8px 32px rgba(0,0,0,0.20)', transition: 'all 0.2s ease',
             }}>
-              {HAS_BOOKING ? 'קבע ייעוץ חינם' : `📞 ${BIZ.phone || 'התקשרו עכשיו'}`}
+              {HAS_BOOKING ? 'קבע ייעוץ חינם' : '📞 התקשרו עכשיו'}
             </CTAButton>
           </motion.div>
         </div>
@@ -666,21 +666,25 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
           alignItems: 'center',
         }}
       >
-        <a
-          href={BIZ.phone ? `tel:${BIZ.phone}` : '#'}
-          aria-label="התקשרו"
-          style={{
-            flex: '0 0 38%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            padding: '13px 6px',
-            background: C.sageLight,
-            color: C.forest,
-            fontFamily: F.label, fontWeight: 700, fontSize: 14,
-            borderRadius: 99, textDecoration: 'none',
-          }}
-        >
-          📞 התקשרו
-        </a>
+        {/* PREMIUM tier: secondary "Call" + primary "Book"
+            BASIC tier: a single full-width "Call" button (no redundant duplicate) */}
+        {HAS_BOOKING && (
+          <a
+            href={BIZ.phone ? `tel:${BIZ.phone}` : '#'}
+            aria-label="התקשרו"
+            style={{
+              flex: '0 0 38%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              padding: '13px 6px',
+              background: C.sageLight,
+              color: C.forest,
+              fontFamily: F.label, fontWeight: 700, fontSize: 14,
+              borderRadius: 99, textDecoration: 'none',
+            }}
+          >
+            📞 התקשרו
+          </a>
+        )}
         <CTAButton style={{
           flex: '1 1 auto',
           padding: '13px 6px',
@@ -691,7 +695,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
           textAlign: 'center' as const,
           boxShadow: '0 6px 20px rgba(45,107,85,0.30)',
         }}>
-          {HAS_BOOKING ? 'קבע תור' : 'התקשרו'}
+          {HAS_BOOKING ? 'קבע תור' : '📞 התקשרו עכשיו'}
         </CTAButton>
         {/* Chat icon — premium tier only */}
         {HAS_CHATBOT && (
