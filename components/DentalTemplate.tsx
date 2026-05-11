@@ -183,8 +183,11 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
   // ── Tier gating (2-tier launch) ──────────────────────────────────────────
   // basic    → static site only (no booking, no chatbot)
   // premium  → + Cal.com booking + AI chatbot
+  // Default = premium: demo sites (Carti-built, no tier field) showcase the
+  // full product so JJ can sell against the best version. Real paying clients
+  // who chose basic have tier explicitly set at intake, so they're unaffected.
   // (legacy 'standard' records — treat as premium so old clients keep their features)
-  const TIER: Tier = content.tier ?? 'basic';
+  const TIER: Tier = content.tier ?? 'premium';
   const HAS_BOOKING = TIER === 'standard' || TIER === 'premium';
   const HAS_CHATBOT = TIER === 'standard' || TIER === 'premium';
 
