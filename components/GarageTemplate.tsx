@@ -397,7 +397,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
               </div>
             )}
             <span style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 18, color: C.charcoal, letterSpacing: '-0.02em' }}>
-              {BIZ.name || 'שם המרפאה'}
+              {BIZ.name || 'שם המוסך'}
             </span>
           </div>
           <div className="nav-links" style={{ display: 'flex', gap: 40, alignItems: 'center' }}>
@@ -449,7 +449,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
             >
               {COPY.h1
                 ? <span>{COPY.h1}</span>
-                : <>החיוך שלך,<br /><span style={{ color: C.forest }}>הסיפור שלנו</span></>}
+                : <>הרכב שלך,<br /><span style={{ color: C.forest }}>השירות שלנו</span></>}
             </motion.h1>
             <motion.p
               className="hero-sub"
@@ -506,7 +506,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
             טיפול מלא,<br /><span style={{ color: C.forest }}>מקום אחד בטוח</span>
           </h2>
           <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.75, maxWidth: 340 }}>
-            מהבדיקה הראשונה ועד לשינוי חיוך מלא — כל טיפול מבוצע על ידי מומחים שבאמת אכפת להם.
+            מהאבחון הראשון ועד למסירת הרכב — כל טיפול מבוצע על ידי טכנאים מוסמכים שבאמת אכפת להם.
           </p>
         </div>
         <div className="services-grid" style={{ display: 'grid', gridTemplateColumns: services.length === 4 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 24 }}>
@@ -518,17 +518,17 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
       <section id="about" className="about-section" style={{ background: C.bgAlt, padding: '120px 80px' }}>
         <div className="about-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
           <motion.div initial={{ opacity: 0, x: -32 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} style={{ position: 'relative' }}>
-            <img className="about-img" src={photos.about} alt="Dentist consulting with patient" style={{ width: '100%', height: 480, objectFit: 'cover', borderRadius: 24, display: 'block' }} />
+            <img className="about-img" src={photos.about} alt="Mechanic working on a customer's car" style={{ width: '100%', height: 480, objectFit: 'cover', borderRadius: 24, display: 'block' }} />
             <div className="hide-mobile" style={{ position: 'absolute', bottom: 28, right: -28, background: C.white, borderRadius: 16, padding: '20px 24px', boxShadow: '0 16px 48px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 48, height: 48, borderRadius: 12, background: C.sageLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🏆</div>
               <div>
-                <div style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 15, color: C.charcoal }}>המרפאה המובילה</div>
+                <div style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 15, color: C.charcoal }}>המוסך המוביל</div>
                 <div style={{ fontFamily: F.body, fontSize: 13, color: C.muted }}>{BIZ.city || 'ישראל'} · 2024</div>
               </div>
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, x: 32 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.15 }}>
-            <SectionLabel>אודות המרפאה</SectionLabel>
+            <SectionLabel>אודות המוסך</SectionLabel>
             <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 24 }}>
               שירות לרכב שמרגיש <span style={{ color: C.forest }}>אמין</span>
             </h2>
@@ -558,13 +558,13 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
         <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
           <SectionLabel>תוצאות</SectionLabel>
           <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 24 }}>
-            חיוכים אמיתיים,<br /><span style={{ color: C.forest }}>ביטחון אמיתי</span>
+            שירות אמיתי,<br /><span style={{ color: C.forest }}>אמון אמיתי</span>
           </h2>
           <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 40 }}>
-            כל חיוך שאנו משנים הוא סיפור. בין אם מדובר בהלבנה, ציפויים או שינוי חיוך מלא — אנחנו עובדים עם המאפיינים הטבעיים שלך כדי ליצור תוצאות שמרגישות כמוך.
+            כל רכב שעובר אצלנו הוא סיפור. בין אם מדובר בטיפול תקופתי, תיקון תקלה מורכבת או שיפוץ מערכת — אנחנו עובדים בשקיפות מלאה כדי שתצא עם רכב אמין ובטוח.
           </p>
           <div className="results-mini" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-            {[{ value: '1,200+', label: 'שיפורי חיוך' }, { value: '4.9★', label: 'דירוג ממוצע' }].map(({ value, label }) => (
+            {[{ value: '1,200+', label: 'רכבים שטופלו' }, { value: '4.9★', label: 'דירוג ממוצע' }].map(({ value, label }) => (
               <div key={label} style={{ background: C.sageLight, borderRadius: 16, padding: '24px 20px' }}>
                 <div style={{ fontFamily: F.serif, fontSize: 28, fontWeight: 800, color: C.forest }}>{value}</div>
                 <div style={{ fontFamily: F.body, fontSize: 13, color: C.sage, marginTop: 4 }}>{label}</div>
@@ -573,7 +573,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
           </div>
         </motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.1 }} style={{ borderRadius: 24, overflow: 'hidden', boxShadow: '0 32px 80px rgba(45,107,85,0.15)' }}>
-          <img className="results-img" src={photos.results} alt="Happy patient smile" style={{ width: '100%', height: 520, objectFit: 'cover', display: 'block' }} />
+          <img className="results-img" src={photos.results} alt="Satisfied customer with their serviced car" style={{ width: '100%', height: 520, objectFit: 'cover', display: 'block' }} />
         </motion.div>
       </section>
 
@@ -600,10 +600,10 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
           <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
             <Tag>מוכנים להתחיל?</Tag>
             <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(32px, 4.5vw, 56px)', fontWeight: 700, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.1, margin: '24px 0', maxWidth: 640 }}>
-              החיוך המושלם שלך במרחק תור אחד
+              הרכב שלך בידיים טובות — במרחק תור אחד
             </h2>
             <p style={{ fontFamily: F.body, fontSize: 17, color: 'rgba(255,255,255,0.80)', marginBottom: 40, maxWidth: 440 }}>
-              הייעוץ הראשון חינם. ללא לחץ, ללא התחייבות — רק שיחה ידידותית על מטרות החיוך שלך.
+              האבחון הראשון חינם. ללא לחץ, ללא התחייבות — רק בדיקה כנה ושיחה ישירה על מה שהרכב באמת צריך.
             </p>
             <CTAButton style={{
               background: '#fff', color: C.forest, fontFamily: F.label, fontWeight: 700, fontSize: 16,
@@ -625,7 +625,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
                 <div style={{ width: 32, height: 32, borderRadius: 99, background: C.forest, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ color: '#fff', fontSize: 16 }}>✦</span>
                 </div>
-                <span style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 18, color: '#fff' }}>{BIZ.name || 'שם המרפאה'}</span>
+                <span style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 18, color: '#fff' }}>{BIZ.name || 'שם המוסך'}</span>
               </div>
               <p style={{ fontFamily: F.body, fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.8, maxWidth: 260 }}>
                 שירות רכב מקצועי{BIZ.city ? ` בלב ${BIZ.city}` : ''}. אמינות, שקיפות וטכנולוגיה — בכל ביקור.
@@ -633,7 +633,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
             </div>
             {[
               { title: 'שירותים', links: services.slice(0, 4).map(s => s.title) },
-              { title: 'המרפאה',  links: ['אודות', 'הצוות שלנו', 'גלריה', 'בלוג'] },
+              { title: 'המוסך',  links: ['אודות', 'הצוות שלנו', 'גלריה', 'בלוג'] },
               { title: 'צור קשר', links: [BIZ.phone, BIZ.email, BIZ.address, BIZ.hours].filter(Boolean) as string[] },
             ].map(({ title, links }) => (
               <div key={title}>
@@ -645,7 +645,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
             ))}
           </div>
           <div className="footer-bottom" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>© 2026 {BIZ.name || 'המרפאה שלנו'}. כל הזכויות שמורות.</span>
+            <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>© 2026 {BIZ.name || 'המוסך שלנו'}. כל הזכויות שמורות.</span>
             <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>נבנה באהבה ✦</span>
           </div>
         </div>
@@ -734,7 +734,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
       {/* ── CHATBOT (premium tier only) ── */}
       {HAS_CHATBOT && (
         <Chatbot config={{
-          name:           BIZ.name || 'המרפאה',
+          name:           BIZ.name || 'המוסך',
           type:           'מוסך',
           location:       BIZ.city || 'ישראל',
           phone:          BIZ.phone || '',
@@ -742,7 +742,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
           services:       services.map(s => s.title),
           offer:          'ייעוץ ראשון חינם',
           brandColor:     C.forest,
-          greeting:       `שלום! 👋 אני העוזר של ${BIZ.name || 'המרפאה'}. במה אוכל לעזור?`,
+          greeting:       `שלום! 👋 אני העוזר של ${BIZ.name || 'המוסך'}. במה אוכל לעזור?`,
           clientEmail:    BIZ.alertEmail || BIZ.email || '',
           clientWhatsapp: BIZ.alertWhatsapp || '',
         }} />
