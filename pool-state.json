@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-21T08:41:35.825Z",
+  "updatedAt": "2026-05-21T12:45:57.599Z",
   "images": [
     {
       "id": "heroes/Gemini_Generated_Image_amvponamvponamvp.png",
@@ -239,6 +239,126 @@
       "assignedAt": null,
       "lockedAt": null,
       "addedAt": "2026-05-21T08:17:57.686Z",
+      "notes": ""
+    },
+    {
+      "id": "heroes/Gemini_Generated_Image_cnz12kcnz12kcnz1.png",
+      "type": "hero",
+      "industry": "barber",
+      "path": "/pool/barber/heroes/Gemini_Generated_Image_cnz12kcnz12kcnz1.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T12:45:57.599Z",
+      "notes": ""
+    },
+    {
+      "id": "heroes/Gemini_Generated_Image_hka413hka413hka4.png",
+      "type": "hero",
+      "industry": "barber",
+      "path": "/pool/barber/heroes/Gemini_Generated_Image_hka413hka413hka4.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T12:45:57.599Z",
+      "notes": ""
+    },
+    {
+      "id": "heroes/Gemini_Generated_Image_qwcyuxqwcyuxqwcy.png",
+      "type": "hero",
+      "industry": "barber",
+      "path": "/pool/barber/heroes/Gemini_Generated_Image_qwcyuxqwcyuxqwcy.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T12:45:57.599Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_1k29wb1k29wb1k29.png",
+      "type": "patient",
+      "industry": "barber",
+      "path": "/pool/barber/patients/Gemini_Generated_Image_1k29wb1k29wb1k29.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T12:45:57.599Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_4k755p4k755p4k75.png",
+      "type": "patient",
+      "industry": "barber",
+      "path": "/pool/barber/patients/Gemini_Generated_Image_4k755p4k755p4k75.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T12:45:57.599Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_tm684mtm684mtm68.png",
+      "type": "patient",
+      "industry": "barber",
+      "path": "/pool/barber/patients/Gemini_Generated_Image_tm684mtm684mtm68.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T12:45:57.599Z",
+      "notes": ""
+    },
+    {
+      "id": "heroes/Gemini_Generated_Image_auszvkauszvkausz.png",
+      "type": "hero",
+      "industry": "salon",
+      "path": "/pool/salon/heroes/Gemini_Generated_Image_auszvkauszvkausz.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T12:45:57.599Z",
+      "notes": ""
+    },
+    {
+      "id": "heroes/Gemini_Generated_Image_gnk75ignk75ignk7.png",
+      "type": "hero",
+      "industry": "salon",
+      "path": "/pool/salon/heroes/Gemini_Generated_Image_gnk75ignk75ignk7.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T12:45:57.599Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_bdo08zbdo08zbdo0.png",
+      "type": "patient",
+      "industry": "salon",
+      "path": "/pool/salon/patients/Gemini_Generated_Image_bdo08zbdo08zbdo0.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T12:45:57.599Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_ra688yra688yra68.png",
+      "type": "patient",
+      "industry": "salon",
+      "path": "/pool/salon/patients/Gemini_Generated_Image_ra688yra688yra68.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T12:45:57.599Z",
       "notes": ""
     }
   ]
