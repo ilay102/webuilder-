@@ -46,7 +46,9 @@ const VERCEL_TEAM     = 'team_fpBcoKvlkv3AffiuMNDZJ0Xb';
 // ─── Types ────────────────────────────────────────────────────────
 
 interface DemoConfig {
-  template:       'dental' | 'accountant' | 'lawyer';
+  /** Template name = industry name = pool folder name.
+   *  Mirrors lib/pool-manager Industry type. */
+  template:       'dental' | 'garage' | 'barber' | 'salon';
   route:          string;
   businessName:   string;
   tagline?:       string;
@@ -232,12 +234,13 @@ async function buildDemo(c: DemoConfig): Promise<string> {
   const variant = pickVariant(c.route, c.template, c.city);
   const pack    = getPack(variant.packId);
 
-  // ── Image pool: allocate hero + patient from unified library (FIFO) ──────────
+  // ── Image pool: allocate hero + patient from THIS INDUSTRY's pool (FIFO) ─────
+  //    c.template doubles as the industry name (matches pool folder names).
   let hero!:    PoolImage;
   let patient!: PoolImage;
   try {
-    hero    = allocateImage('hero',    c.route);
-    patient = allocateImage('patient', c.route);
+    hero    = allocateImage('hero',    c.route, c.template);
+    patient = allocateImage('patient', c.route, c.template);
   } catch (e: any) {
     freeImages(c.route); // roll back any partial image allocation
     throw new Error(`Image pool exhausted — ${e.message}`);

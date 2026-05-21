@@ -1,0 +1,758 @@
+'use client';
+
+/**
+ * GarageTemplate.tsx — Auto-repair shop site renderer.
+ *
+ * Cloned from DentalTemplate; only Hebrew industry-specific strings differ.
+ * Same props shape (SiteContent) — content.json drives services/photos/copy.
+ *
+ *   - app/[slug]/page.tsx (dynamic route, fetches from VPS)
+ *   - app/garage/page.tsx (canonical template preview)
+ *
+ * NEVER import content.json directly here — all data comes through props.
+ */
+
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, useInView } from 'framer-motion';
+import { CalBooking, CalFloatingButton } from '@/components/ui/cal-booking';
+import { Chatbot } from '@/components/ui/chatbot';
+import { AccessibilityFooter } from '@/components/ui/AccessibilityFooter';
+import { getPack, googleFontsUrl } from '@/lib/design-packs';
+
+/* ── Types ────────────────────────────────────────────────────────────────── */
+
+/** 2-tier launch: 'standard' kept in type union for back-compat with old client records, treated as premium at runtime. */
+export type Tier = 'basic' | 'standard' | 'premium';
+
+export interface SiteContent {
+  /** Client tier — controls which features render. Defaults to 'basic' if missing. */
+  tier?: Tier;
+  biz: {
+    name:           string;
+    tagline?:       string;
+    city:           string;
+    address?:       string;
+    phone:          string;
+    email?:         string;
+    hours?:         string;
+    calLink?:       string;
+    alertEmail?:    string;
+    alertWhatsapp?: string;
+    domain?:        string | null;
+    template?:      string;
+    logo?:          string | null;
+  };
+  services:     Array<{ icon: string; title: string; desc: string }>;
+  photos:       { hero: string; about: string; results: string; cta: string; gallery?: string[] };
+  testimonials: Array<{ quote: string; name: string; detail: string }>;
+  stats:        Array<{ value: string; label: string }>;
+  design?:      { packId?: string; textPackId?: string };
+  copy?: {
+    h1?:           string;
+    heroSubtitle?: string;
+    tagline?:      string;
+    about?:        string;
+    ctaMain?:      string;
+    ctaSecondary?: string;
+    sectionLabel?: string;
+  };
+}
+
+export interface DentalTemplateProps {
+  content: SiteContent;
+  /** Show "Demo" banner — shown when slug has no registered client yet */
+  isDemo?: boolean;
+}
+
+/* ── Sub-components ───────────────────────────────────────────────────────── */
+
+function ServiceCard({
+  icon, title, desc, delay, colors,
+}: {
+  icon: string; title: string; desc: string; delay: number;
+  colors: { bg: string; white: string; forest: string; sageLight: string; charcoal: string; muted: string };
+}) {
+  const [hovered, setHovered] = useState(false);
+  const ref   = useRef(null);
+  const inView = useInView(ref, { once: true });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 24 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.6, delay }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: hovered ? colors.white : colors.bg, borderRadius: 20, padding: '36px 32px',
+        transition: 'all 0.3s ease',
+        boxShadow: hovered ? '0 20px 48px rgba(45,107,85,0.10)' : '0 2px 12px rgba(0,0,0,0.04)',
+        cursor: 'default',
+      }}
+    >
+      <div style={{
+        width: 52, height: 52, borderRadius: 14,
+        background: hovered ? colors.forest : colors.sageLight,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 24, marginBottom: 20, transition: 'all 0.3s ease',
+      }}>{icon}</div>
+      <h3 style={{ fontFamily: 'var(--f-serif)', fontSize: 19, fontWeight: 600, color: colors.charcoal, marginBottom: 10 }}>{title}</h3>
+      <p style={{ fontFamily: 'var(--f-body)', fontSize: 15, color: colors.muted, lineHeight: 1.7, margin: 0 }}>{desc}</p>
+    </motion.div>
+  );
+}
+
+function Testimonial({
+  quote, name, detail, delay, colors,
+}: {
+  quote: string; name: string; detail: string; delay: number;
+  colors: { white: string; sageLight: string; forest: string; charcoal: string; muted: string };
+}) {
+  const ref   = useRef(null);
+  const inView = useInView(ref, { once: true });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.6, delay }}
+      style={{ background: colors.white, borderRadius: 20, padding: '36px 32px', boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}
+    >
+      <div style={{ fontSize: 36, color: colors.sageLight, lineHeight: 1, marginBottom: 16, fontFamily: 'Georgia' }}>"</div>
+      <p style={{ fontFamily: 'var(--f-body)', fontSize: 16, color: colors.charcoal, lineHeight: 1.75, marginBottom: 24 }}>{quote}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: 99, background: colors.sageLight,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: 'var(--f-serif)', fontWeight: 700, color: colors.forest, fontSize: 16,
+        }}>
+          {name[0]}
+        </div>
+        <div>
+          <div style={{ fontFamily: 'var(--f-serif)', fontWeight: 600, fontSize: 15, color: colors.charcoal }}>{name}</div>
+          <div style={{ fontFamily: 'var(--f-body)', fontSize: 13, color: colors.muted }}>{detail}</div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ── Main Component ───────────────────────────────────────────────────────── */
+
+export default function DentalTemplate({ content, isDemo = false }: DentalTemplateProps) {
+  // ── Derive design pack from content (or fallback) ───────────────────────
+  const PACK = getPack(content.design?.packId);
+
+  const C = {
+    bg:        PACK.colors.bg,
+    bgAlt:     PACK.colors.bgAlt,
+    white:     PACK.colors.white,
+    forest:    PACK.colors.primary,
+    forestDim: PACK.colors.primaryDark,
+    sage:      PACK.colors.primary,
+    sageMid:   PACK.colors.primaryDark,
+    sageLight: PACK.colors.accentLight,
+    oak:       PACK.colors.accent,
+    oakLight:  PACK.colors.accentLight,
+    charcoal:  PACK.colors.text,
+    muted:     PACK.colors.muted,
+    light:     PACK.colors.light,
+  };
+
+  const F = {
+    serif: `'${PACK.fonts.heading.family}', system-ui, serif`,
+    body:  `'${PACK.fonts.body.family}', system-ui, sans-serif`,
+    label: `'${PACK.fonts.body.family}', system-ui, sans-serif`,
+  };
+
+  const BIZ  = content.biz;
+  const COPY = {
+    h1:           content.copy?.h1           ?? null,
+    heroSubtitle: content.copy?.heroSubtitle ?? null,
+    tagline:      content.copy?.tagline      ?? null,
+    about:        content.copy?.about        ?? null,
+    ctaMain:      content.copy?.ctaMain      ?? 'קבע ייעוץ חינם',
+    ctaSecondary: content.copy?.ctaSecondary ?? 'לכל השירותים',
+    sectionLabel: content.copy?.sectionLabel ?? `מוסך מקצועי · ${BIZ.city}`,
+  };
+
+  const photos       = content.photos;
+  const services     = content.services;
+  const testimonials = content.testimonials;
+  const stats        = content.stats;
+
+  // ── Tier gating (2-tier launch) ──────────────────────────────────────────
+  // basic    → static site only (no booking, no chatbot)
+  // premium  → + Cal.com booking + AI chatbot
+  // Default = premium: demo sites (Carti-built, no tier field) showcase the
+  // full product so JJ can sell against the best version. Real paying clients
+  // who chose basic have tier explicitly set at intake, so they're unaffected.
+  // (legacy 'standard' records — treat as premium so old clients keep their features)
+  const TIER: Tier = content.tier ?? 'premium';
+  const HAS_BOOKING = TIER === 'standard' || TIER === 'premium';
+  const HAS_CHATBOT = TIER === 'standard' || TIER === 'premium';
+
+  // Shared colors object for sub-components
+  const SC = {
+    bg: C.bg, white: C.white, forest: C.forest, sageLight: C.sageLight,
+    charcoal: C.charcoal, muted: C.muted,
+  };
+
+  // ── Font loader ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    const id = `pack-fonts-${PACK.id}`;
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id   = id;
+    link.rel  = 'stylesheet';
+    link.href = googleFontsUrl(PACK);
+    document.head.appendChild(link);
+  }, [PACK.id]);
+
+  // ── Scroll + overflow reset ────────────────────────────────────────────
+  useEffect(() => {
+    document.body.style.height     = 'auto';
+    document.body.style.overflow   = 'auto';
+    document.documentElement.style.height   = 'auto';
+    document.documentElement.style.overflow = 'auto';
+  }, []);
+
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  function Tag({ children }: { children: React.ReactNode }) {
+    return (
+      <span style={{
+        fontFamily: F.label, fontSize: 11, letterSpacing: '0.18em',
+        textTransform: 'uppercase' as const, color: C.forest,
+        background: C.sageLight, padding: '4px 12px', borderRadius: 99, display: 'inline-block',
+      }}>{children}</span>
+    );
+  }
+
+  // ── Smart CTA: booking widget if tier supports it, tel: link otherwise ──
+  function CTAButton({
+    children,
+    style,
+  }: {
+    children: React.ReactNode;
+    style?: React.CSSProperties;
+  }) {
+    if (HAS_BOOKING) {
+      return (
+        <CalBooking calLink={BIZ.calLink || 'ilay-lankin/15min'} brandColor={C.forest}>
+          <button style={style}>{children}</button>
+        </CalBooking>
+      );
+    }
+    // Basic tier: a tel: link styled identically — no booking widget
+    return (
+      <a
+        href={BIZ.phone ? `tel:${BIZ.phone.replace(/[^0-9+]/g, '')}` : '#'}
+        style={{ ...style, textDecoration: 'none', display: 'inline-block' }}
+      >
+        {children}
+      </a>
+    );
+  }
+
+  function SectionLabel({ children }: { children: string }) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <div style={{ width: 28, height: 2, background: C.forest, borderRadius: 2 }} />
+        <span style={{ fontFamily: F.label, fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: C.forest }}>{children}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div dir="rtl" style={{ background: C.bg, minHeight: '100vh', fontFamily: F.body }}>
+
+      {/* CSS variables + responsive overrides */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @import url('${googleFontsUrl(PACK)}');
+        :root {
+          --f-serif: ${F.serif};
+          --f-body:  ${F.body};
+          --f-label: ${F.label};
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { scroll-behavior: smooth; overflow-x: hidden !important; max-width: 100vw; }
+        @media (max-width: 768px) {
+          /* NAV: hide desktop links, the floating bottom bar replaces them */
+          .nav-links { display: none !important; }
+          .nav-book  { display: none !important; }
+          nav        { padding: 0 20px !important; }
+
+          /* HERO: shorter, RTL-aligned, breathing room above the bottom CTA */
+          .hero-section { height: 88vh !important; min-height: 560px !important; }
+          .hero-grad { background: linear-gradient(to bottom, ${C.bg}10 0%, ${C.bg}c0 45%, ${C.bg}f5 100%) !important; }
+          .hero-inner { padding: 0 22px !important; align-items: flex-end !important; padding-bottom: 110px !important; justify-content: flex-end !important; }
+          .hero-content { max-width: 100% !important; direction: rtl !important; text-align: right !important; }
+          .hero-h1   { font-size: 38px !important; line-height: 1.12 !important; margin-top: 18px !important; margin-bottom: 18px !important; }
+          .hero-sub  { font-size: 16px !important; margin-bottom: 28px !important; max-width: 100% !important; }
+
+          /* CTA buttons stack full-width on mobile */
+          .hero-btns { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+          .hero-btns button { width: 100% !important; text-align: center !important; padding: 15px 24px !important; font-size: 15px !important; }
+
+          /* STATS: 2-up, smaller numbers */
+          .stats-grid { grid-template-columns: repeat(2,1fr) !important; padding: 36px 22px !important; gap: 22px !important; }
+          .stat-value { font-size: 30px !important; }
+
+          /* SERVICES */
+          .services-wrap { padding: 64px 22px !important; }
+          .services-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .services-header { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; margin-bottom: 36px !important; }
+          .services-header h2 { font-size: 30px !important; }
+          .services-header p  { font-size: 15px !important; }
+
+          /* ABOUT */
+          .about-section { padding: 64px 22px !important; }
+          .about-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .about-img  { height: 280px !important; border-radius: 18px !important; }
+          .about-h2   { font-size: 28px !important; }
+
+          /* RESULTS */
+          .results-section { grid-template-columns: 1fr !important; padding: 64px 22px !important; gap: 32px !important; }
+          .results-mini { grid-template-columns: 1fr 1fr !important; gap: 14px !important; }
+          .results-img  { height: 320px !important; }
+          .results-h2   { font-size: 28px !important; }
+
+          /* TESTIMONIALS */
+          .testimonials-wrap { padding: 64px 22px !important; }
+          .testimonials-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .testimonials-h2   { font-size: 28px !important; margin-bottom: 36px !important; }
+
+          /* CTA strip */
+          .cta-section { height: auto !important; padding: 72px 0 !important; }
+          .cta-section h2 { font-size: 30px !important; line-height: 1.15 !important; }
+          .cta-section p  { font-size: 15px !important; }
+
+          /* FOOTER + leave 96px clear for mobile sticky bar */
+          .footer-outer { padding: 44px 22px 110px !important; }
+          .footer-grid  { grid-template-columns: 1fr !important; gap: 28px !important; }
+          .footer-bottom { flex-direction: column !important; gap: 8px !important; text-align: center !important; }
+
+          /* Hide decorations that don't make sense on small screens */
+          .hide-mobile { display: none !important; }
+
+          /* Sticky bottom CTA bar — only visible on mobile */
+          .mobile-cta-bar { display: flex !important; }
+
+          /* HIDE the floating Cal button on mobile — sticky bar replaces it */
+          .cal-floating-button-container,
+          [data-cal-floating] { display: none !important; }
+
+          /* Mobile: hide the floating chatbot bubble — there's a chat icon inside the sticky bar now */
+          /* Keep the wrapper so the panel still anchors correctly when opened via custom event */
+          .chatbot-bubble-btn { display: none !important; }
+          .chatbot-fab        { bottom: 80px !important; left: 16px !important; pointer-events: none; }
+          .chatbot-fab > *:not(.chatbot-bubble-btn) { pointer-events: auto; }
+
+          /* a11y button: bottom-left, just above the sticky bar */
+          .a11y-fab { bottom: 80px !important; left: 16px !important; width: 38px !important; height: 38px !important; }
+        }
+        @media (min-width: 769px) {
+          .mobile-cta-bar { display: none !important; }
+        }
+      `}} />
+
+      {/* ── DEMO BANNER ── */}
+      {isDemo && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
+          background: '#F59E0B', color: '#1C1917', fontFamily: F.body,
+          fontSize: 13, fontWeight: 600, textAlign: 'center',
+          padding: '10px 16px', letterSpacing: '0.02em',
+        }}>
+          🚧 דמו בלבד — זה אתר לדוגמה. פרטי העסק יתמלאו לאחר טופס הקבלה.
+        </div>
+      )}
+
+      {/* ── NAV ── */}
+      <nav style={{
+        position: 'fixed', top: isDemo ? 40 : 0, left: 0, right: 0, zIndex: 100,
+        background: scrolled ? 'rgba(250,248,244,0.92)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(16px)' : 'none',
+        WebkitBackdropFilter: scrolled ? 'blur(16px)' : 'none',
+        transition: 'all 0.4s ease', padding: '0 48px',
+      }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {BIZ.logo ? (
+              <img
+                src={BIZ.logo}
+                alt={`${BIZ.name || 'לוגו'} logo`}
+                style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', display: 'block' }}
+              />
+            ) : (
+              <div style={{ width: 32, height: 32, borderRadius: 99, background: C.forest, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ color: '#fff', fontSize: 16 }}>✦</span>
+              </div>
+            )}
+            <span style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 18, color: C.charcoal, letterSpacing: '-0.02em' }}>
+              {BIZ.name || 'שם המרפאה'}
+            </span>
+          </div>
+          <div className="nav-links" style={{ display: 'flex', gap: 40, alignItems: 'center' }}>
+            {[['שירותים', 'services'], ['אודות', 'about'], ['המלצות', 'testimonials']].map(([label, id]) => (
+              <a key={id} href={`#${id}`}
+                style={{ fontFamily: F.body, fontSize: 15, color: C.charcoal, textDecoration: 'none', fontWeight: 500, opacity: 0.75, transition: 'opacity 0.2s' }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '0.75')}>
+                {label}
+              </a>
+            ))}
+            <CTAButton style={{
+              background: C.forest, color: '#fff', fontFamily: F.label, fontWeight: 600, fontSize: 14,
+              padding: '10px 24px', borderRadius: 99, border: 'none', cursor: 'pointer', transition: 'background 0.2s ease',
+            }}>
+              <span className="nav-book">{HAS_BOOKING ? 'קבע תור' : '📞 התקשרו'}</span>
+            </CTAButton>
+          </div>
+        </div>
+      </nav>
+
+      {/* ── HERO ── */}
+      <section className="hero-section" style={{ position: 'relative', height: '100vh', overflow: 'hidden', marginTop: isDemo ? 40 : 0 }}>
+        <img
+          src={photos.hero}
+          alt="Dental clinic"
+          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', filter: PACK.photoFilter }}
+        />
+        <div aria-hidden style={{
+          position: 'absolute', inset: 0,
+          background: PACK.heroOverlay.gradient,
+          mixBlendMode: PACK.heroOverlay.blend as any,
+          opacity: PACK.heroOverlay.opacity,
+          pointerEvents: 'none',
+        }} />
+        <div className="hero-grad" style={{
+          position: 'absolute', inset: 0,
+          background: `linear-gradient(to right, ${C.bg}e8 38%, ${C.bg}30 70%, transparent 100%)`,
+        }} />
+        <div className="hero-inner" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 80px' }}>
+          <div className="hero-content" style={{ maxWidth: 560, textAlign: 'left' as const, direction: 'ltr' as const }}>
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
+              <Tag>{COPY.sectionLabel}</Tag>
+            </motion.div>
+            <motion.h1
+              className="hero-h1"
+              initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.15 }}
+              style={{ fontFamily: F.serif, fontSize: 'clamp(40px, 5.5vw, 72px)', fontWeight: 700, lineHeight: 1.08, color: C.charcoal, marginTop: 24, marginBottom: 24, letterSpacing: '-0.03em' }}
+            >
+              {COPY.h1
+                ? <span>{COPY.h1}</span>
+                : <>החיוך שלך,<br /><span style={{ color: C.forest }}>הסיפור שלנו</span></>}
+            </motion.h1>
+            <motion.p
+              className="hero-sub"
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.3 }}
+              style={{ fontSize: 18, color: C.muted, lineHeight: 1.75, marginBottom: 40, maxWidth: 420 }}
+            >
+              {COPY.heroSubtitle || BIZ.tagline || 'מוסך מקצועי עם שירות אישי ושקיפות מלאה'}
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.45 }}
+              className="hero-btns"
+              style={{ display: 'flex', gap: 16, flexWrap: 'wrap' as const }}
+            >
+              <CTAButton style={{
+                background: C.forest, color: '#fff', fontFamily: F.label, fontWeight: 700, fontSize: 15,
+                padding: '16px 36px', borderRadius: 99, border: 'none', cursor: 'pointer',
+                boxShadow: '0 8px 24px rgba(45,107,85,0.30)', transition: 'all 0.2s ease',
+              }}>
+                {HAS_BOOKING ? COPY.ctaMain : '📞 התקשרו עכשיו'}
+              </CTAButton>
+              <button style={{
+                background: 'transparent', color: C.charcoal, fontFamily: F.label, fontWeight: 600, fontSize: 15,
+                padding: '16px 36px', borderRadius: 99, border: `1.5px solid rgba(42,42,42,0.20)`, cursor: 'pointer', transition: 'all 0.2s ease',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = C.forest; e.currentTarget.style.color = C.forest; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(42,42,42,0.20)'; e.currentTarget.style.color = C.charcoal; }}>
+                {COPY.ctaSecondary}
+              </button>
+            </motion.div>
+          </div>
+        </div>
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, background: `linear-gradient(to bottom, transparent, ${C.bg})` }} />
+      </section>
+
+      {/* ── STATS ── */}
+      {stats.length > 0 && (
+        <section style={{ background: C.forest }}>
+          <div className="stats-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32, padding: '48px 80px' }}>
+            {stats.map(({ value, label }, i) => (
+              <motion.div key={label} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }} style={{ textAlign: 'center' as const }}>
+                <div className="stat-value" style={{ fontFamily: F.serif, fontSize: 40, fontWeight: 800, color: '#fff', letterSpacing: '-0.03em' }}>{value}</div>
+                <div style={{ fontFamily: F.body, fontSize: 14, color: 'rgba(255,255,255,0.65)', marginTop: 4 }}>{label}</div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── SERVICES ── */}
+      <section id="services" className="services-wrap" style={{ padding: '120px 80px', maxWidth: 1200, margin: '0 auto' }}>
+        <SectionLabel>מה אנחנו מציעים</SectionLabel>
+        <div className="services-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 64, gap: 32 }}>
+          <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 480 }}>
+            טיפול מלא,<br /><span style={{ color: C.forest }}>מקום אחד בטוח</span>
+          </h2>
+          <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.75, maxWidth: 340 }}>
+            מהבדיקה הראשונה ועד לשינוי חיוך מלא — כל טיפול מבוצע על ידי מומחים שבאמת אכפת להם.
+          </p>
+        </div>
+        <div className="services-grid" style={{ display: 'grid', gridTemplateColumns: services.length === 4 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 24 }}>
+          {services.map((s, i) => <ServiceCard key={s.title} {...s} delay={i * 0.08} colors={SC} />)}
+        </div>
+      </section>
+
+      {/* ── ABOUT ── */}
+      <section id="about" className="about-section" style={{ background: C.bgAlt, padding: '120px 80px' }}>
+        <div className="about-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+          <motion.div initial={{ opacity: 0, x: -32 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} style={{ position: 'relative' }}>
+            <img className="about-img" src={photos.about} alt="Dentist consulting with patient" style={{ width: '100%', height: 480, objectFit: 'cover', borderRadius: 24, display: 'block' }} />
+            <div className="hide-mobile" style={{ position: 'absolute', bottom: 28, right: -28, background: C.white, borderRadius: 16, padding: '20px 24px', boxShadow: '0 16px 48px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: C.sageLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🏆</div>
+              <div>
+                <div style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 15, color: C.charcoal }}>המרפאה המובילה</div>
+                <div style={{ fontFamily: F.body, fontSize: 13, color: C.muted }}>{BIZ.city || 'ישראל'} · 2024</div>
+              </div>
+            </div>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, x: 32 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.15 }}>
+            <SectionLabel>אודות המרפאה</SectionLabel>
+            <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 24 }}>
+              שירות לרכב שמרגיש <span style={{ color: C.forest }}>אמין</span>
+            </h2>
+            {COPY.about ? (
+              <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 40 }}>{COPY.about}</p>
+            ) : (
+              <>
+                <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 20 }}>
+                  הקמנו את {BIZ.name || 'המוסך שלנו'} כי האמנו שטיפול ברכב לא חייב להרגיש מלחיץ או לא ברור. המוסך שלנו פועל בשקיפות מלאה — מסבירים כל תקלה, מציגים הצעת מחיר לפני העבודה, ולא מתפשרים על איכות החלפים והעבודה.
+                </p>
+                <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 40 }}>
+                  כל פרט — מהעיצוב הפנימי ועד לחלונות הגדולים — הוא מכוון. הצוות שלנו משלב חום ומקצועיות בכל תור ותור.
+                </p>
+              </>
+            )}
+            <button style={{ background: C.forest, color: '#fff', fontFamily: F.label, fontWeight: 700, fontSize: 14, padding: '14px 32px', borderRadius: 99, border: 'none', cursor: 'pointer', transition: 'all 0.2s ease' }}
+              onMouseEnter={e => { e.currentTarget.style.background = C.forestDim; }}
+              onMouseLeave={e => { e.currentTarget.style.background = C.forest; }}>
+              הכירו את הצוות ←
+            </button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── RESULTS ── */}
+      <section className="results-section" style={{ padding: '120px 80px', maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+        <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
+          <SectionLabel>תוצאות</SectionLabel>
+          <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 24 }}>
+            חיוכים אמיתיים,<br /><span style={{ color: C.forest }}>ביטחון אמיתי</span>
+          </h2>
+          <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 40 }}>
+            כל חיוך שאנו משנים הוא סיפור. בין אם מדובר בהלבנה, ציפויים או שינוי חיוך מלא — אנחנו עובדים עם המאפיינים הטבעיים שלך כדי ליצור תוצאות שמרגישות כמוך.
+          </p>
+          <div className="results-mini" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            {[{ value: '1,200+', label: 'שיפורי חיוך' }, { value: '4.9★', label: 'דירוג ממוצע' }].map(({ value, label }) => (
+              <div key={label} style={{ background: C.sageLight, borderRadius: 16, padding: '24px 20px' }}>
+                <div style={{ fontFamily: F.serif, fontSize: 28, fontWeight: 800, color: C.forest }}>{value}</div>
+                <div style={{ fontFamily: F.body, fontSize: 13, color: C.sage, marginTop: 4 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.1 }} style={{ borderRadius: 24, overflow: 'hidden', boxShadow: '0 32px 80px rgba(45,107,85,0.15)' }}>
+          <img className="results-img" src={photos.results} alt="Happy patient smile" style={{ width: '100%', height: 520, objectFit: 'cover', display: 'block' }} />
+        </motion.div>
+      </section>
+
+      {/* ── TESTIMONIALS ── */}
+      {testimonials.length > 0 && (
+        <section id="testimonials" className="testimonials-wrap" style={{ background: C.bgAlt, padding: '120px 80px' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+            <SectionLabel>המלצות</SectionLabel>
+            <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 700, color: C.charcoal, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 64 }}>
+              מה הלקוחות שלנו אומרים
+            </h2>
+            <div className="testimonials-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+              {testimonials.map((t, i) => <Testimonial key={t.name} {...t} delay={i * 0.1} colors={{ white: C.white, sageLight: C.sageLight, forest: C.forest, charcoal: C.charcoal, muted: C.muted }} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── CTA ── */}
+      <section className="cta-section" style={{ position: 'relative', height: 560, overflow: 'hidden' }}>
+        <img src={photos.cta} alt="Clinic reception" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(45,107,85,0.75)' }} />
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', textAlign: 'center' as const, padding: '0 40px' }}>
+          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
+            <Tag>מוכנים להתחיל?</Tag>
+            <h2 style={{ fontFamily: F.serif, fontSize: 'clamp(32px, 4.5vw, 56px)', fontWeight: 700, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.1, margin: '24px 0', maxWidth: 640 }}>
+              החיוך המושלם שלך במרחק תור אחד
+            </h2>
+            <p style={{ fontFamily: F.body, fontSize: 17, color: 'rgba(255,255,255,0.80)', marginBottom: 40, maxWidth: 440 }}>
+              הייעוץ הראשון חינם. ללא לחץ, ללא התחייבות — רק שיחה ידידותית על מטרות החיוך שלך.
+            </p>
+            <CTAButton style={{
+              background: '#fff', color: C.forest, fontFamily: F.label, fontWeight: 700, fontSize: 16,
+              padding: '18px 48px', borderRadius: 99, border: 'none', cursor: 'pointer',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.20)', transition: 'all 0.2s ease',
+            }}>
+              {HAS_BOOKING ? 'קבע ייעוץ חינם' : '📞 התקשרו עכשיו'}
+            </CTAButton>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer className="footer-outer" style={{ background: C.charcoal, padding: '64px 80px 40px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48, marginBottom: 56 }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 99, background: C.forest, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ color: '#fff', fontSize: 16 }}>✦</span>
+                </div>
+                <span style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 18, color: '#fff' }}>{BIZ.name || 'שם המרפאה'}</span>
+              </div>
+              <p style={{ fontFamily: F.body, fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.8, maxWidth: 260 }}>
+                שירות רכב מקצועי{BIZ.city ? ` בלב ${BIZ.city}` : ''}. אמינות, שקיפות וטכנולוגיה — בכל ביקור.
+              </p>
+            </div>
+            {[
+              { title: 'שירותים', links: services.slice(0, 4).map(s => s.title) },
+              { title: 'המרפאה',  links: ['אודות', 'הצוות שלנו', 'גלריה', 'בלוג'] },
+              { title: 'צור קשר', links: [BIZ.phone, BIZ.email, BIZ.address, BIZ.hours].filter(Boolean) as string[] },
+            ].map(({ title, links }) => (
+              <div key={title}>
+                <div style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 14, color: '#fff', marginBottom: 20, letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>{title}</div>
+                {links.map(link => (
+                  <div key={link} style={{ fontFamily: F.body, fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 12, cursor: 'pointer' }}>{link}</div>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className="footer-bottom" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>© 2026 {BIZ.name || 'המרפאה שלנו'}. כל הזכויות שמורות.</span>
+            <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.30)' }}>נבנה באהבה ✦</span>
+          </div>
+        </div>
+      </footer>
+
+      {/* ── STICKY MOBILE CTA BAR ── */}
+      <div
+        className="mobile-cta-bar"
+        style={{
+          display: 'none',
+          position: 'fixed',
+          left: 0, right: 0, bottom: 0,
+          zIndex: 150,
+          padding: '10px 12px calc(10px + env(safe-area-inset-bottom))',
+          background: 'rgba(255,255,255,0.96)',
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+          borderTop: `1px solid ${C.sageLight}`,
+          boxShadow: '0 -4px 20px rgba(0,0,0,0.06)',
+          gap: 8,
+          direction: 'rtl' as const,
+          alignItems: 'center',
+        }}
+      >
+        {/* PREMIUM tier: secondary "Call" + primary "Book"
+            BASIC tier: a single full-width "Call" button (no redundant duplicate) */}
+        {HAS_BOOKING && (
+          <a
+            href={BIZ.phone ? `tel:${BIZ.phone}` : '#'}
+            aria-label="התקשרו"
+            style={{
+              flex: '0 0 38%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              padding: '13px 6px',
+              background: C.sageLight,
+              color: C.forest,
+              fontFamily: F.label, fontWeight: 700, fontSize: 14,
+              borderRadius: 99, textDecoration: 'none',
+            }}
+          >
+            📞 התקשרו
+          </a>
+        )}
+        <CTAButton style={{
+          flex: '1 1 auto',
+          padding: '13px 6px',
+          background: C.forest,
+          color: '#fff',
+          fontFamily: F.label, fontWeight: 700, fontSize: 14,
+          border: 'none', borderRadius: 99, cursor: 'pointer',
+          textAlign: 'center' as const,
+          boxShadow: '0 6px 20px rgba(45,107,85,0.30)',
+        }}>
+          {HAS_BOOKING ? 'קבע תור' : '📞 התקשרו עכשיו'}
+        </CTAButton>
+        {/* Chat icon — premium tier only */}
+        {HAS_CHATBOT && (
+          <button
+            aria-label="פתח צ'אט"
+            onClick={() => window.dispatchEvent(new Event('open-chatbot'))}
+            style={{
+              flex: '0 0 auto',
+              width: 44, height: 44,
+              background: C.forest,
+              color: '#fff',
+              border: 'none', borderRadius: '50%', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 6px 16px rgba(45,107,85,0.30)',
+              fontSize: 18, padding: 0,
+            }}
+          >
+            💬
+          </button>
+        )}
+      </div>
+
+      {/* ── ACCESSIBILITY FOOTER ── */}
+      <AccessibilityFooter
+        bizName={BIZ.name || ''}
+        email={BIZ.email || ''}
+        phone={BIZ.phone || ''}
+        hours={BIZ.hours || ''}
+        accentColor={C.forest}
+      />
+
+      {/* ── CHATBOT (premium tier only) ── */}
+      {HAS_CHATBOT && (
+        <Chatbot config={{
+          name:           BIZ.name || 'המרפאה',
+          type:           'מוסך',
+          location:       BIZ.city || 'ישראל',
+          phone:          BIZ.phone || '',
+          hours:          BIZ.hours || '',
+          services:       services.map(s => s.title),
+          offer:          'ייעוץ ראשון חינם',
+          brandColor:     C.forest,
+          greeting:       `שלום! 👋 אני העוזר של ${BIZ.name || 'המרפאה'}. במה אוכל לעזור?`,
+          clientEmail:    BIZ.alertEmail || BIZ.email || '',
+          clientWhatsapp: BIZ.alertWhatsapp || '',
+        }} />
+      )}
+
+      {/* ── FLOATING BOOK BUTTON (booking-tier only) ── */}
+      {HAS_BOOKING && (
+        <CalFloatingButton calLink={BIZ.calLink || 'ilay-lankin/15min'} brandColor={C.forest} label="קבע תור" buttonStyle={{ borderRadius: 99 }} />
+      )}
+
+    </div>
+  );
+}

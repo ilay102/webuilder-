@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-04-29T19:22:57.445Z",
+  "updatedAt": "2026-05-21T08:41:35.825Z",
   "images": [
     {
       "id": "heroes/Gemini_Generated_Image_amvponamvponamvp.png",
@@ -10,7 +10,8 @@
       "assignedAt": "2026-04-29T19:22:57.444Z",
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.810Z",
-      "notes": ""
+      "notes": "",
+      "industry": "dental"
     },
     {
       "id": "heroes/Gemini_Generated_Image_mf4i5umf4i5umf4i.png",
@@ -21,7 +22,8 @@
       "assignedAt": null,
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.812Z",
-      "notes": ""
+      "notes": "",
+      "industry": "dental"
     },
     {
       "id": "heroes/Gemini_Generated_Image_vtdf96vtdf96vtdf.png",
@@ -32,7 +34,8 @@
       "assignedAt": "2026-04-18T11:56:57.510Z",
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.812Z",
-      "notes": ""
+      "notes": "",
+      "industry": "dental"
     },
     {
       "id": "heroes/Gemini_Generated_Image_z6mpqvz6mpqvz6mp.png",
@@ -43,7 +46,8 @@
       "assignedAt": "2026-04-18T11:57:14.028Z",
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.813Z",
-      "notes": ""
+      "notes": "",
+      "industry": "dental"
     },
     {
       "id": "heroes/atikah-akhtar-XJptUS8nbhs-unsplash.jpg",
@@ -54,7 +58,8 @@
       "assignedAt": "2026-04-18T11:57:23.459Z",
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.814Z",
-      "notes": ""
+      "notes": "",
+      "industry": "dental"
     },
     {
       "id": "patients/Gemini_Generated_Image_4bei9g4bei9g4bei.png",
@@ -65,7 +70,8 @@
       "assignedAt": "2026-04-29T19:22:57.445Z",
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.815Z",
-      "notes": ""
+      "notes": "",
+      "industry": "dental"
     },
     {
       "id": "patients/Gemini_Generated_Image_a2k33ta2k33ta2k3.png",
@@ -76,7 +82,8 @@
       "assignedAt": null,
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.815Z",
-      "notes": ""
+      "notes": "",
+      "industry": "dental"
     },
     {
       "id": "patients/Gemini_Generated_Image_bfkwrebfkwrebfkw.png",
@@ -87,7 +94,8 @@
       "assignedAt": "2026-04-18T11:56:57.513Z",
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.815Z",
-      "notes": ""
+      "notes": "",
+      "industry": "dental"
     },
     {
       "id": "patients/Gemini_Generated_Image_ew0abyew0abyew0a.png",
@@ -98,7 +106,8 @@
       "assignedAt": "2026-04-18T11:57:14.030Z",
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.816Z",
-      "notes": ""
+      "notes": "",
+      "industry": "dental"
     },
     {
       "id": "patients/Gemini_Generated_Image_p1spoap1spoap1sp.png",
@@ -109,7 +118,8 @@
       "assignedAt": "2026-04-18T11:57:23.467Z",
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.816Z",
-      "notes": ""
+      "notes": "",
+      "industry": "dental"
     },
     {
       "id": "patients/Gemini_Generated_Image_so8q1xso8q1xso8q.png",
@@ -120,7 +130,8 @@
       "assignedAt": null,
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.818Z",
-      "notes": ""
+      "notes": "",
+      "industry": "dental"
     },
     {
       "id": "patients/Gemini_Generated_Image_uudiu6uudiu6uudi (1).png",
@@ -131,7 +142,8 @@
       "assignedAt": null,
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.819Z",
-      "notes": ""
+      "notes": "",
+      "industry": "dental"
     },
     {
       "id": "patients/Gemini_Generated_Image_whdnwkwhdnwkwhdn.png",
@@ -142,7 +154,8 @@
       "assignedAt": null,
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.820Z",
-      "notes": ""
+      "notes": "",
+      "industry": "dental"
     },
     {
       "id": "patients/Gemini_Generated_Image_z3fwvrz3fwvrz3fw.png",
@@ -153,6 +166,79 @@
       "assignedAt": null,
       "lockedAt": null,
       "addedAt": "2026-04-17T09:57:09.822Z",
+      "notes": "",
+      "industry": "dental"
+    },
+    {
+      "id": "heroes/Gemini_Generated_Image_2z2idz2z2idz2z2i.png",
+      "type": "hero",
+      "industry": "garage",
+      "path": "/pool/garage/heroes/Gemini_Generated_Image_2z2idz2z2idz2z2i.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T08:17:57.686Z",
+      "notes": ""
+    },
+    {
+      "id": "heroes/Gemini_Generated_Image_h2e3fqh2e3fqh2e3.png",
+      "type": "hero",
+      "industry": "garage",
+      "path": "/pool/garage/heroes/Gemini_Generated_Image_h2e3fqh2e3fqh2e3.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T08:17:57.686Z",
+      "notes": ""
+    },
+    {
+      "id": "heroes/Gemini_Generated_Image_m8be8km8be8km8be.png",
+      "type": "hero",
+      "industry": "garage",
+      "path": "/pool/garage/heroes/Gemini_Generated_Image_m8be8km8be8km8be.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T08:17:57.686Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_9tyzg79tyzg79tyz.png",
+      "type": "patient",
+      "industry": "garage",
+      "path": "/pool/garage/patients/Gemini_Generated_Image_9tyzg79tyzg79tyz.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T08:17:57.686Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_ay7b5iay7b5iay7b.png",
+      "type": "patient",
+      "industry": "garage",
+      "path": "/pool/garage/patients/Gemini_Generated_Image_ay7b5iay7b5iay7b.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T08:17:57.686Z",
+      "notes": ""
+    },
+    {
+      "id": "patients/Gemini_Generated_Image_bz5ciqbz5ciqbz5c.png",
+      "type": "patient",
+      "industry": "garage",
+      "path": "/pool/garage/patients/Gemini_Generated_Image_bz5ciqbz5ciqbz5c.png",
+      "status": "available",
+      "assignedTo": null,
+      "assignedAt": null,
+      "lockedAt": null,
+      "addedAt": "2026-05-21T08:17:57.686Z",
       "notes": ""
     }
   ]

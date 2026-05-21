@@ -35,6 +35,17 @@ const OWNER_WHATSAPP = process.env.OWNER_WHATSAPP || '972534638880';
 
 if (!fs.existsSync(HISTORY_DIR)) fs.mkdirSync(HISTORY_DIR, { recursive: true });
 
+// ─── Humanizer: natural reply delay ───────────────────────────────
+// Real people don't reply instantly. Delay outgoing messages so JJ feels human.
+// Components: 1.5s "reading" pause + ~35ms typing per character + 0-2s jitter.
+// Clamped to [2s, 15s] so short replies don't feel instant and long pricing
+// breakdowns feel like real typing time (not always capped at the same value).
+function naturalDelayMs(text) {
+  const len = (text || '').length;
+  const base = 1500 + len * 35 + Math.random() * 2000;
+  return Math.min(15000, Math.max(2000, Math.round(base)));
+}
+
 // ─── Send WhatsApp via Baileys (local, port 3003) ─────────────────
 function sendWhatsApp(phone, message) {
   return new Promise((resolve) => {
@@ -63,12 +74,28 @@ function sendWhatsApp(phone, message) {
   });
 }
 
+// ─── Phone normalization ─────────────────────────────────────────
+// Scout writes Israeli domestic format ("03-523-2414"). Baileys delivers
+// international ("97235232414"). Normalize both to the international
+// "972XXXXXXXXX" canonical form before comparing.
+//
+//   "03-523-2414"  → "97235232414"   (drop leading 0, prepend 972)
+//   "+972-50-1234567" → "972501234567"
+//   "97235232414"  → "97235232414"   (already canonical)
+function canonPhone(raw) {
+  let d = String(raw || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d.startsWith('972')) return d;
+  if (d.startsWith('0'))   return '972' + d.slice(1);   // domestic 0XX → 972XX
+  return d;
+}
+
 // ─── Lead filtering ───────────────────────────────────────────────
 function isLead(phone) {
   try {
     const leads = JSON.parse(fs.readFileSync(LEADS_PATH, 'utf-8'));
-    const cp = String(phone).replace(/\D/g, '');
-    return leads.some(l => String(l.phone).replace(/\D/g, '') === cp);
+    const cp = canonPhone(phone);
+    return leads.some(l => canonPhone(l.phone) === cp);
   } catch { return false; }
 }
 
@@ -78,6 +105,13 @@ const BOT_PATTERNS = [
   'הודעה אוטומטית','auto reply','automatic reply','out of office',
   'אני כרגע לא זמין','נשוב אליך בהקדם','תגובה אוטומטית',
   'הצוות שלנו יחזור','להסרה מהרשימה','להסרה מרשימת התפוצה',
+  // Common WhatsApp Business greeting templates — almost every clinic in
+  // Israel uses one of these. Treat as auto-reply and stay silent until
+  // the human actually engages.
+  'תודה שיצרת קשר','תודה על פנייתך','איך אפשר לעזור',
+  'נחזור אליך בהקדם','קיבלנו את הודעתך','פנייתך התקבלה',
+  'נחזור אליכם בהקדם','איש צוות יחזור','נציג יחזור אליך',
+  'הודעתך נשלחה בהצלחה','קיבלתי את הודעתך',
 ];
 function isAutoReply(message) {
   const lower = message.toLowerCase();
@@ -126,8 +160,8 @@ function stageRank(s) { return FUNNEL_STAGES.indexOf(s ?? 'cold'); }
 function setFunnelStage(phone, stage, extra = {}) {
   try {
     const leads = JSON.parse(fs.readFileSync(LEADS_PATH, 'utf-8'));
-    const cp  = String(phone).replace(/\D/g, '');
-    const idx = leads.findIndex(l => String(l.phone).replace(/\D/g, '') === cp);
+    const cp  = canonPhone(phone);
+    const idx = leads.findIndex(l => canonPhone(l.phone) === cp);
     if (idx === -1) return;
     const current = leads[idx].funnelStage || 'contacted';
     if (stage !== 'closed-lost' && stageRank(stage) <= stageRank(current)) return;
@@ -143,8 +177,8 @@ function setFunnelStage(phone, stage, extra = {}) {
 function findLead(phone) {
   try {
     const leads = JSON.parse(fs.readFileSync(LEADS_PATH, 'utf-8'));
-    const cp = String(phone).replace(/\D/g, '');
-    return leads.find(l => String(l.phone).replace(/\D/g, '') === cp) || null;
+    const cp = canonPhone(phone);
+    return leads.find(l => canonPhone(l.phone) === cp) || null;
   } catch { return null; }
 }
 
@@ -164,6 +198,34 @@ function makeSlug(lead) {
   return slug + '-demo';
 }
 
+// ─── Industry → template mapping ──────────────────────────────────
+// Scout writes lead.industry as the Hebrew query it used. Carti/new-demo.ts
+// expect a short English template id matching the folder name under app/
+// and public/pool/.
+//
+// Important: barber (men's) vs salon (women's) are intentionally separate
+// templates with distinct photo pools and gendered copy. Use the most
+// specific Hebrew term in the Scout query to land on the right one
+// ("מספרת גברים" / "ברבר" → barber; "סלון יופי" / "מספרה לנשים" → salon).
+// Generic "מספרה" defaults to barber.
+function templateForIndustry(industry) {
+  const s = String(industry || '');
+  const lower = s.toLowerCase();
+  // Dental
+  if (s.includes('רופא שיניים') || s.includes('מרפאת שיניים') || lower.includes('dental')) return 'dental';
+  // Garage
+  if (s.includes('מוסך')        || lower.includes('garage')   || s.includes('פחחות'))     return 'garage';
+  // Salon (women's) — match these BEFORE generic barber
+  if (s.includes('סלון יופי')   || s.includes('סלון שיער')    || s.includes('מספרה לנשים') ||
+      s.includes('מעצב שיער')   || s.includes('מעצבת שיער')   || s.includes('צבעי שיער')   ||
+      lower.includes('salon')   || lower.includes('hair salon')) return 'salon';
+  // Barber (men's)
+  if (s.includes('ברבר')        || s.includes('מספרת גברים')  || s.includes('מספרה לגברים') ||
+      s.includes('מספרה')       || s.includes('ספרות')        ||
+      lower.includes('barber')) return 'barber';
+  return 'dental';
+}
+
 // ─── Tag dispatchers ──────────────────────────────────────────────
 
 async function dispatchBuild(phone) {
@@ -173,9 +235,9 @@ async function dispatchBuild(phone) {
   let queue = [];
   try { queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf-8')); } catch {}
 
-  const cp = String(phone).replace(/\D/g, '');
+  const cp = canonPhone(phone);
   const already = queue.find(e =>
-    String(e.leadPhone).replace(/\D/g, '') === cp &&
+    canonPhone(e.leadPhone) === cp &&
     (e.status === 'pending' || e.status === 'building' || e.status === 'done')
   );
   if (already) {
@@ -190,9 +252,11 @@ async function dispatchBuild(phone) {
     return { ok: true };
   }
 
-  const route = makeSlug(lead);
+  const route    = makeSlug(lead);
+  const template = templateForIndustry(lead.industry);
+  console.log('[BUILD] +' + phone + ' lead.industry="' + (lead.industry || '?') + '" → template=' + template);
   queue.push({
-    id: 'jj-' + Date.now(), status: 'pending', template: 'dental', route,
+    id: 'jj-' + Date.now(), status: 'pending', template, route,
     businessName: lead.company, city: lead.city, phone: lead.phone,
     hours: 'Sun-Thu 9:00-18:00', calLink: 'ilay-lankin/15min',
     clientEmail: 'ilay1bgu@gmail.com', clientWhatsapp: '972534638880',
@@ -243,6 +307,18 @@ function dispatchMeeting(phone) {
     fs.writeFileSync(MEETINGS_PATH, JSON.stringify(meetings, null, 2));
     setFunnelStage(phone, 'meeting-booked');
     console.log('[MEETING] +' + phone + ' ' + lead.company);
+    // Owner ping — they may need to actually take the call
+    const ownerMsg = [
+      '📅 MEETING — לקוח ביקש שיחה',
+      '',
+      'עסק: ' + (lead.company || '?'),
+      'איש קשר: ' + (lead.owner_name || '?'),
+      'טלפון: +' + phone,
+      'עיר: ' + (lead.city || '?'),
+      '',
+      'הלקוח קיבל את הלינק https://cal.com/ilay-lankin/15min',
+    ].join('\n');
+    sendWhatsApp(OWNER_WHATSAPP, ownerMsg);
     return { ok: true };
   } catch (e) { return { ok: false, reason: e.message }; }
 }
@@ -309,17 +385,63 @@ function dispatchWaitlist(phone, tier) {
   savePilot(data);
   setFunnelStage(phone, 'checkout-sent', { waitlistTier: tier, waitlistAt: new Date().toISOString() });
   console.log('[WAITLIST] +' + cp + ' tier=' + tier + ' company=' + (lead.company || '?'));
+  // Owner ping — highest-value pilot signal (real intent to buy)
+  const tierLabel = tier === 'premium' ? 'פרימיום (1,600 + 140/חודש)' : 'בסיס (700 + 70/חודש)';
+  const ownerMsg = [
+    '🎯 WAITLIST — לקוח מעוניין לשלם!',
+    '',
+    'חבילה: ' + tierLabel,
+    'עסק: ' + (lead.company || '?'),
+    'איש קשר: ' + (lead.owner_name || '?'),
+    'טלפון: +' + cp,
+    'עיר: ' + (lead.city || '?'),
+    '',
+    'JJ אמר לו ששומר לו מקום ראשון בתור עד שהבטא תיפתח לתשלומים.',
+  ].join('\n');
+  sendWhatsApp(OWNER_WHATSAPP, ownerMsg);
   return { ok: true };
 }
 
-function dispatchStop(phone) {
-  // Mark closed-lost. The /respond handler also reads this result to suppress
-  // any message body if the lead was previously cold (no demo URL in history).
-  setFunnelStage(phone, 'closed-lost', { closedAt: new Date().toISOString() });
+function dispatchStop(phone, cleanedBody) {
   const histText = getHistory(phone).map(h => h.parts?.[0]?.text || '').join('\n');
-  const wasEngaged = /webuilder|vercel\.app|polar\.sh/.test(histText);
+  // Engaged = demo URL sent OR price discussed (so the client has actually invested).
+  const wasEngaged = /webuilder|vercel\.app|polar\.sh|1[,.]?600|700|פרימיום|בסיס|הקמה|חודשי/.test(histText);
+  const hasBody = (cleanedBody || '').trim().length > 0;
+
+  // GUARD: post-demo / post-pricing [STOP] with empty body = Gemini misfire.
+  // We don't want to lose an engaged lead silently. Instead: keep the lead open,
+  // force-send a "why?" probe so we capture price-feedback data, and let the next
+  // turn handle the real close.
+  if (wasEngaged && !hasBody) {
+    const probe = 'מבין. רק עוזר לי להתפתח — מה הסיבה? המחיר, המוצר עצמו, או הזמן?';
+    console.log('[STOP-BLOCKED] +' + phone + ' bare [STOP] in engaged stage — probing instead, lead kept open');
+    // Lead is NOT closed-lost. Main handler will use replaceReply as both the
+    // outgoing message and the model turn saved to history (instead of "[STOP]").
+    return { ok: true, blocked: true, replaceReply: probe };
+  }
+
+  setFunnelStage(phone, 'closed-lost', { closedAt: new Date().toISOString() });
   console.log('[STOP] +' + phone + ' closed-lost (engaged=' + wasEngaged + ')');
-  // If they were cold (never saw demo) → tell respond handler to drop the message body too.
+  // Owner ping ONLY for engaged-stage stops — cold stops are noise.
+  if (wasEngaged) {
+    const lead = findLead(phone) || {};
+    const recent = getHistory(phone).slice(-6).map(h => {
+      const who = h.role === 'user' ? 'לקוח' : 'JJ';
+      return who + ': ' + (h.parts?.[0]?.text || '').slice(0, 120);
+    }).join('\n');
+    const ownerMsg = [
+      '🛑 STOP — לקוח שראה דמו סגר',
+      '',
+      'עסק: ' + (lead.company || '?'),
+      'איש קשר: ' + (lead.owner_name || '?'),
+      'טלפון: +' + phone,
+      '',
+      '6 הודעות אחרונות:',
+      recent,
+    ].join('\n');
+    sendWhatsApp(OWNER_WHATSAPP, ownerMsg);
+  }
+  // Cold (never saw demo) and bare [STOP] → drop message body (silent close).
   return { ok: true, suppressMessage: !wasEngaged };
 }
 
@@ -362,7 +484,7 @@ function parseTags(reply) {
   return { tags, cleaned };
 }
 
-async function runDispatchers(phone, tags) {
+async function runDispatchers(phone, tags, cleanedBody) {
   const replacements = {};
   for (const tag of tags) {
     let result;
@@ -392,8 +514,9 @@ async function runDispatchers(phone, tags) {
     else if (tag === 'PAID')             result = dispatchPaid(phone);
     else if (tag === 'ESCALATE')         result = await dispatchEscalate(phone);
     else if (tag === 'INTAKE_DONE')      result = dispatchIntakeDone(phone);
-    else if (tag === 'STOP')             result = dispatchStop(phone);
+    else if (tag === 'STOP')             result = dispatchStop(phone, cleanedBody);
     if (result?.suppressMessage) replacements.__suppress = true;
+    if (result?.replaceReply)    replacements.__replaceReply = result.replaceReply;
     if (result?.replacements) Object.assign(replacements, result.replacements);
   }
   return replacements;
@@ -439,37 +562,124 @@ function callGemini(soul, history, message, nudge, temperature) {
   });
 }
 
-// ─── Main respond endpoint ────────────────────────────────────────
-app.post('/respond', async (req, res) => {
-  const { phone, message } = req.body;
-  if (!phone || !message) return res.json({ reply: null, error: 'missing phone or message' });
-
-  const cleanPhone = String(phone).replace(/\D/g, '');
-
-  if (!isLead(cleanPhone)) {
-    console.log('[SKIP]  +' + cleanPhone + ' not in leads.json');
-    return res.json({ reply: null, reason: 'not_a_lead' });
-  }
-  // Closed-lost = JJ is permanently silent on this lead. Hard guard to prevent
-  // any future message (e.g. lead changes their mind weeks later) from re-engaging.
-  // To re-open, manually clear the funnelStage on the lead record.
-  const closedLead = findLead(cleanPhone);
-  if (closedLead?.funnelStage === 'closed-lost') {
-    console.log('[CLOSED] +' + cleanPhone + ' lead is closed-lost, skipping');
-    return res.json({ reply: null, reason: 'closed-lost' });
-  }
-  if (isAutoReply(message)) {
-    console.log('[BOT]   +' + cleanPhone + ' auto-reply, skipping');
-    return res.json({ reply: null, reason: 'auto-reply' });
-  }
-  if (isDuplicate(cleanPhone, message)) {
-    console.log('[DUP]   +' + cleanPhone + ':', message.substring(0, 30));
-    return res.json({ reply: null, reason: 'duplicate' });
-  }
-
-  console.log('[IN]    +' + cleanPhone + ':', message.substring(0, 80));
-
+// ─── Deferred retry (after immediate Gemini failures) ────────────
+// Runs the full message pipeline again — re-checks closed-lost, lead state,
+// Gemini, tag dispatch, send. Used when the initial /respond got 3 empty
+// replies in a row (typical of a Gemini 503 spike). Fires 90s later so the
+// quota / region usually clears by then.
+async function deferredRetry(cleanPhone, message) {
   try {
+    // Re-check the lead state — owner may have replied manually, or [STOP] may
+    // have fired from another path in the meantime.
+    const lead = findLead(cleanPhone);
+    if (!lead) return;
+    if (lead.funnelStage === 'closed-lost') {
+      console.log('[LATE-SKIP] +' + cleanPhone + ' lead closed in the meantime');
+      return;
+    }
+    const soul    = fs.readFileSync(SOUL_PATH, 'utf-8');
+    const history = getHistory(cleanPhone);
+    // Skip if this message was already answered by a more recent /respond — i.e.
+    // the user re-sent something ("שולח?") and JJ replied while we were waiting.
+    // Heuristic: the most recent user turn in history is NOT this message.
+    const lastUserTurn = [...history].reverse().find(h => h.role === 'user');
+    if (lastUserTurn && lastUserTurn.parts?.[0]?.text !== message) {
+      console.log('[LATE-SKIP] +' + cleanPhone + ' message already superseded — skipping retry');
+      return;
+    }
+
+    let reply = await callGemini(soul, history, message);
+    if (!reply) reply = await callGemini(soul, history, message,
+      'Earlier attempt returned empty due to a transient API spike. Read the last user message and respond now — short, warm, Hebrew. Never empty.', 0.9);
+    if (!reply) {
+      console.log('[LATE-FAIL] +' + cleanPhone + ' delayed retry also failed — escalating');
+      await dispatchEscalate(cleanPhone);
+      return;
+    }
+
+    const { tags, cleaned } = parseTags(reply);
+    let outgoing = cleaned;
+    let suppressed = false;
+    let replaceReply = null;
+    if (tags.length > 0) {
+      console.log('[LATE-TAGS] +' + cleanPhone + ' ' + tags.join(', '));
+      const replacements = await runDispatchers(cleanPhone, tags, cleaned);
+      suppressed   = !!replacements.__suppress;
+      replaceReply = replacements.__replaceReply || null;
+      delete replacements.__suppress;
+      delete replacements.__replaceReply;
+      outgoing = applyReplacements(cleaned, replacements);
+      if (outgoing.includes('{{CHECKOUT_URL}}')) {
+        console.error('[LATE-TAGS] +' + cleanPhone + ' placeholder unresolved — dropping');
+        return;
+      }
+    }
+    if (replaceReply) { outgoing = replaceReply; reply = replaceReply; suppressed = false; }
+
+    saveHistory(cleanPhone, message, reply);
+
+    if (suppressed) {
+      console.log('[LATE-STOP-SILENT] +' + cleanPhone);
+      return;
+    }
+    if (tags.includes('STOP') && (!outgoing || outgoing.trim() === '')) {
+      console.log('[LATE-STOP-SILENT] +' + cleanPhone + ' [STOP] empty body');
+      return;
+    }
+
+    const delay = naturalDelayMs(outgoing);
+    console.log('[LATE-DELAY] +' + cleanPhone + ' ' + delay + 'ms');
+    setTimeout(() => {
+      sendWhatsApp(cleanPhone, outgoing);
+      console.log('[LATE-OUT] +' + cleanPhone + ':', outgoing.substring(0, 120));
+    }, delay);
+  } catch (e) {
+    console.error('[LATE-ERR] +' + cleanPhone + ':', e.message);
+  }
+}
+
+// ─── Inbound message coalescing ───────────────────────────────────
+// When a lead types fast ("מה" then "כן" within seconds), we want JJ to reply
+// ONCE to the combined intent — not twice with conflicting answers. Buffer
+// inbound messages per phone; (re)set a 3s timer; on quiet, flush as one.
+// Also serves as a serialization gate: only one processInbound runs per phone.
+const COALESCE_MS = 3000;
+const inboundBuf  = new Map(); // phone → { messages: [], timer: TimeoutID }
+const inFlight    = new Map(); // phone → Promise (currently processing)
+
+function flushInbound(cleanPhone) {
+  const buf = inboundBuf.get(cleanPhone);
+  if (!buf) return;
+  inboundBuf.delete(cleanPhone);
+  const msgs = buf.messages;
+  const combined = msgs.length === 1 ? msgs[0] : msgs.join('\n');
+  if (msgs.length > 1) {
+    console.log('[COALESCE] +' + cleanPhone + ' merged ' + msgs.length + ' msgs → "' + combined.substring(0, 60) + '"');
+  }
+  // Chain after any in-flight processing for this phone (serialize per lead)
+  const prev = inFlight.get(cleanPhone) || Promise.resolve();
+  const next = prev
+    .catch(() => {})
+    .then(() => processInbound(cleanPhone, combined))
+    .catch(e => console.error('[PROCESS-ERR] +' + cleanPhone + ':', e.message))
+    .finally(() => { if (inFlight.get(cleanPhone) === next) inFlight.delete(cleanPhone); });
+  inFlight.set(cleanPhone, next);
+}
+
+// Runs the full pipeline for ONE (possibly coalesced) inbound message.
+// Extracted from the original /respond body so it can also be re-invoked by
+// deferred retries and the coalescer.
+async function processInbound(cleanPhone, message) {
+  console.log('[IN]    +' + cleanPhone + ':', message.substring(0, 80));
+  try {
+    // Re-check lead state: between buffering and flushing (or during an
+    // earlier in-flight batch) the lead may have been closed (e.g. operator
+    // closed manually, [STOP] fired from a prior batch). Don't process if so.
+    const leadNow = findLead(cleanPhone);
+    if (leadNow?.funnelStage === 'closed-lost') {
+      console.log('[CLOSED-LATE] +' + cleanPhone + ' lead closed during buffer/flight, dropping');
+      return;
+    }
     const soul    = fs.readFileSync(SOUL_PATH, 'utf-8');
     const history = getHistory(cleanPhone);
     let reply = await callGemini(soul, history, message);
@@ -488,58 +698,98 @@ app.post('/respond', async (req, res) => {
         1.0);
     }
     if (!reply) {
-      console.log('[SILENT-FINAL] +' + cleanPhone + ' — Gemini failed 3x, giving up');
-      return res.json({ reply: null });
+      // Gemini failed all 3 immediate retries — most often a transient 503.
+      // Schedule ONE more attempt 90 seconds out. If that also fails, escalate.
+      // We respond to HTTP now so Baileys isn't blocked.
+      console.log('[SILENT-FINAL] +' + cleanPhone + ' — 3 immediate retries empty, scheduling 90s retry');
+      setTimeout(() => deferredRetry(cleanPhone, message), 90 * 1000);
+      return;
     }
 
     // ─── Tag pipeline ─────────────────────────────────────────────
-    // 1. Parse all [TAG] lines from the model reply.
-    // 2. Dispatch each (side effects: queue build, create Polar checkout, log meeting, etc).
-    // 3. Apply any placeholder replacements ({{CHECKOUT_URL}} → live Polar URL).
-    // 4. Safety: if {{CHECKOUT_URL}} still unresolved (Polar call failed), drop message.
-    // 5. Send the CLEANED reply to the client via Baileys.
-    // 6. Save the ORIGINAL tagged reply to history so the model sees its own tags next turn.
     const { tags, cleaned } = parseTags(reply);
     let outgoing = cleaned;
 
     let suppressed = false;
+    let replaceReply = null;
     if (tags.length > 0) {
       console.log('[TAGS]  +' + cleanPhone + ' ' + tags.join(', '));
-      const replacements = await runDispatchers(cleanPhone, tags);
-      suppressed = !!replacements.__suppress;
+      const replacements = await runDispatchers(cleanPhone, tags, cleaned);
+      suppressed   = !!replacements.__suppress;
+      replaceReply = replacements.__replaceReply || null;
       delete replacements.__suppress;
+      delete replacements.__replaceReply;
       outgoing = applyReplacements(cleaned, replacements);
-
       if (outgoing.includes('{{CHECKOUT_URL}}')) {
-        console.error('[TAGS]  +' + cleanPhone + ' placeholder unresolved — suppressing message');
-        return res.json({ reply: null, error: 'checkout_placeholder_unresolved' });
+        console.error('[TAGS]  +' + cleanPhone + ' placeholder unresolved — dropping');
+        return;
       }
     }
 
-    // Save original (with tags) so next Gemini turn sees what JJ did
+    if (replaceReply) { outgoing = replaceReply; reply = replaceReply; suppressed = false; }
+
     saveHistory(cleanPhone, message, reply);
 
-    // [STOP] in cold stage → silent close. Save history but send nothing.
-    // (Engaged stages may still send a one-line goodbye — suppressMessage=false.)
     if (suppressed) {
       console.log('[STOP-SILENT] +' + cleanPhone + ' message suppressed (cold-stage close)');
-      return res.json({ reply: null, suppressed: true, reason: 'cold_stop' });
+      return;
+    }
+    if (tags.includes('STOP') && (!outgoing || outgoing.trim() === '')) {
+      console.log('[STOP-SILENT] +' + cleanPhone + ' [STOP] with empty body');
+      return;
     }
 
-    // Empty body after stripping tags (common with [STOP] alone) → don't send blank message
-    if (!outgoing || outgoing.trim() === '') {
-      console.log('[STOP-SILENT] +' + cleanPhone + ' empty body after tag strip');
-      return res.json({ reply: null, suppressed: true, reason: 'empty_after_tags' });
-    }
-
-    sendWhatsApp(cleanPhone, outgoing);
-    console.log('[OUT]   +' + cleanPhone + ':', outgoing.substring(0, 120));
-    res.json({ reply: outgoing, sent: true });
-
+    const delay = naturalDelayMs(outgoing);
+    console.log('[DELAY] +' + cleanPhone + ' ' + delay + 'ms');
+    setTimeout(() => {
+      sendWhatsApp(cleanPhone, outgoing);
+      console.log('[OUT]   +' + cleanPhone + ':', outgoing.substring(0, 120));
+    }, delay);
   } catch (err) {
-    console.error('[ERR]   Gemini error:', err.message);
-    res.json({ reply: null, error: err.message });
+    console.error('[ERR]   processInbound +' + cleanPhone + ':', err.message);
   }
+}
+
+// ─── Main respond endpoint ────────────────────────────────────────
+// Lightweight: applies gates and buffers messages. Actual Gemini work happens
+// in processInbound (via the 3s coalescer in flushInbound).
+app.post('/respond', async (req, res) => {
+  const { phone, message } = req.body;
+  if (!phone || !message) return res.json({ reply: null, error: 'missing phone or message' });
+
+  const cleanPhone = String(phone).replace(/\D/g, '');
+
+  if (!isLead(cleanPhone)) {
+    console.log('[SKIP]  +' + cleanPhone + ' not in leads.json');
+    return res.json({ reply: null, reason: 'not_a_lead' });
+  }
+  const closedLead = findLead(cleanPhone);
+  if (closedLead?.funnelStage === 'closed-lost') {
+    console.log('[CLOSED] +' + cleanPhone + ' lead is closed-lost, skipping');
+    return res.json({ reply: null, reason: 'closed-lost' });
+  }
+  if (isAutoReply(message)) {
+    console.log('[BOT]   +' + cleanPhone + ' auto-reply, skipping');
+    return res.json({ reply: null, reason: 'auto-reply' });
+  }
+  if (isDuplicate(cleanPhone, message)) {
+    console.log('[DUP]   +' + cleanPhone + ':', message.substring(0, 30));
+    return res.json({ reply: null, reason: 'duplicate' });
+  }
+
+  // Push into the per-phone coalescing buffer. If another message arrives
+  // within COALESCE_MS, we restart the timer and merge them on flush.
+  let buf = inboundBuf.get(cleanPhone);
+  if (!buf) {
+    buf = { messages: [], timer: null };
+    inboundBuf.set(cleanPhone, buf);
+  }
+  buf.messages.push(message);
+  if (buf.timer) clearTimeout(buf.timer);
+  buf.timer = setTimeout(() => flushInbound(cleanPhone), COALESCE_MS);
+  console.log('[BUFFER] +' + cleanPhone + ' (' + buf.messages.length + ' queued): ' + message.substring(0, 60));
+
+  res.json({ reply: null, buffered: true, queueDepth: buf.messages.length });
 });
 
 // ─── System events (called by webhooks, NOT clients) ─────────────
@@ -568,6 +818,33 @@ app.post('/notify-sent', (req, res) => {
   appendToHistory(cp, 'model', message);
   setFunnelStage(cp, 'demo-sent');
   console.log('[NOTIFY] +' + cp + ' demo link logged + funnelStage=demo-sent');
+
+  // Proactive feedback prompt — 8s after demo URL. Skip if:
+  //   • lead became closed-lost
+  //   • lead advanced past demo-sent (intake/paid)
+  //   • the question is already in recent history (we asked, Carti asked, or JJ asked)
+  //   • the user already replied to the demo URL — their reply will trigger JJ
+  //     organically via the normal /respond pipeline, so a forced nudge would
+  //     just duplicate Gemini's natural feedback question
+  const histLenAtNotify = getHistory(cp).length;
+  setTimeout(() => {
+    const lead = findLead(cp);
+    if (!lead || lead.funnelStage === 'closed-lost') return;
+    if (stageRank(lead.funnelStage) > stageRank('demo-sent')) return;
+    const histNow = getHistory(cp);
+    if (histNow.length > histLenAtNotify &&
+        histNow.slice(histLenAtNotify).some(h => h.role === 'user')) {
+      console.log('[FEEDBACK-PROMPT] +' + cp + ' user replied within 8s — skipping nudge');
+      return;
+    }
+    const recent = histNow.slice(-6).map(h => h.parts?.[0]?.text || '').join('\n');
+    if (/מה חשבת|יצא לך לשחק/.test(recent)) return;
+    const prompt = 'יצא לך לשחק עם זה קצת? מה חשבת?';
+    appendToHistory(cp, 'model', prompt);
+    sendWhatsApp(cp, prompt);
+    console.log('[FEEDBACK-PROMPT] +' + cp + ' sent post-demo feedback nudge');
+  }, 8 * 1000);
+
   res.json({ ok: true });
 });
 
