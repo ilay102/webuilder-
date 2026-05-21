@@ -34,10 +34,10 @@
     }
   ],
   "photos": {
-    "hero": null,
-    "about": null,
-    "results": null,
-    "cta": null,
+    "hero":    "/pool/salon/heroes/Gemini_Generated_Image_auszvkauszvkausz.png",
+    "about":   "/pool/salon/patients/Gemini_Generated_Image_bdo08zbdo08zbdo0.png",
+    "results": "/pool/salon/heroes/Gemini_Generated_Image_gnk75ignk75ignk7.png",
+    "cta":     "/pool/salon/patients/Gemini_Generated_Image_ra688yra688yra68.png",
     "gallery": []
   },
   "testimonials": [

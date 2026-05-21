@@ -590,7 +590,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
 
       {/* ── CTA ── */}
       <section className="cta-section" style={{ position: 'relative', height: 560, overflow: 'hidden' }}>
-        <img src={photos.cta} alt="Clinic reception" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }} />
+        <img src={photos.cta} alt="Salon reception area" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(45,107,85,0.75)' }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', textAlign: 'center' as const, padding: '0 40px' }}>
           <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>

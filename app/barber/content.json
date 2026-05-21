@@ -34,10 +34,10 @@
     }
   ],
   "photos": {
-    "hero": null,
-    "about": null,
-    "results": null,
-    "cta": null,
+    "hero":    "/pool/barber/heroes/Gemini_Generated_Image_cnz12kcnz12kcnz1.png",
+    "about":   "/pool/barber/patients/Gemini_Generated_Image_1k29wb1k29wb1k29.png",
+    "results": "/pool/barber/heroes/Gemini_Generated_Image_hka413hka413hka4.png",
+    "cta":     "/pool/barber/heroes/Gemini_Generated_Image_qwcyuxqwcyuxqwcy.png",
     "gallery": []
   },
   "testimonials": [
