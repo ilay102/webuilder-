@@ -40,16 +40,33 @@ export default function ApprovalsPage() {
 
   const pending = items.filter(i => !done.has(i.id))
 
+  // Both handlers: hit the API FIRST, only update the UI on success.
+  // If the API fails, we surface the error so a failed click can never
+  // be confused for a successful one (the previous bug: optimistic UI
+  // removed the entry before knowing the call succeeded → user thought
+  // the message was sent when it wasn't).
   const handleApprove = async (id: string) => {
+    try {
+      await approve(id)
+    } catch (err) {
+      console.error(err)
+      alert('שגיאה באישור — נסה שוב.\n' + (err as Error).message)
+      return
+    }
     setDone(s => { const n = new Set(s); n.add(id); return n; })
     if (selected?.id === id) setSelected(pending.find(p => p.id !== id) ?? null)
-    await approve(id)
   }
 
   const handleReject = async (id: string) => {
+    try {
+      await reject(id)
+    } catch (err) {
+      console.error(err)
+      alert('שגיאה בדחייה — נסה שוב.\n' + (err as Error).message)
+      return
+    }
     setDone(s => { const n = new Set(s); n.add(id); return n; })
     if (selected?.id === id) setSelected(pending.find(p => p.id !== id) ?? null)
-    await reject(id)
   }
 
   return (

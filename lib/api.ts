@@ -21,11 +21,22 @@ async function get<T>(path: string, fallback: T): Promise<T> {
 }
 
 export async function approve(id: string): Promise<void> {
-  await fetch(`${BASE}/api/approvals/${id}/approve`, { method: 'POST' }).catch(() => {})
+  // Throw on any failure (network, 404, 5xx) so the caller can revert the
+  // optimistic UI update. Previously `.catch(() => {})` silently swallowed
+  // every error, making failed approvals invisible to the user.
+  const res = await fetch(`${BASE}/api/approvals/${id}/approve`, { method: 'POST' })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`approve(${id}) failed: HTTP ${res.status} ${body}`)
+  }
 }
 
 export async function reject(id: string): Promise<void> {
-  await fetch(`${BASE}/api/approvals/${id}/reject`, { method: 'POST' }).catch(() => {})
+  const res = await fetch(`${BASE}/api/approvals/${id}/reject`, { method: 'POST' })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`reject(${id}) failed: HTTP ${res.status} ${body}`)
+  }
 }
 
 export async function updateTaskStatus(id: string, status: string): Promise<void> {
