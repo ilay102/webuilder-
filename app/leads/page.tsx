@@ -6,12 +6,28 @@ import type { Lead } from '@/lib/types'
 import clsx from 'clsx'
 
 const STATUS_STYLE: Record<string, { dot: string; badge: string; label: string }> = {
-  new:       { dot: 'bg-cyan',    badge: 'bg-cyan/10 text-cyan border-cyan/20',        label: 'New' },
-  contacted: { dot: 'bg-accent',  badge: 'bg-accent/10 text-accent border-accent/20',  label: 'Contacted' },
-  replied:   { dot: 'bg-success', badge: 'bg-success/10 text-success border-success/20', label: 'Replied' },
-  qualified: { dot: 'bg-purple',  badge: 'bg-purple/10 text-purple border-purple/20',  label: 'Qualified' },
-  lost:      { dot: 'bg-faint',   badge: 'bg-faint/10 text-faint border-faint/20',     label: 'Lost' },
+  // Scout / Pen / JJ all write different status strings; every one needs a style
+  // so the page doesn't crash when STATUS_STYLE[lead.status] is undefined.
+  new:             { dot: 'bg-cyan',    badge: 'bg-cyan/10 text-cyan border-cyan/20',        label: 'New' },
+  drafted:         { dot: 'bg-warn',    badge: 'bg-warn/10 text-warn border-warn/20',        label: 'Drafted' },
+  contacted:       { dot: 'bg-accent',  badge: 'bg-accent/10 text-accent border-accent/20',  label: 'Contacted' },
+  replied:         { dot: 'bg-success', badge: 'bg-success/10 text-success border-success/20', label: 'Replied' },
+  'demo-queued':   { dot: 'bg-warn',    badge: 'bg-warn/10 text-warn border-warn/20',        label: 'Demo queued' },
+  'demo-sent':     { dot: 'bg-accent',  badge: 'bg-accent/10 text-accent border-accent/20',  label: 'Demo sent' },
+  'demo-feedback': { dot: 'bg-accent',  badge: 'bg-accent/10 text-accent border-accent/20',  label: 'Demo feedback' },
+  'meeting-booked':{ dot: 'bg-purple',  badge: 'bg-purple/10 text-purple border-purple/20',  label: 'Meeting' },
+  'checkout-sent': { dot: 'bg-purple',  badge: 'bg-purple/10 text-purple border-purple/20',  label: 'Waitlist' },
+  qualified:       { dot: 'bg-purple',  badge: 'bg-purple/10 text-purple border-purple/20',  label: 'Qualified' },
+  paid:            { dot: 'bg-success', badge: 'bg-success/10 text-success border-success/20', label: 'Paid' },
+  live:            { dot: 'bg-success', badge: 'bg-success/10 text-success border-success/20', label: 'Live' },
+  'closed-lost':   { dot: 'bg-faint',   badge: 'bg-faint/10 text-faint border-faint/20',     label: 'Closed lost' },
+  lost:            { dot: 'bg-faint',   badge: 'bg-faint/10 text-faint border-faint/20',     label: 'Lost' },
 }
+// Fallback when a lead has a status we haven't styled yet (e.g. a new funnelStage
+// added later). Without this, STATUS_STYLE[lead.status].dot throws and the
+// whole page crashes — exactly the "Application error: client-side exception"
+// the user hit.
+const STATUS_FALLBACK = { dot: 'bg-faint', badge: 'bg-faint/10 text-faint border-faint/20', label: 'Unknown' }
 
 function ScoreBar({ score }: { score?: number }) {
   if (!score) return <span className="text-faint text-[10px]">—</span>
@@ -26,8 +42,11 @@ function ScoreBar({ score }: { score?: number }) {
   )
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
+function formatDate(iso: string | undefined | null) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('en-GB', { day:'numeric', month:'short' })
 }
 
 export default function LeadsPage() {
@@ -54,7 +73,9 @@ export default function LeadsPage() {
     .filter(l => {
       if (!search) return true
       const q = search.toLowerCase()
-      return l.company.toLowerCase().includes(q) || l.contact.toLowerCase().includes(q) || l.industry.toLowerCase().includes(q)
+      // Guard against null/undefined — Scout-added leads sometimes lack contact or industry.
+      const fields = [l.company, l.contact, l.industry, l.phone].filter(Boolean) as string[]
+      return fields.some(f => String(f).toLowerCase().includes(q))
     })
     .sort((a, b) => sort === 'score' ? (b.score ?? 0) - (a.score ?? 0) : new Date(b.found_at).getTime() - new Date(a.found_at).getTime())
 
@@ -129,7 +150,7 @@ export default function LeadsPage() {
               </thead>
               <tbody>
                 {filtered.map(lead => {
-                  const st = STATUS_STYLE[lead.status]
+                  const st = STATUS_STYLE[lead.status] ?? STATUS_FALLBACK
                   return (
                     <tr
                       key={lead.id}
