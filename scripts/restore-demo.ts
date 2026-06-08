@@ -10,6 +10,7 @@
  * Usage:
  *   npx ts-node scripts/restore-demo.ts <slug>
  */
+import fs from 'fs';
 import path from 'path';
 import { config as dotenvConfig } from 'dotenv';
 dotenvConfig({ path: path.join(process.cwd(), '.env') });
@@ -47,20 +48,35 @@ async function main() {
     process.exit(1);
   }
 
-  const textRecords = getTextPacksForSlug(slug).filter(p => p.status !== 'available');
-  if (textRecords.length === 0) {
-    console.error(`[restore] Text pool has no pack assigned to ${slug}`);
-    process.exit(1);
-  }
-  const textPack = getTextPack(textRecords[0].id);
-  if (!textPack) {
-    console.error(`[restore] Pack id "${textRecords[0].id}" not in text-packs.ts`);
-    process.exit(1);
-  }
-
   // 3. Recover biz fields from existing record (or its prior siteContent)
   const prior = client.siteContent?.biz ?? {};
-  const variant = pickVariant(slug, client.template ?? 'dental', client.city ?? prior.city ?? '');
+  const template = client.template || prior.template || 'dental';
+  const variant = pickVariant(slug, template, client.city ?? prior.city ?? '');
+
+  let textPack = null;
+  let templateDefaults = null;
+
+  if (template === 'dental') {
+    const textRecords = getTextPacksForSlug(slug).filter(p => p.status !== 'available');
+    if (textRecords.length === 0) {
+      console.error(`[restore] Text pool has no pack assigned to ${slug}`);
+      process.exit(1);
+    }
+    textPack = getTextPack(textRecords[0].id);
+    if (!textPack) {
+      console.error(`[restore] Pack id "${textRecords[0].id}" not in text-packs.ts`);
+      process.exit(1);
+    }
+  } else {
+    try {
+      const templateContentPath = path.join(process.cwd(), 'app', template, 'content.json');
+      if (fs.existsSync(templateContentPath)) {
+        templateDefaults = JSON.parse(fs.readFileSync(templateContentPath, 'utf-8'));
+      }
+    } catch (e: any) {
+      console.error(`Failed to load template defaults for ${template}:`, e.message);
+    }
+  }
 
   const siteContent = composeSiteContent({
     biz: {
@@ -73,12 +89,13 @@ async function main() {
       clientWhatsapp: client.whatsapp       || prior.alertWhatsapp  || '',
       calLink:        prior.calLink         || 'ilay-lankin/15min',
       domain:         client.domain         || prior.domain         || null,
-      template:       client.template       || prior.template       || 'dental',
+      template:       template,
     },
     hero,
     patient,
     textPack,
     designPackId: variant.packId,
+    templateDefaults,
   });
 
   // 4. PATCH back to VPS
@@ -95,7 +112,7 @@ async function main() {
   console.log(`[restore] ✅ ${slug} restored.`);
   console.log(`  hero    = ${hero.id}`);
   console.log(`  patient = ${patient.id}`);
-  console.log(`  text    = ${textPack.id}`);
+  console.log(`  text    = ${textPack ? textPack.id : 'defaults'}`);
   console.log(`  design  = ${variant.packId}`);
 }
 

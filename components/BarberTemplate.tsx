@@ -162,14 +162,15 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
   };
 
   const BIZ  = content.biz;
+  const isBeauty = BIZ.template === 'beauty';
   const COPY = {
     h1:           content.copy?.h1           ?? null,
     heroSubtitle: content.copy?.heroSubtitle ?? null,
     tagline:      content.copy?.tagline      ?? null,
     about:        content.copy?.about        ?? null,
-    ctaMain:      content.copy?.ctaMain      ?? 'קבע ייעוץ חינם',
+    ctaMain:      content.copy?.ctaMain      ?? (isBeauty ? 'קבעי טיפול חינם' : 'קבע ייעוץ חינם'),
     ctaSecondary: content.copy?.ctaSecondary ?? 'לכל השירותים',
-    sectionLabel: content.copy?.sectionLabel ?? `מספרה מובילה · ${BIZ.city}`,
+    sectionLabel: content.copy?.sectionLabel ?? (isBeauty ? `קליניקת יופי מובילה · ${BIZ.city}` : `מספרה מובילה · ${BIZ.city}`),
   };
 
   const photos       = content.photos;
@@ -533,7 +534,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
             ) : (
               <>
                 <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 20 }}>
-                  הקמנו את {BIZ.name || 'המספרה שלנו'} כי האמנו שביקור במספרה צריך להרגיש כמו פינוק — לא משימה. המקום שלנו תוכנן מהיסוד להיות נעים, מעוצב ואיכותי, מבלי להתפשר על הדיוק והסטייל.
+                  הקמנו את {BIZ.name || (isBeauty ? 'קליניקת היופי שלנו' : 'המספרה שלנו')} כי האמנו שביקור {isBeauty ? 'בקליניקה' : 'במספרה'} צריך להרגיש כמו פינוק — לא משימה. המקום שלנו תוכנן מהיסוד להיות נעים, מעוצב ואיכותי, מבלי להתפשר על הדיוק והסטייל.
                 </p>
                 <p style={{ fontFamily: F.body, fontSize: 16, color: C.muted, lineHeight: 1.8, marginBottom: 40 }}>
                   כל פרט — מהעיצוב הפנימי ועד לחלונות הגדולים — הוא מכוון. הצוות שלנו משלב חום ומקצועיות בכל תור ותור.
@@ -624,7 +625,7 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
                 <span style={{ fontFamily: F.serif, fontWeight: 700, fontSize: 18, color: '#fff' }}>{BIZ.name || 'שם העסק'}</span>
               </div>
               <p style={{ fontFamily: F.body, fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.8, maxWidth: 260 }}>
-                מספרה פרמיום{BIZ.city ? ` בלב ${BIZ.city}` : ''}. החוויה והסטייל שלך הם העדיפות שלנו.
+                {isBeauty ? 'קליניקת יופי' : 'מספרה'} פרמיום{BIZ.city ? ` בלב ${BIZ.city}` : ''}. {isBeauty ? 'היופי והחוויה שלך הם העדיפות שלנו.' : 'החוויה והסטייל שלך הם העדיפות שלנו.'}
               </p>
             </div>
             {[
@@ -730,15 +731,15 @@ export default function DentalTemplate({ content, isDemo = false }: DentalTempla
       {/* ── CHATBOT (premium tier only) ── */}
       {HAS_CHATBOT && (
         <Chatbot config={{
-          name:           BIZ.name || 'העסק',
-          type:           'מספרה',
+          name:           BIZ.name || (isBeauty ? 'קליניקת היופי' : 'העסק'),
+          type:           isBeauty ? 'קליניקת יופי' : 'מספרה',
           location:       BIZ.city || 'ישראל',
           phone:          BIZ.phone || '',
           hours:          BIZ.hours || '',
           services:       services.map(s => s.title),
-          offer:          'ייעוץ ראשון חינם',
+          offer:          isBeauty ? 'טיפול ראשון מפנק' : 'ייעוץ ראשון חינם',
           brandColor:     C.forest,
-          greeting:       `שלום! 👋 אני העוזר של ${BIZ.name || 'העסק'}. במה אוכל לעזור?`,
+          greeting:       `שלום! 👋 אני העוזר של ${BIZ.name || (isBeauty ? 'קליניקת היופי' : 'העסק')}. במה אוכל לעזור?`,
           clientEmail:    BIZ.alertEmail || BIZ.email || '',
           clientWhatsapp: BIZ.alertWhatsapp || '',
         }} />

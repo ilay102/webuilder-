@@ -32,7 +32,7 @@ export type ImageStatus = 'available' | 'in-use' | 'locked';
  * Add more by populating /public/pool/<name>/heroes & /patients,
  * registering them in pool-state.json with this industry tag.
  */
-export type Industry = 'dental' | 'garage' | 'barber' | 'salon';
+export type Industry = 'dental' | 'garage' | 'barber' | 'salon' | 'beauty';
 export const DEFAULT_INDUSTRY: Industry = 'dental';
 
 export interface PoolImage {
@@ -60,7 +60,7 @@ export interface PoolImage {
 function normalizeIndustry(img: PoolImage): Industry {
   if (img.industry) return img.industry;
   const m = img.path.match(/^\/pool\/([^/]+)\//);
-  if (m && (['dental','garage','barber','salon'] as Industry[]).includes(m[1] as Industry)) {
+  if (m && (['dental','garage','barber','salon','beauty'] as Industry[]).includes(m[1] as Industry)) {
     return m[1] as Industry;
   }
   return DEFAULT_INDUSTRY;
@@ -116,12 +116,13 @@ export function allocateImage(
 ): PoolImage {
   return withFileLock(POOL_PATH, () => {
     const pool = readPool();
+    const targetIndustry = industry === 'beauty' ? 'salon' : industry;
 
     const candidates = pool.images
       .filter(img =>
         img.type === type &&
         img.status === 'available' &&
-        normalizeIndustry(img) === industry,
+        normalizeIndustry(img) === targetIndustry,
       )
       .sort((a, b) => a.addedAt.localeCompare(b.addedAt)); // FIFO
 
@@ -136,12 +137,12 @@ export function allocateImage(
     }
 
     // Mutate in-place (find the record in the original array, not the sorted copy)
-    const record = pool.images.find(i => i.id === candidates[0].id && normalizeIndustry(i) === industry)!;
+    const record = pool.images.find(i => i.id === candidates[0].id && normalizeIndustry(i) === targetIndustry)!;
     record.status     = 'in-use';
     record.assignedTo = slug;
     record.assignedAt = new Date().toISOString();
     // Backfill industry on legacy rows
-    if (!record.industry) record.industry = industry;
+    if (!record.industry) record.industry = targetIndustry;
     writePool(pool);
 
     return { ...record }; // return a snapshot, not a mutable reference

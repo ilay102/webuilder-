@@ -16,6 +16,8 @@ import path             from 'path';
 import type { Metadata } from 'next';
 import { notFound }     from 'next/navigation';
 import DentalTemplate, { type SiteContent } from '@/components/DentalTemplate';
+import GarageTemplate                       from '@/components/GarageTemplate';
+import BarberTemplate                       from '@/components/BarberTemplate';
 
 const VPS = process.env.NEXT_PUBLIC_API_URL || 'http://204.168.207.116:3000';
 
@@ -140,5 +142,12 @@ export default async function ClientSitePage({
     );
   }
 
+  const template = content.biz?.template || 'dental';
+  if (template === 'garage') {
+    return <GarageTemplate content={content} />;
+  }
+  if (template === 'barber' || template === 'salon' || template === 'beauty') {
+    return <BarberTemplate content={content as any} />;
+  }
   return <DentalTemplate content={content} />;
 }

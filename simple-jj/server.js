@@ -184,14 +184,25 @@ function findLead(phone) {
 
 const HEBREW_MAP = {
   'מרפאת':'marpaat','מרפאה':'marpaa','שיניים':'shinayim','רופא':'rofe',
-  'דוקטור':'doctor','עו"ד':'lawyer','עורך':'orekh','דין':'din',
+  'דוקטור':'doctor','עו"ד':'orekh-din','עורך':'orekh','דין':'din',
   'רואה':'roe','חשבון':'heshbon','מכון':'machon','מרכז':'merkaz',
   'קליניקה':'clinica','בית':'beit','ספר':'sefer','מספרה':'mispara',
+  'מוסך':'mosach','פתח':'petach','תקווה':'tikva','רמת':'ramat','גן':'gan',
+  'ראשון':'rishon','לציון':'lezion','חיפה':'haifa','ירושלים':'jerusalem',
+  'תל':'tel','אביב':'aviv','אילת':'eilat','אשדוד':'ashdod','באר':'beer','שבע':'sheva'
+};
+
+const TRANSLIT = {
+  'א':'a','ב':'b','ג':'g','ד':'d','ה':'h','ו':'v','ז':'z','ח':'ch','ט':'t','י':'i','כ':'k','ך':'ch','ל':'l','מ':'m','ם':'m','נ':'n','ן':'n','ס':'s','ע':'a','פ':'p','ף':'p','צ':'tz','ץ':'tz','ק':'k','ר':'r','ש':'sh','ת':'t'
 };
 
 function makeSlug(lead) {
   let base = (lead.company || 'site').trim().toLowerCase();
-  for (const [heb, eng] of Object.entries(HEBREW_MAP)) base = base.replace(new RegExp(heb, 'g'), eng);
+  for (const [heb, eng] of Object.entries(HEBREW_MAP)) {
+    base = base.replace(new RegExp(heb, 'g'), eng);
+  }
+  // Transliterate remaining Hebrew characters to English phonetics
+  base = base.split('').map(char => TRANSLIT[char] || char).join('');
   base = base.replace(/\s+/g, '-');
   let slug = base.replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
   if (!slug || slug.length < 2) slug = 'lead-' + Date.now().toString().slice(-6);
@@ -208,22 +219,54 @@ function makeSlug(lead) {
 // specific Hebrew term in the Scout query to land on the right one
 // ("מספרת גברים" / "ברבר" → barber; "סלון יופי" / "מספרה לנשים" → salon).
 // Generic "מספרה" defaults to barber.
-function templateForIndustry(industry) {
-  const s = String(industry || '');
-  const lower = s.toLowerCase();
-  // Dental
-  if (s.includes('רופא שיניים') || s.includes('מרפאת שיניים') || lower.includes('dental')) return 'dental';
-  // Garage
-  if (s.includes('מוסך')        || lower.includes('garage')   || s.includes('פחחות'))     return 'garage';
-  // Salon (women's) — match these BEFORE generic barber
-  if (s.includes('סלון יופי')   || s.includes('סלון שיער')    || s.includes('מספרה לנשים') ||
-      s.includes('מעצב שיער')   || s.includes('מעצבת שיער')   || s.includes('צבעי שיער')   ||
-      lower.includes('salon')   || lower.includes('hair salon')) return 'salon';
-  // Barber (men's)
-  if (s.includes('ברבר')        || s.includes('מספרת גברים')  || s.includes('מספרה לגברים') ||
-      s.includes('מספרה')       || s.includes('ספרות')        ||
-      lower.includes('barber')) return 'barber';
-  return 'dental';
+function templateForIndustry(industry, companyName = '') {
+  const s = String(industry || '').toLowerCase();
+  const c = String(companyName || '').toLowerCase();
+  
+  // 1. Dental
+  if (s.includes('רופא שיניים') || s.includes('מרפאת שיניים') || s.includes('dental') ||
+      c.includes('רופא שיניים') || c.includes('מרפאת שיניים') || c.includes('dental')) {
+    return 'dental';
+  }
+  
+  // 2. Garage
+  if (s.includes('מוסך') || s.includes('garage') || s.includes('פחחות') ||
+      c.includes('מוסך') || c.includes('garage') || c.includes('פחחות')) {
+    return 'garage';
+  }
+  
+  // 3. Beauty / Cosmetics / Nails (must check before hair to avoid misclassifying cosmetics salons as hair salons)
+  const beautyKeywords = [
+    'קוסמטיקה', 'קוסמטיקאית', 'לק ג\'ל', 'מניקור', 'פדיקור', 'איפור', 'גבות', 'טיפולי פנים', 'מכון יופי',
+    'cosmetics', 'beauty', 'nails', 'nail', 'skincare', 'clinic'
+  ];
+  if (beautyKeywords.some(k => s.includes(k) || c.includes(k))) {
+    return 'beauty';
+  }
+  
+  // 4. Barber (men's)
+  if (s.includes('ברבר') || s.includes('מספרת גברים') || s.includes('מספרה לגברים') || s.includes('barber') ||
+      c.includes('ברבר') || c.includes('מספרת גברים') || c.includes('מספרה לגברים') || c.includes('barber')) {
+    return 'barber';
+  }
+  
+  // 5. Salon (women's hair)
+  if (s.includes('סלון שיער') || s.includes('מספרה לנשים') || s.includes('מעצב שיער') || s.includes('מעצבת שיער') || s.includes('צבעי שיער') || s.includes('hair salon') ||
+      c.includes('סלון שיער') || c.includes('מספרה לנשים') || c.includes('מעצב שיער') || c.includes('מעצבת שיער') || c.includes('צבעי שיער') || c.includes('hair salon')) {
+    return 'salon';
+  }
+  
+  // If it's a generic "מספרה" (hair salon / barbershop)
+  if (s.includes('מספרה') || s.includes('ספרות') || c.includes('מספרה') || c.includes('ספרות')) {
+    return 'barber';
+  }
+  
+  // If it's a generic "סלון יופי", default to beauty (cosmetics)
+  if (s.includes('סלון יופי') || c.includes('סלון יופי') || s.includes('salon') || c.includes('salon')) {
+    return 'beauty';
+  }
+  
+  return 'dental'; // fallback
 }
 
 // ─── Tag dispatchers ──────────────────────────────────────────────
@@ -238,7 +281,7 @@ async function dispatchBuild(phone) {
   const cp = canonPhone(phone);
   const already = queue.find(e =>
     canonPhone(e.leadPhone) === cp &&
-    (e.status === 'pending' || e.status === 'building' || e.status === 'done')
+    (e.status === 'pending' || e.status === 'pending_send' || e.status === 'building' || e.status === 'done')
   );
   if (already) {
     if (already.status === 'done' && already.demoUrl) {
@@ -252,11 +295,15 @@ async function dispatchBuild(phone) {
     return { ok: true };
   }
 
-  const route    = makeSlug(lead);
-  const template = templateForIndustry(lead.industry);
-  console.log('[BUILD] +' + phone + ' lead.industry="' + (lead.industry || '?') + '" → template=' + template);
+  const hasPreBuilt = !!lead.demo_url;
+  const route = hasPreBuilt ? lead.demo_url.split('/').pop() : makeSlug(lead);
+  const template = templateForIndustry(lead.industry || lead.type, lead.company);
+  const status = hasPreBuilt ? 'pending_send' : 'pending';
+  const demoUrl = hasPreBuilt ? lead.demo_url : undefined;
+
+  console.log('[BUILD] +' + phone + ' lead.industry="' + (lead.industry || '?') + '" → template=' + template + ', prebuilt=' + hasPreBuilt);
   queue.push({
-    id: 'jj-' + Date.now(), status: 'pending', template, route,
+    id: 'jj-' + Date.now(), status, template, route, demoUrl,
     businessName: lead.company, city: lead.city, phone: lead.phone,
     hours: 'Sun-Thu 9:00-18:00', calLink: 'ilay-lankin/15min',
     clientEmail: 'ilay1bgu@gmail.com', clientWhatsapp: '972534638880',
@@ -265,7 +312,7 @@ async function dispatchBuild(phone) {
   });
   fs.writeFileSync(QUEUE_PATH, JSON.stringify(queue, null, 2));
   setFunnelStage(phone, 'demo-queued');
-  console.log('[BUILD] Queued demo for', lead.company, '→ route:', route);
+  console.log('[BUILD] Queued demo for', lead.company, '→ route:', route + ', status: ' + status);
   return { ok: true };
 }
 

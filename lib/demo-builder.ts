@@ -39,15 +39,22 @@ export function composeSiteContent(args: {
   biz:      BizFields;
   hero:     PoolImage;
   patient:  PoolImage;
-  textPack: TextPack;
+  textPack: TextPack | null;
   designPackId: string;
+  templateDefaults?: any;
 }): SiteContent {
-  const { biz, hero, patient, textPack, designPackId } = args;
+  const { biz, hero, patient, textPack, designPackId, templateDefaults } = args;
+
+  const services     = textPack ? textPack.services     : (templateDefaults?.services ?? []);
+  const testimonials = textPack ? textPack.testimonials : (templateDefaults?.testimonials ?? []);
+  const stats        = textPack ? textPack.stats        : (templateDefaults?.stats ?? []);
+  const copy         = textPack ? textPack.copy         : (templateDefaults?.copy ?? {});
+  const tagline      = textPack ? textPack.copy.tagline  : (templateDefaults?.biz?.tagline ?? biz.tagline ?? '');
 
   return {
     biz: {
       name:          biz.name,
-      tagline:       textPack.copy.tagline,
+      tagline:       tagline,
       city:          biz.city,
       address:       biz.address ?? biz.city,
       phone:         biz.phone,
@@ -59,9 +66,9 @@ export function composeSiteContent(args: {
       domain:        biz.domain ?? null,
       template:      biz.template ?? 'dental',
     },
-    services:     textPack.services,
-    testimonials: textPack.testimonials,
-    stats:        textPack.stats,
+    services,
+    testimonials,
+    stats,
     photos: {
       hero:    hero.path,
       about:   hero.path,
@@ -69,7 +76,7 @@ export function composeSiteContent(args: {
       cta:     hero.path,
       gallery: [],
     },
-    design: { packId: designPackId, textPackId: textPack.id },
-    copy:   textPack.copy,
+    design: { packId: designPackId, textPackId: textPack ? textPack.id : undefined },
+    copy,
   };
 }

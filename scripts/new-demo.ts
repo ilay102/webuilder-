@@ -48,7 +48,7 @@ const VERCEL_TEAM     = 'team_fpBcoKvlkv3AffiuMNDZJ0Xb';
 interface DemoConfig {
   /** Template name = industry name = pool folder name.
    *  Mirrors lib/pool-manager Industry type. */
-  template:       'dental' | 'garage' | 'barber' | 'salon';
+  template:       'dental' | 'garage' | 'barber' | 'salon' | 'beauty';
   route:          string;
   businessName:   string;
   tagline?:       string;
@@ -246,21 +246,28 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     throw new Error(`Image pool exhausted — ${e.message}`);
   }
 
-  // ── Text pool: allocate one pack (FIFO). Same lifecycle as images. ──────────
-  let textAlloc;
-  try {
-    textAlloc = allocateTextPack(c.route);
-  } catch (e: any) {
-    freeImages(c.route);    // give the images back
-    freeTextPack(c.route);  // safety: nothing to free, but keeps rollback symmetric
-    throw new Error(`Text pool exhausted — ${e.message}`);
-  }
-  const textPack = textAlloc.pack;
+  // ── Text pool: allocate one pack (FIFO) ONLY for dental templates. ──────────
+  let textPack = null;
+  if (c.template === 'dental') {
+    let textAlloc;
+    try {
+      textAlloc = allocateTextPack(c.route);
+    } catch (e: any) {
+      freeImages(c.route);    // give the images back
+      throw new Error(`Text pool exhausted — ${e.message}`);
+    }
+    textPack = textAlloc.pack;
 
-  process.stderr.write(
-    `[pool] ${c.route} → design=${pack.id}  text=${textPack.id}  ` +
-    `hero=${hero.id}  patient=${patient.id}\n`,
-  );
+    process.stderr.write(
+      `[pool] ${c.route} → design=${pack.id}  text=${textPack.id}  ` +
+      `hero=${hero.id}  patient=${patient.id}\n`,
+    );
+  } else {
+    process.stderr.write(
+      `[pool] ${c.route} → design=${pack.id}  ` +
+      `hero=${hero.id}  patient=${patient.id}\n`,
+    );
+  }
 
   // Assemble content from ONLY: intake + design pack + text pack + pool images.
   // NO template inheritance — guarantees zero cross-demo contamination.
@@ -281,6 +288,7 @@ async function buildDemo(c: DemoConfig): Promise<string> {
     patient,
     textPack,
     designPackId: pack.id,
+    templateDefaults: baseContent,
   });
   // Local mutable copy used downstream (and written to disk for legacy folder mode)
   Object.assign(baseContent, siteContent);
