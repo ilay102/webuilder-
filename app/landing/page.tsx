@@ -9,95 +9,14 @@ const NG = '#8eff71';
 const NC = '#00eefc';
 const NP = '#ff59e3';
 
-/* ─── Fixed full-page neon canvas ───────────────────────── */
-function NeonCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouseRef  = useRef({ x: 0.5, y: 0.5 });
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let W = 0, H = 0, raf = 0;
-
-    interface Tube { color:string; pts:{x:number;y:number}[]; w:number; speed:number; opacity:number; offset:number }
-    const COLORS = [NG,NC,NP,'#53fc84','#00d9ff','#ff2de0','#6fff50','#7efcff','#ff80f0'];
-
-    function buildTubes(): Tube[] {
-      return Array.from({length:9},(_,i)=>{
-        const color = COLORS[i%COLORS.length];
-        const startY = H*(0.02+(i/9)*0.96);
-        const amp    = H*(0.05+Math.random()*0.13);
-        const freq   = 0.4+Math.random()*1.3;
-        const pts    = Array.from({length:50},(__,s)=>{
-          const t=s/49;
-          return { x:-W*0.15+t*W*1.3, y:startY+Math.sin(t*Math.PI*freq+i*0.9)*amp+Math.cos(t*Math.PI*1.5+i*0.6)*amp*0.4 };
-        });
-        return { color, pts, w:1+Math.random()*2, speed:0.003+Math.random()*0.004, opacity:0.4+Math.random()*0.45, offset:i*0.28 };
-      });
-    }
-
-    let tubes:Tube[] = [];
-
-    const resize = ()=>{
-      W = window.innerWidth;
-      H = Math.max(document.body.scrollHeight,window.innerHeight);
-      canvas.width  = W*devicePixelRatio;
-      canvas.height = H*devicePixelRatio;
-      canvas.style.width  = W+'px';
-      canvas.style.height = H+'px';
-      ctx.scale(devicePixelRatio,devicePixelRatio);
-      tubes = buildTubes();
-    };
-    resize();
-
-    const onMouse=(e:MouseEvent)=>{ mouseRef.current={x:e.clientX, y:e.clientY+window.scrollY}; };
-    window.addEventListener('mousemove',onMouse);
-    window.addEventListener('resize',resize);
-
-    // Throttle to ~30fps — smooth but not heavy
-    let t=0, last=0;
-    const FPS = 30, INTERVAL = 1000/FPS;
-
-    const drawTube=(pts:{x:number;y:number}[], lw:number, alpha:number, color:string)=>{
-      ctx.globalAlpha=alpha; ctx.strokeStyle=color; ctx.lineWidth=lw;
-      ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
-      for(let i=1;i<pts.length-1;i++){
-        const mx2=(pts[i].x+pts[i+1].x)/2, my2=(pts[i].y+pts[i+1].y)/2;
-        ctx.quadraticCurveTo(pts[i].x,pts[i].y,mx2,my2);
-      }
-      ctx.stroke();
-    };
-
-    const loop=(now:number)=>{
-      raf=requestAnimationFrame(loop);
-      if(now-last < INTERVAL) return;
-      last=now; t++;
-      ctx.clearRect(0,0,W,H);
-      ctx.lineCap='round'; ctx.lineJoin='round';
-      const mx=(mouseRef.current.x/W-0.5)*60;
-      const my=(mouseRef.current.y/H-0.5)*40;
-      for(const tube of tubes){
-        const ph=t*tube.speed*30+tube.offset*8;
-        const pts=tube.pts.map((p,i)=>{
-          const f=i/tube.pts.length;
-          return { x:p.x+Math.sin(ph+f*Math.PI*2.3)*14+mx*f*0.8, y:p.y+Math.cos(ph*0.7+f*Math.PI)*20+my*f*0.8 };
-        });
-        // Glow via layered strokes — no ctx.filter (avoids software renderer)
-        drawTube(pts, tube.w*9,  tube.opacity*0.06, tube.color);
-        drawTube(pts, tube.w*6,  tube.opacity*0.10, tube.color);
-        drawTube(pts, tube.w*3,  tube.opacity*0.25, tube.color);
-        drawTube(pts, tube.w*1.2,tube.opacity*0.75, tube.color);
-        drawTube(pts, tube.w*0.5,tube.opacity,       '#ffffff');
-      }
-    };
-    raf=requestAnimationFrame(loop);
-    return ()=>{ cancelAnimationFrame(raf); window.removeEventListener('mousemove',onMouse); window.removeEventListener('resize',resize); };
-  },[]);
-
-  return <canvas ref={canvasRef} style={{position:'fixed',top:0,left:0,zIndex:0,pointerEvents:'none',transform:'translateZ(0)'}} />;
+/* ─── Lightweight Ambient GPU Background ───────────────── */
+function AmbientBackground() {
+  return (
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" style={{ transform: 'translateZ(0)' }}>
+      <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full opacity-25 blur-[100px]"
+        style={{ background: 'radial-gradient(circle, #8eff71 0%, #00eefc 40%, transparent 75%)' }} />
+    </div>
+  );
 }
 
 /* ─── Counter ────────────────────────────────────────────── */
@@ -174,14 +93,14 @@ function DotGrid(){
   );
 }
 
-/* ─── Glass card (more transparent = neon shows through) ── */
+/* ─── High Performance Card ── */
 function GCard({children,className='',glow=NG}:{children:React.ReactNode;className?:string;glow?:string}){
   return(
-    <motion.div whileHover={{scale:1.02}} transition={{duration:0.2}}
+    <motion.div whileHover={{scale:1.015}} transition={{duration:0.2}}
       className={`relative group rounded-xl overflow-hidden ${className}`}
-      style={{background:'rgba(6,6,6,0.62)',backdropFilter:'blur(18px)',WebkitBackdropFilter:'blur(18px)',border:'1px solid rgba(255,255,255,0.09)'}}>
+      style={{background:'rgba(12,12,12,0.85)',border:'1px solid rgba(255,255,255,0.08)',transform:'translateZ(0)',willChange:'transform'}}>
       <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-        style={{boxShadow:`inset 0 0 0 1px ${glow}66, 0 0 50px ${glow}22`}}/>
+        style={{boxShadow:`inset 0 0 0 1px ${glow}44, 0 0 30px ${glow}15`}}/>
       {children}
     </motion.div>
   );
@@ -362,49 +281,154 @@ export default function LandingPage(){
   return(
     <div className="min-h-screen text-white" style={{fontFamily:'Inter,sans-serif',background:'#000'}}>
 
-      {/* Fixed neon canvas — behind everything except hero */}
-      <NeonCanvas/>
+      {/* Lightweight GPU Ambient Background */}
+      <AmbientBackground/>
 
       <div style={{position:'relative',zIndex:1}}>
 
         {/* ── NAV ───────────────────────────────────── */}
         <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-10 md:px-20 py-5"
-          style={{background:'rgba(0,0,0,0.45)',backdropFilter:'blur(20px)'}}>
+          style={{background:'rgba(0,0,0,0.85)',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
           <span className="text-sm font-black tracking-[0.25em] uppercase" style={{color:NG,fontFamily:'Space Grotesk,monospace'}}>ILAY</span>
           <nav className="hidden md:flex gap-8 text-[12px] text-white/50 tracking-widest uppercase" style={{fontFamily:'Space Grotesk,monospace'}}>
-            {['Process','Services','Results','About'].map(l=>(
-              <a key={l} href="#" className="hover:text-white transition-colors">{l}</a>
+            {[
+              { label: 'Process', href: '#process' },
+              { label: 'Services', href: '#services' },
+              { label: 'Results', href: '#results' },
+              { label: 'About', href: '#contact' },
+            ].map(item => (
+              <a key={item.label} href={item.href} className="hover:text-white transition-colors">{item.label}</a>
             ))}
           </nav>
           <div className="w-2 h-2 rounded-full" style={{background:NG,boxShadow:`0 0 10px ${NG}`}}/>
         </header>
 
-        {/* ── HERO — CDN Three.js tubes cursor effect ── */}
-        <TubesBackground className="min-h-screen flex items-center justify-center" enableClickInteraction>
-          <div className="flex flex-col items-center justify-center min-h-screen text-center px-6 pt-24 pb-20 pointer-events-auto">
+        {/* ── TOP HERO HEADER WITH NEON TUBES EFFECT ────────── */}
+        <TubesBackground className="py-24 flex items-center justify-center relative overflow-hidden" enableClickInteraction>
+          <div className="flex flex-col items-center justify-center text-center px-6 pt-16 pb-12 pointer-events-auto max-w-5xl mx-auto">
+            {/* 1. Animated Title & Subtitle */}
             <motion.h1
               initial={{opacity:0,y:50}} animate={{opacity:1,y:0}}
               transition={{duration:1.1,ease:[0.22,1,0.36,1]}}
-              className="text-[clamp(4rem,10vw,9rem)] font-black leading-[0.9] tracking-[-0.02em]"
+              className="text-[clamp(3.8rem,9.5vw,8.5rem)] font-black leading-[0.95] tracking-[-0.02em] mb-4"
               style={{fontFamily:'Georgia,"Times New Roman",serif',textShadow:'0 2px 80px rgba(0,0,0,0.7)'}}>
               Ilay Automation
             </motion.h1>
             <motion.p initial={{opacity:0,y:20}} animate={{opacity:1,y:0}}
               transition={{duration:0.8,delay:0.25}}
-              className="mt-6 text-2xl md:text-3xl text-white/70 font-light tracking-wide">
+              className="text-xl md:text-3xl text-white/70 font-light tracking-wide mb-6">
               Your Automation Starts Here
             </motion.p>
+
+            {/* Glow Line */}
+            <motion.div initial={{scaleX:0}} animate={{scaleX:1}} transition={{duration:1,delay:0.4}}
+              className="w-48 h-1 rounded-full"
+              style={{background:`linear-gradient(90deg, transparent, ${NG}, ${NC}, transparent)`}}/>
           </div>
         </TubesBackground>
 
+        {/* ── AI SMART SECRETARY SECTION ────────── */}
+        <section className="py-16 px-6 max-w-5xl mx-auto text-center" dir="rtl">
+          {/* Badge */}
+          <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{duration:0.6}}
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full mb-6"
+            style={{background:'rgba(142,255,113,0.08)',border:'1px solid rgba(142,255,113,0.3)',backdropFilter:'blur(10px)'}}>
+            <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{background:NG,boxShadow:`0 0 10px ${NG}`}}/>
+            <span className="text-sm font-bold tracking-wide" style={{color:NG,fontFamily:'Inter,sans-serif'}}>
+              מזכירת AI חכמה בוואטסאפ לעסקים
+            </span>
+          </motion.div>
+
+          {/* Main Hook (Heading) */}
+          <motion.h2
+            initial={{opacity:0,y:40}} whileInView={{opacity:1,y:0}} viewport={{once:true}}
+            transition={{duration:0.9,ease:[0.22,1,0.36,1]}}
+            className="text-[clamp(2.3rem,6vw,5rem)] font-black leading-[1.15] tracking-tight mb-6"
+            style={{fontFamily:'Inter,"Rubik","Heebo",sans-serif',textShadow:'0 2px 80px rgba(0,0,0,0.8)'}}>
+            אפס התעסקות בטלפון.{' '}
+            <span style={{background:`linear-gradient(135deg, ${NG} 0%, ${NC} 100%)`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+              100% שקט נפשי
+            </span>{' '}
+            בעסק ובבית.
+          </motion.h2>
+
+          {/* Sub-heading */}
+          <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}}
+            transition={{duration:0.8,delay:0.2}}
+            className="text-lg md:text-2xl text-white/80 font-normal leading-relaxed max-w-3xl mx-auto mb-12">
+            המזכירה החכמה שלנו בוואטסאפ עונה ללקוחות, מספקת מידע וסוגרת תורים ביומן 24/7 – בלי שתצטרך לגעת בטלפון באמצע טיפול, עבודה או בזמן הפרטי שלך.
+          </motion.p>
+
+          {/* Key Benefits Cards Grid */}
+          <motion.div initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}} viewport={{once:true}}
+            transition={{duration:0.8,delay:0.3}}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-4xl mx-auto mb-16 text-right">
+            {[
+              { icon: '🛑', title: 'אפס הודעות בערבים ובסופ"ש', desc: 'המזכירה מטפלת בפניות וסוגרת הכל לבד.', color: NP },
+              { icon: '⚡', title: 'מענה חם, אנושי ורגיש', desc: 'שומר על היחס האישי ולא נשמע כמו בוט יבש.', color: NC },
+              { icon: '📅', title: 'סנכרון מלא ליומן', desc: 'התורים נרשמים ומעודכנים אוטומטית.', color: NG },
+              { icon: '☕', title: 'שקט נפשי בהפסקות', desc: 'קמים בבוקר ורואים יומן מלא בלי להתעסק בנייד.', color: NC },
+            ].map((item, idx) => (
+              <div key={idx} className="p-6 rounded-2xl flex items-start gap-4 transition-all duration-300 hover:border-white/20"
+                style={{background:'rgba(12,12,12,0.65)',backdropFilter:'blur(16px)',border:`1px solid ${item.color}33`}}>
+                <span className="text-3xl p-3 rounded-xl shrink-0" style={{background:`${item.color}15`,border:`1px solid ${item.color}30`}}>
+                  {item.icon}
+                </span>
+                <div>
+                  <h3 className="text-lg font-bold text-white mb-1" style={{fontFamily:'Inter,"Rubik",sans-serif'}}>{item.title}</h3>
+                  <p className="text-sm text-white/60 leading-normal">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+
+          {/* PROMINENT / WAY BIGGER CONTACT DETAILS */}
+          <motion.div initial={{opacity:0,scale:0.95}} whileInView={{opacity:1,scale:1}} viewport={{once:true}} transition={{duration:0.8}}
+            className="flex flex-col items-center justify-center gap-6 w-full max-w-3xl mx-auto p-8 rounded-3xl"
+            style={{background:'rgba(10,10,10,0.85)',border:'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(20px)',boxShadow:`0 0 50px ${NG}15`}}>
+            
+            <span className="text-xs font-bold tracking-[0.25em] text-white/40 uppercase" style={{fontFamily:'Space Grotesk,monospace'}}>
+              יצירת קשר ישיר
+            </span>
+
+            {/* BIG WHATSAPP BUTTON */}
+            <a href="https://wa.me/972534638880?text=%D7%97%D7%99%D7%99%20%D7%90%D7%99%D7%9C%D7%90%D7%99,%20%D7%90%D7%A0%D7%99%20%D7%A8%D7%95%D7%A6%D7%94%20%D7%9C%D7%A9%D7%9E%D7%95%D7%A2%20%D7%A2%D7%9C%20%D7%94%D7%9E%D7%96%D7%9B%D7%99%D7%A8%D7%94%20%D7%94%D7%97%D7%9B%D7%9E%D7%94"
+              target="_blank" rel="noopener noreferrer"
+              className="w-full py-5 px-8 rounded-2xl flex items-center justify-center gap-4 transition-all duration-300 hover:scale-105 shadow-xl"
+              style={{background:`linear-gradient(135deg, ${NG} 0%, #29f000 100%)`,color:'#043000',boxShadow:`0 0 40px ${NG}55`}}>
+              <span className="text-3xl">💬</span>
+              <div className="flex flex-col items-start text-right">
+                <span className="text-xs font-extrabold uppercase tracking-wider opacity-80" style={{fontFamily:'Inter,sans-serif'}}>שלחו הודעה בוואטסאפ</span>
+                <span className="text-2xl md:text-3xl font-black tracking-wider" style={{fontFamily:'Space Grotesk,Inter,monospace'}}>053-4638880</span>
+              </div>
+            </a>
+
+            {/* BIG GMAIL BUTTON */}
+            <a href="mailto:ilay10lankin@gmail.com"
+              className="w-full py-4 px-8 rounded-2xl flex items-center justify-center gap-4 transition-all duration-300 hover:bg-white/10 hover:border-cyan-400/50"
+              style={{background:'rgba(255,255,255,0.05)',border:`1px solid ${NC}55`}}>
+              <span className="text-2xl">✉️</span>
+              <div className="flex flex-col items-start text-right">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-white/50" style={{fontFamily:'Inter,sans-serif'}}>שלחו אימייל ישיר</span>
+                <span className="text-lg md:text-xl font-bold tracking-wide text-white" style={{fontFamily:'Space Grotesk,monospace'}}>ilay10lankin@gmail.com</span>
+              </div>
+            </a>
+
+          </motion.div>
+        </section>
+
         {/* ── SERVICES ──────────────────────────────── */}
-        <section className="py-24 px-6 md:px-16 max-w-6xl mx-auto">
+        <section id="services" className="py-24 px-6 md:px-16 max-w-6xl mx-auto">
           <motion.div initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}}
             viewport={{once:true}} transition={{duration:0.7}} className="text-center mb-16">
             <h2 className="text-[clamp(1.5rem,3vw,2.6rem)] font-black tracking-[-0.02em] uppercase">
               Architecting the{' '}
               <span style={{color:NG,fontStyle:'italic'}}>Intelligent</span> Web
             </h2>
+            {/* Added Hebrew Subtitle */}
+            <p className="mt-4 text-xl md:text-2xl font-bold text-white/90" dir="rtl" style={{fontFamily:'Inter,"Rubik",sans-serif'}}>
+              בניית אתרים חכמים וחדשניים עם ניהול יומן וצאטבוט.
+            </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -434,7 +458,7 @@ export default function LandingPage(){
         </section>
 
         {/* ── METHOD ────────────────────────────────── */}
-        <section className="py-24 px-6 md:px-16" style={{background:'rgba(4,4,4,0.65)',backdropFilter:'blur(10px)'}}>
+        <section id="process" className="py-24 px-6 md:px-16" style={{background:'rgba(4,4,4,0.65)',backdropFilter:'blur(10px)'}}>
           <div className="max-w-6xl mx-auto">
             <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="mb-12">
               <div className="flex items-start justify-between flex-wrap gap-4">
@@ -483,7 +507,7 @@ export default function LandingPage(){
         </section>
 
         {/* ── STATS ─────────────────────────────────── */}
-        <section className="py-24 px-6 md:px-16">
+        <section id="results" className="py-24 px-6 md:px-16">
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
@@ -529,30 +553,30 @@ export default function LandingPage(){
           </div>
         </section>
 
-        {/* ── CTA — unchanged ───────────────────────── */}
-        <section className="min-h-[65vh] flex flex-col items-center justify-center text-center px-6 py-20">
+        {/* ── CTA — CONTACT ───────────────────────── */}
+        <section id="contact" className="min-h-[65vh] flex flex-col items-center justify-center text-center px-6 py-20">
           <motion.div initial={{opacity:0,y:40}} whileInView={{opacity:1,y:0}}
             viewport={{once:true}} transition={{duration:0.9,ease:[0.22,1,0.36,1]}}>
-            <h2 className="text-[clamp(3.5rem,10vw,8rem)] font-black leading-[0.9] tracking-[-0.03em] uppercase"
+            <h2 className="text-[clamp(3rem,8vw,7rem)] font-black leading-[0.9] tracking-[-0.03em] uppercase"
               style={{textShadow:'0 0 100px rgba(0,0,0,0.8)'}}>
-              READY TO<br/>
-              <span style={{color:NG,fontStyle:'italic'}}>AUTOMATE?</span>
+              מוכנים לקבל<br/>
+              <span style={{color:NG,fontStyle:'italic'}}>שקט נפשי?</span>
             </h2>
-            <p className="mt-6 text-white/40 max-w-sm mx-auto leading-relaxed uppercase tracking-widest"
-              style={{fontFamily:'Space Grotesk,monospace',fontSize:'0.65rem'}}>
-              SECURE YOUR POSITION IN THE INTELLIGENT WEB. LET'S<br/>
-              BUILD THE FUTURE OF YOUR OPERATIONS TODAY.
+            <p className="mt-6 text-white/60 max-w-md mx-auto leading-relaxed text-sm"
+              style={{fontFamily:'Inter,sans-serif'}}>
+              קבלו שבוע ניסיון ללא התחייבות. המזכירה החכמה תתחיל לעבוד בשבילכם כבר היום.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a href="mailto:hello@ilayautomation.com"
-                className="px-8 py-3.5 font-bold rounded-md tracking-widest uppercase transition-all hover:brightness-110 hover:scale-105"
+              <a href="https://wa.me/972534638880?text=%D7%97%D7%99%D7%99%20%D7%90%D7%99%D7%9C%D7%90%D7%99,%20%D7%90%D7%A0%D7%99%20%D7%A8%D7%95%D7%A6%D7%94%20%D7%A9%D7%91%D7%95%D7%A2%20%D7%A0%D7%99%D7%A1%D7%99%D7%95%D7%9F%20%D7%9C%D7%9C%D7%90%20%D7%97%D7%95%D7%91%D7%94"
+                target="_blank" rel="noopener noreferrer"
+                className="px-8 py-4 font-bold rounded-xl tracking-wide transition-all hover:scale-105"
                 style={{background:`linear-gradient(45deg,${NG},#2ff801)`,color:'#064200',
-                  fontFamily:'Space Grotesk,monospace',fontSize:'0.7rem',boxShadow:`0 0 30px ${NG}55`}}>
-                LAUNCH YOUR SYSTEM
+                  fontFamily:'Inter,sans-serif',fontSize:'0.9rem',boxShadow:`0 0 30px ${NG}55`}}>
+                דברו איתי בווצאפ: 053-4638880 📱
               </a>
-              <a href="#" className="px-8 py-3.5 font-bold rounded-md tracking-widest uppercase text-white/60 hover:text-white transition-all"
-                style={{border:'1px solid rgba(255,255,255,0.2)',fontFamily:'Space Grotesk,monospace',fontSize:'0.7rem'}}>
-                VIEW DOCS
+              <a href="mailto:ilay10lankin@gmail.com" className="px-8 py-4 font-bold rounded-xl tracking-wide text-white/80 hover:text-white transition-all"
+                style={{border:'1px solid rgba(255,255,255,0.2)',fontFamily:'Inter,sans-serif',fontSize:'0.9rem'}}>
+                ilay10lankin@gmail.com ✉️
               </a>
             </div>
           </motion.div>
@@ -563,8 +587,13 @@ export default function LandingPage(){
           style={{background:'rgba(0,0,0,0.6)',backdropFilter:'blur(20px)',borderTop:'1px solid rgba(255,255,255,0.04)'}}>
           <span className="text-sm font-black tracking-[0.25em] uppercase" style={{color:NG,fontFamily:'Space Grotesk,monospace'}}>ILAY</span>
           <nav className="hidden md:flex gap-6 text-[11px] text-white/25 tracking-[0.15em] uppercase" style={{fontFamily:'Space Grotesk,monospace'}}>
-            {['Process','Services','Results','About'].map(l=>(
-              <a key={l} href="#" className="hover:text-white/60 transition-colors">{l}</a>
+            {[
+              { label: 'Process', href: '#process' },
+              { label: 'Services', href: '#services' },
+              { label: 'Results', href: '#results' },
+              { label: 'About', href: '#contact' },
+            ].map(item => (
+              <a key={item.label} href={item.href} className="hover:text-white/60 transition-colors">{item.label}</a>
             ))}
           </nav>
           <svg viewBox="0 0 24 24" className="w-6 h-6">
