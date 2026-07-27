@@ -279,7 +279,7 @@ export default function LandingPage(){
   },[]);
 
   return(
-    <div className="min-h-screen text-white" style={{fontFamily:'Inter,sans-serif',background:'#000'}}>
+    <div className="min-h-screen text-white overflow-x-hidden w-full" style={{fontFamily:'Inter,sans-serif',background:'#000'}}>
 
       {/* Lightweight GPU Ambient Background */}
       <AmbientBackground/>
@@ -287,10 +287,10 @@ export default function LandingPage(){
       <div style={{position:'relative',zIndex:1}}>
 
         {/* ── NAV ───────────────────────────────────── */}
-        <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-10 md:px-20 py-5"
+        <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-20 py-4"
           style={{background:'rgba(0,0,0,0.85)',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
           <span className="text-sm font-black tracking-[0.25em] uppercase" style={{color:NG,fontFamily:'Space Grotesk,monospace'}}>ILAY</span>
-          <nav className="hidden md:flex gap-8 text-[12px] text-white/50 tracking-widest uppercase" style={{fontFamily:'Space Grotesk,monospace'}}>
+          <nav className="flex gap-4 md:gap-8 text-[11px] md:text-[12px] text-white/60 md:text-white/50 tracking-wider md:tracking-widest uppercase" style={{fontFamily:'Space Grotesk,monospace'}}>
             {[
               { label: 'Process', href: '#process' },
               { label: 'Services', href: '#services' },
@@ -300,41 +300,41 @@ export default function LandingPage(){
               <a key={item.label} href={item.href} className="hover:text-white transition-colors">{item.label}</a>
             ))}
           </nav>
-          <div className="w-2 h-2 rounded-full" style={{background:NG,boxShadow:`0 0 10px ${NG}`}}/>
+          <div className="w-2 h-2 rounded-full hidden sm:block" style={{background:NG,boxShadow:`0 0 10px ${NG}`}}/>
         </header>
 
         {/* ── TOP HERO HEADER WITH NEON TUBES EFFECT ────────── */}
-        <TubesBackground className="py-24 flex items-center justify-center relative overflow-hidden" enableClickInteraction>
-          <div className="flex flex-col items-center justify-center text-center px-6 pt-16 pb-12 pointer-events-auto max-w-5xl mx-auto">
+        <TubesBackground className="py-20 md:py-24 flex items-center justify-center relative overflow-hidden" enableClickInteraction>
+          <div className="flex flex-col items-center justify-center text-center px-4 sm:px-6 pt-16 pb-10 pointer-events-auto max-w-5xl mx-auto">
             {/* 1. Animated Title & Subtitle */}
             <motion.h1
               initial={{opacity:0,y:50}} animate={{opacity:1,y:0}}
               transition={{duration:1.1,ease:[0.22,1,0.36,1]}}
-              className="text-[clamp(3.8rem,9.5vw,8.5rem)] font-black leading-[0.95] tracking-[-0.02em] mb-4"
+              className="text-[clamp(2.4rem,8vw,8.5rem)] font-black leading-[0.95] tracking-[-0.02em] mb-4 break-words"
               style={{fontFamily:'Georgia,"Times New Roman",serif',textShadow:'0 2px 80px rgba(0,0,0,0.7)'}}>
               Ilay Automation
             </motion.h1>
             <motion.p initial={{opacity:0,y:20}} animate={{opacity:1,y:0}}
               transition={{duration:0.8,delay:0.25}}
-              className="text-xl md:text-3xl text-white/70 font-light tracking-wide mb-6">
+              className="text-lg md:text-3xl text-white/70 font-light tracking-wide mb-6">
               Your Automation Starts Here
             </motion.p>
 
             {/* Glow Line */}
             <motion.div initial={{scaleX:0}} animate={{scaleX:1}} transition={{duration:1,delay:0.4}}
-              className="w-48 h-1 rounded-full"
+              className="w-32 md:w-48 h-1 rounded-full"
               style={{background:`linear-gradient(90deg, transparent, ${NG}, ${NC}, transparent)`}}/>
           </div>
         </TubesBackground>
 
         {/* ── AI SMART SECRETARY SECTION ────────── */}
-        <section className="py-16 px-6 max-w-5xl mx-auto text-center" dir="rtl">
+        <section className="py-12 md:py-16 px-4 sm:px-6 max-w-5xl mx-auto text-center" dir="rtl">
           {/* Badge */}
           <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{duration:0.6}}
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-full mb-6"
+            className="inline-flex items-center gap-2 px-4 py-1.5 sm:px-5 sm:py-2 rounded-full mb-6 max-w-full"
             style={{background:'rgba(142,255,113,0.08)',border:'1px solid rgba(142,255,113,0.3)',backdropFilter:'blur(10px)'}}>
-            <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{background:NG,boxShadow:`0 0 10px ${NG}`}}/>
-            <span className="text-sm font-bold tracking-wide" style={{color:NG,fontFamily:'Inter,sans-serif'}}>
+            <span className="w-2.5 h-2.5 rounded-full animate-pulse shrink-0" style={{background:NG,boxShadow:`0 0 10px ${NG}`}}/>
+            <span className="text-xs sm:text-sm font-bold tracking-wide truncate" style={{color:NG,fontFamily:'Inter,sans-serif'}}>
               מזכירת AI חכמה בוואטסאפ לעסקים
             </span>
           </motion.div>
@@ -343,7 +343,7 @@ export default function LandingPage(){
           <motion.h2
             initial={{opacity:0,y:40}} whileInView={{opacity:1,y:0}} viewport={{once:true}}
             transition={{duration:0.9,ease:[0.22,1,0.36,1]}}
-            className="text-[clamp(2.3rem,6vw,5rem)] font-black leading-[1.15] tracking-tight mb-6"
+            className="text-[clamp(1.75rem,5.5vw,5rem)] font-black leading-[1.18] tracking-tight mb-6"
             style={{fontFamily:'Inter,"Rubik","Heebo",sans-serif',textShadow:'0 2px 80px rgba(0,0,0,0.8)'}}>
             אפס התעסקות בטלפון.{' '}
             <span style={{background:`linear-gradient(135deg, ${NG} 0%, ${NC} 100%)`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
@@ -355,28 +355,28 @@ export default function LandingPage(){
           {/* Sub-heading */}
           <motion.p initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}}
             transition={{duration:0.8,delay:0.2}}
-            className="text-lg md:text-2xl text-white/80 font-normal leading-relaxed max-w-3xl mx-auto mb-12">
+            className="text-base md:text-2xl text-white/80 font-normal leading-relaxed max-w-3xl mx-auto mb-10">
             המזכירה החכמה שלנו בוואטסאפ עונה ללקוחות, מספקת מידע וסוגרת תורים ביומן 24/7 – בלי שתצטרך לגעת בטלפון באמצע טיפול, עבודה או בזמן הפרטי שלך.
           </motion.p>
 
           {/* Key Benefits Cards Grid */}
           <motion.div initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}} viewport={{once:true}}
             transition={{duration:0.8,delay:0.3}}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-4xl mx-auto mb-16 text-right">
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-4xl mx-auto mb-12 sm:mb-16 text-right">
             {[
               { icon: '🛑', title: 'אפס הודעות בערבים ובסופ"ש', desc: 'המזכירה מטפלת בפניות וסוגרת הכל לבד.', color: NP },
               { icon: '⚡', title: 'מענה חם, אנושי ורגיש', desc: 'שומר על היחס האישי ולא נשמע כמו בוט יבש.', color: NC },
               { icon: '📅', title: 'סנכרון מלא ליומן', desc: 'התורים נרשמים ומעודכנים אוטומטית.', color: NG },
               { icon: '☕', title: 'שקט נפשי בהפסקות', desc: 'קמים בבוקר ורואים יומן מלא בלי להתעסק בנייד.', color: NC },
             ].map((item, idx) => (
-              <div key={idx} className="p-6 rounded-2xl flex items-start gap-4 transition-all duration-300 hover:border-white/20"
+              <div key={idx} className="p-5 sm:p-6 rounded-2xl flex items-start gap-4 transition-all duration-300 hover:border-white/20"
                 style={{background:'rgba(12,12,12,0.65)',backdropFilter:'blur(16px)',border:`1px solid ${item.color}33`}}>
-                <span className="text-3xl p-3 rounded-xl shrink-0" style={{background:`${item.color}15`,border:`1px solid ${item.color}30`}}>
+                <span className="text-2xl sm:text-3xl p-2.5 sm:p-3 rounded-xl shrink-0" style={{background:`${item.color}15`,border:`1px solid ${item.color}30`}}>
                   {item.icon}
                 </span>
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-1" style={{fontFamily:'Inter,"Rubik",sans-serif'}}>{item.title}</h3>
-                  <p className="text-sm text-white/60 leading-normal">{item.desc}</p>
+                  <h3 className="text-base sm:text-lg font-bold text-white mb-1" style={{fontFamily:'Inter,"Rubik",sans-serif'}}>{item.title}</h3>
+                  <p className="text-xs sm:text-sm text-white/60 leading-normal">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -384,7 +384,7 @@ export default function LandingPage(){
 
           {/* PROMINENT / WAY BIGGER CONTACT DETAILS */}
           <motion.div initial={{opacity:0,scale:0.95}} whileInView={{opacity:1,scale:1}} viewport={{once:true}} transition={{duration:0.8}}
-            className="flex flex-col items-center justify-center gap-6 w-full max-w-3xl mx-auto p-8 rounded-3xl"
+            className="flex flex-col items-center justify-center gap-5 sm:gap-6 w-full max-w-3xl mx-auto p-5 sm:p-8 rounded-3xl"
             style={{background:'rgba(10,10,10,0.85)',border:'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(20px)',boxShadow:`0 0 50px ${NG}15`}}>
             
             <span className="text-xs font-bold tracking-[0.25em] text-white/40 uppercase" style={{fontFamily:'Space Grotesk,monospace'}}>
@@ -394,23 +394,23 @@ export default function LandingPage(){
             {/* BIG WHATSAPP BUTTON */}
             <a href="https://wa.me/972534638880?text=%D7%97%D7%99%D7%99%20%D7%90%D7%99%D7%9C%D7%90%D7%99,%20%D7%90%D7%A0%D7%99%20%D7%A8%D7%95%D7%A6%D7%94%20%D7%9C%D7%A9%D7%9E%D7%95%D7%A2%20%D7%A2%D7%9C%20%D7%94%D7%9E%D7%96%D7%9B%D7%99%D7%A8%D7%94%20%D7%94%D7%97%D7%9B%D7%9E%D7%94"
               target="_blank" rel="noopener noreferrer"
-              className="w-full py-5 px-8 rounded-2xl flex items-center justify-center gap-4 transition-all duration-300 hover:scale-105 shadow-xl"
+              className="w-full py-4 sm:py-5 px-5 sm:px-8 rounded-2xl flex items-center justify-center gap-3 sm:gap-4 transition-all duration-300 hover:scale-105 shadow-xl"
               style={{background:`linear-gradient(135deg, ${NG} 0%, #29f000 100%)`,color:'#043000',boxShadow:`0 0 40px ${NG}55`}}>
-              <span className="text-3xl">💬</span>
+              <span className="text-2xl sm:text-3xl">💬</span>
               <div className="flex flex-col items-start text-right">
-                <span className="text-xs font-extrabold uppercase tracking-wider opacity-80" style={{fontFamily:'Inter,sans-serif'}}>שלחו הודעה בוואטסאפ</span>
-                <span className="text-2xl md:text-3xl font-black tracking-wider" style={{fontFamily:'Space Grotesk,Inter,monospace'}}>053-4638880</span>
+                <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider opacity-80" style={{fontFamily:'Inter,sans-serif'}}>שלחו הודעה בוואטסאפ</span>
+                <span className="text-xl sm:text-3xl font-black tracking-wider" style={{fontFamily:'Space Grotesk,Inter,monospace'}}>053-4638880</span>
               </div>
             </a>
 
             {/* BIG GMAIL BUTTON */}
             <a href="mailto:ilay10lankin@gmail.com"
-              className="w-full py-4 px-8 rounded-2xl flex items-center justify-center gap-4 transition-all duration-300 hover:bg-white/10 hover:border-cyan-400/50"
+              className="w-full py-3.5 sm:py-4 px-4 sm:px-8 rounded-2xl flex items-center justify-center gap-3 sm:gap-4 transition-all duration-300 hover:bg-white/10 hover:border-cyan-400/50 overflow-hidden"
               style={{background:'rgba(255,255,255,0.05)',border:`1px solid ${NC}55`}}>
-              <span className="text-2xl">✉️</span>
-              <div className="flex flex-col items-start text-right">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-white/50" style={{fontFamily:'Inter,sans-serif'}}>שלחו אימייל ישיר</span>
-                <span className="text-lg md:text-xl font-bold tracking-wide text-white" style={{fontFamily:'Space Grotesk,monospace'}}>ilay10lankin@gmail.com</span>
+              <span className="text-xl sm:text-2xl shrink-0">✉️</span>
+              <div className="flex flex-col items-start text-right min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-white/50" style={{fontFamily:'Inter,sans-serif'}}>שלחו אימייל ישיר</span>
+                <span className="text-sm sm:text-xl font-bold tracking-wide text-white truncate max-w-full" style={{fontFamily:'Space Grotesk,monospace'}}>ilay10lankin@gmail.com</span>
               </div>
             </a>
 
@@ -418,15 +418,15 @@ export default function LandingPage(){
         </section>
 
         {/* ── SERVICES ──────────────────────────────── */}
-        <section id="services" className="py-24 px-6 md:px-16 max-w-6xl mx-auto">
+        <section id="services" className="py-16 sm:py-24 px-4 sm:px-16 max-w-6xl mx-auto">
           <motion.div initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}}
-            viewport={{once:true}} transition={{duration:0.7}} className="text-center mb-16">
-            <h2 className="text-[clamp(1.5rem,3vw,2.6rem)] font-black tracking-[-0.02em] uppercase">
+            viewport={{once:true}} transition={{duration:0.7}} className="text-center mb-12 sm:mb-16">
+            <h2 className="text-[clamp(1.3rem,4vw,2.6rem)] font-black tracking-[-0.02em] uppercase">
               Architecting the{' '}
               <span style={{color:NG,fontStyle:'italic'}}>Intelligent</span> Web
             </h2>
             {/* Added Hebrew Subtitle */}
-            <p className="mt-4 text-xl md:text-2xl font-bold text-white/90" dir="rtl" style={{fontFamily:'Inter,"Rubik",sans-serif'}}>
+            <p className="mt-3 text-lg md:text-2xl font-bold text-white/90" dir="rtl" style={{fontFamily:'Inter,"Rubik",sans-serif'}}>
               בניית אתרים חכמים וחדשניים עם ניהול יומן וצאטבוט.
             </p>
           </motion.div>
